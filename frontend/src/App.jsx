@@ -1,16 +1,15 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import { LoginPage } from './pages/auth/LoginPage';
+import { Routes, Route, Navigate } from "react-router-dom";
+import LoginPage  from "./pages/auth/LoginPage.jsx";
+import Dashboard  from "./pages/Dashboard.jsx";
+import Admin      from "./pages/Admin.jsx";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" richColors />
-      <Routes>
-        <Route path="/login"    element={<LoginPage />} />
-        <Route path="/admin"    element={<AdminDashboard />} />
-        <Route path="/dashboard" element={<AgentDashboard />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/"          element={<Navigate to="/login" replace />} />
+      <Route path="/login"     element={<LoginPage />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/admin"     element={<Admin />} />
+    </Routes>
   );
 }
