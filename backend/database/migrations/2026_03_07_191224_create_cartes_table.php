@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('id_agent');            //FK agent(Agent ayant activé la carte)
             $table->unsignedBigInteger('id_kiosque');         //FK kiosue(Kiosque d'activation de la carte)
             $table->string('numero_carte',20)->unique();      //Numéro unique lisible de la carte (CPN1, CPN2…)
-            $table->string('qr_code_uid',255)->unique();     //Identifiant unique encodé dans le QR code
+            $table->string('qr_code_uid', 191)->unique();    //Identifiant unique encodé dans le QR code
             $table->text('qr_code_image');                  //Image QR code en base64 ou chemin fichier
             $table->enum('statut',['vierge','actif','expiré','terminé']); //État courant de la carte
             $table->enum('duree',['15 jours','30 jours']);               //Durée de validité choisie lors activation
@@ -25,7 +25,7 @@ return new class extends Migration {
             $table->date('date_expiration')->nullable();               //Date d'expiration calculée à partir de date_activation + durée
             $table->tinyInteger('nb_depots_jour')->default(0);         //Compteur de dépôts effectués aujourd'hui( max 3 par jour)
             $table->tinyInteger('nb_retraits_jour')->default(0);       //Compteur de retraits effectués aujourd'hui( max  par jour)
-            $table->date('reset_date')->default(DB::raw('CURRENT_DATE')); //Date de réinitialisation quotidienne des compteurs de dépôts/retraits
+            $table->date('reset_date')->useCurrent(); //Date de réinitialisation quotidienne des compteurs de dépôts/retraits
             $table->timestamps();
 
             $table->foreign('id_client')->references('id_client')->on('clients')->onDelete('cascade'); //FK clients
