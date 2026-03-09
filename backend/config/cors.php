@@ -15,20 +15,16 @@ return [
     |
     */
 
-    'paths' => ['*'],
+    'paths' => [
+    'api/*',
+    'sanctum/csrf-cookie',  // ← route CSRF obligatoire
+    'login', 'logout', 'register',
+  ],
+  'allowed_origins'  => ['http://localhost:5173'],
+  'allowed_methods'  => ['*'],
+  'allowed_headers'  => ['*'],
 
-    'allowed_methods' => ['*'],
-
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],
-
-    'allowed_origins_patterns' => [],
-
-    'allowed_headers' => ['*'],
-
-    'exposed_headers' => [],
-
-    'max_age' => 0,
-
-    'supports_credentials' => true,
+  // ⚠ CRITIQUE : sans ce true, la session n'est jamais maintenue
+  'supports_credentials' => true,
 
 ];
