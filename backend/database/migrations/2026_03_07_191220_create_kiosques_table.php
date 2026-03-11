@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,11 +15,11 @@ return new class extends Migration
             $table->string('ville', 100);
             $table->string('telephone', 20);
             $table->enum('statut_service', ['actif', 'inactif'])->default('actif');
-            $table->unsignedBigInteger('id_admin')->nullable();
+            $table->foreignId('id_admin')
+                ->nullable()
+                ->constrained('users', 'id')
+                ->cascadeOnDelete();
             $table->timestamps();
-
-            // ✅ Correction : references('id') car users utilise $table->id()
-            $table->foreign('id_admin')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
