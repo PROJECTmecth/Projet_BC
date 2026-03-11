@@ -24,7 +24,7 @@ Base de données:bomba_cash
   Cette commande mettra à jour APP_KEY dans le .env.
 
 Obligatoire pour que Laravel fonctionne correctement.
-
+exi
         *frontend
 1. cd frontend
 2. npm install: # installe les dépendances npm

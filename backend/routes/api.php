@@ -3,23 +3,45 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// ==============================================================
+// ROUTES PUBLIQUES — Authentification (collègue login)
+// ==============================================================
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::post('/auth/admin/login', fn() => response()->json(['message' => 'Route login admin — géré par collègue']));
+Route::post('/auth/agent/login', fn() => response()->json(['message' => 'Route login agent — géré par collègue']));
 
-// Routes protégées Admin (CheckIsAdmin middleware)
-/* Route::middleware(['auth:sanctum', 'isAdmin'])->group(function () {
-    Route::get('/admin/cartes', [CardController::class, 'index']);
-    Route::post('/admin/cartes/generate', [CardController::class, 'generate']);
-});
 
-// Routes protégées Agent (CheckIsAgent middleware)
-Route::middleware(['auth:sanctum', 'isAgent'])->group(function () {
-    Route::get('/agent/dashboard', [AgentController::class, 'dashboard']);
-}); */
+// ==============================================================
+// ROUTES ADMIN — Panel BOMBA CASH MANAGER
+// ==============================================================
+Route::middleware(['auth:sanctum', 'isAdmin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', fn() => response()->json(['success' => true, 'message' => '✅ Dashboard Manager']))->name('dashboard');
+        Route::get('/kiosques', fn() => response()->json(['success' => true, 'message' => '✅ Liste kiosques']))->name('kiosques.index');
+        Route::get('/agents', fn() => response()->json(['success' => true, 'message' => '✅ Liste agents']))->name('agents.index');
+        Route::get('/clients', fn() => response()->json(['success' => true, 'message' => '✅ Liste clients']))->name('clients.index');
+        Route::get('/transactions', fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
+        Route::get('/mouvements-solde', fn() => response()->json(['success' => true, 'message' => '✅ Mouvements solde']))->name('mouvements.index');
+        Route::post('/qrcodes/generer', fn() => response()->json(['success' => true, 'message' => '✅ Génération QR codes']))->name('qrcodes.generer');
+    });
 
-// Route pour récupérer l'utilisateur connecté (dans React pour lire le rôle)
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+
+// ==============================================================
+// ROUTES AGENT — Interface terrain BOMBA CASH
+// ==============================================================
+Route::middleware(['auth:sanctum', 'isAgent'])
+    ->prefix('agent')
+    ->name('agent.')
+    ->group(function () {
+        Route::get('/dashboard', fn() => response()->json(['success' => true, 'message' => '✅ Dashboard Agent']))->name('dashboard');
+        Route::get('/mes-clients', fn() => response()->json(['success' => true, 'message' => '✅ Mes clients']))->name('clients.index');
+        Route::get('/historique', fn() => response()->json(['success' => true, 'message' => '✅ Historique']))->name('historique.index');
+        Route::post('/scan-carte', fn() => response()->json(['success' => true, 'message' => '✅ Scan carte']))->name('carte.scan');
+        Route::post('/operations', fn() => response()->json(['success' => true, 'message' => '✅ Opération']))->name('operations.store');
+        Route::get('/rapport-journalier', fn() => response()->json(['success' => true, 'message' => '✅ Rapport journalier']))->name('rapport.journalier');
+    });
