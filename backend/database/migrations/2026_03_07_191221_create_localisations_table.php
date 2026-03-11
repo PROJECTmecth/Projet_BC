@@ -6,9 +6,13 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('localisation', function (Blueprint $table) {
-            $table->id('id_loc');                            // Clé primaire auto-incrémentée
-            $table->unsignedBigInteger('id_kiosque')->unique();  // FK vers kiosques
+        Schema::create('localisations', function (Blueprint $table) {
+            $table->id('id_loc');// Clé primaire auto-incrémentée
+
+            $table->foreignId('id_kiosque')
+            ->unique()
+          ->constrained('kiosques', 'id_kiosque')
+          ->cascadeOnDelete();                                   // FK vers kiosques // FK vers kiosques
             $table->decimal('latitude',10,8);                    //Latitude GPS du kiosque
             $table->decimal('longitude',11,8);                   //Longitude GPS du kiosque
             $table->string('adresse_maps',255)->nullable();      //Adresse formatée par Maps (
@@ -16,11 +20,10 @@ return new class extends Migration {
             $table->enum('source',['GPS','manuel'])->default('GPS'); //Source de la localisation
             $table->timestamps();                                    
 
-            $table->foreign('id_kiosque')->references('id_kiosque')->on('kiosques')->onDelete('cascade'); //kiosques
         });
     }
     public function down(): void
     {
-        Schema::dropIfExists('localisation');
+        Schema::dropIfExists('localisations');
     }
 };

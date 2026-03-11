@@ -8,7 +8,11 @@ return new class extends Migration {
     {
         Schema::create('comptes', function (Blueprint $table) {
             $table->id('id_compte');                           // Clé primaire auto-incrémentée
-            $table->unsignedBigInteger('id_client')->unique(); //FK(Client propriétaire du compte)
+            
+            $table->foreignId('id_client')
+                  ->unique()
+                  ->constrained('clients','id_client')
+                  ->cascadeOnDelete();                      //FK(Client propriétaire du compte)
             $table->decimal('solde_total',15,2)->default(0);  //Solde courant du compte client
             $table->decimal('total_depots',15,2)->default(0); //Cumul total des dépôts  effectués
             $table->decimal('total_retraits',15,2)->default(0);  //Cumul total des retraits  effectués
