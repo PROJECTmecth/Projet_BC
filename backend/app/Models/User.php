@@ -1,48 +1,56 @@
 <?php
-
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; // ✅ ligne manquante
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable; // ✅ HasApiTokens ajouté ici
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $primaryKey = 'id_user';
+
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
+        'statut'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_AGENT = 'agent';
+    public const STATUT_ACTIF = 'actif';
+    public const STATUT_INACTIF = 'inactif';
+
+    public function isAdmin(): bool
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isAgent(): bool
+    {
+        return $this->role === self::ROLE_AGENT;
+    }
+
+    public function isActif(): bool
+    {
+        return $this->statut === self::STATUT_ACTIF;
+    }
+
+    public function agent()
+    {
+        return $this->hasOne(Agent::class, 'id_user', 'id_user');
     }
 }
