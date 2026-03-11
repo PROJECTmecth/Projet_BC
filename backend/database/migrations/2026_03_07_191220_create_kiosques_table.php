@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,14 +16,16 @@ return new class extends Migration {
             $table->string('adresse', 255);             // Adresse physique
             $table->string('ville', 100);              // ville 
             $table->string('telephone', 20);          // Téléphone (+242 + 9 chiffres)
-            $table->enum('statut_service',['actif','inactif'])->default('actif');  //état operationnel du kioque
-            
+            $table->enum('statut_service', ['actif', 'inactif'])->default('actif');  //état operationnel du kioque
 
+
+            // Après ✅
             $table->foreignId('id_admin')
-                  ->constrained('users','id')
-                  ->cascadeOnDelete(); // FK vers users
-                  
-             $table->timestamps(); // created_at & updated_at
+                ->nullable()
+                ->constrained('users', 'id')
+                ->nullOnDelete();; // FK vers users
+
+            $table->timestamps(); // created_at & updated_at
         });
     }
     public function down(): void
