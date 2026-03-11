@@ -53,5 +53,4 @@ class Carte extends Model
     {
         return $this->belongsTo(Kiosque::class, 'id_kiosque', 'id_kiosque');
     }
-
 }
