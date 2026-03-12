@@ -1,8 +1,23 @@
+// ─────────────────────────────────────────────────────────────────────────────
 // fichier : src/pages/admin/GestionCartesPage.jsx
 //
 // Page Gestion des Cartes — Admin BOMBA CASH
-// Dépendances : framer-motion, lucide-react
-// Composants  : LotItem, Button (ui/button), Toast (ui/Toast)
+//
+// Sections :
+//   1. Titre de page
+//   2. Carte stat "Total Générés" — pleine largeur
+//   3. Section génération QR (sélecteur quantité + bouton)
+//   4. Modal aperçu impression (ApercuImpressionModal)
+//   5. Historique des lots générés
+//
+// NOTE BACKEND :
+//   Décommenter les appels axios quand les endpoints sont prêts :
+//   POST /api/cartes/generer { quantite }
+//   GET  /api/cartes/lots/{id}/imprimer
+//   GET  /api/cartes/lots/{id}/export-csv
+//
+// Dépendances : framer-motion, lucide-react, qrcode.react
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -10,8 +25,9 @@ import { TrendingUp, QrCode } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import Toast from "../../components/ui/Toast";
 import LotCarteItem from "../../components/admin/LotCarteItem";
+import ApercuImpressionModal from "../../components/admin/ApercuImpressionModal";
 
-// ── Données mock ──────────────────────────────────────────────────────────────
+// ── Données mock initiales ────────────────────────────────────────────────────
 const MOCK_LOTS = [
   { id: "1", numero: "Lot #042", quantite: 500, dateGeneration: "05/03/2026", heureGeneration: "14:30", statut: "Actif" },
   { id: "2", numero: "Lot #041", quantite: 300, dateGeneration: "04/03/2026", heureGeneration: "09:15", statut: "Utilisé" },
@@ -22,11 +38,16 @@ const MOCK_LOTS = [
 
 const QUANTITIES = [100, 200, 300, 400, 500];
 
+// ─────────────────────────────────────────────────────────────────────────────
 export default function GestionCartesPage() {
   const [lots, setLots]                         = useState(MOCK_LOTS);
   const [selectedQuantity, setSelectedQuantity] = useState(100);
   const [isGenerating, setIsGenerating]         = useState(false);
   const [toast, setToast]                       = useState({ msg: "", type: "success" });
+
+  // ── État du modal aperçu impression ──────────────────────────────────────
+  const [apercuOpen, setApercuOpen]   = useState(false);
+  const [apercuLot, setApercuLot]     = useState(null);
 
   const totalGeneres   = lots.reduce((sum, l) => sum + l.quantite, 0);
   const objectifAnnuel = 32000;
@@ -37,10 +58,11 @@ export default function GestionCartesPage() {
     setTimeout(() => setToast({ msg: "" }), 3500);
   }
 
+  // ── Générer un nouveau lot + ouvrir aperçu ────────────────────────────────
   async function handleGenerate() {
     setIsGenerating(true);
     // TODO backend : POST /api/cartes/generer { quantite: selectedQuantity }
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 1500));
 
     const nextNum = 43 + lots.length;
     const newLot = {
@@ -51,14 +73,19 @@ export default function GestionCartesPage() {
       heureGeneration: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
       statut: "Actif",
     };
+
     setLots([newLot, ...lots]);
     setIsGenerating(false);
-    showToast(`${selectedQuantity} codes QR générés avec succès !`);
+
+    // Ouvrir l'aperçu avec le nouveau lot
+    setApercuLot(newLot);
+    setApercuOpen(true);
   }
 
   function handlePrint(lot) {
     // TODO backend : GET /api/cartes/lots/{id}/imprimer
-    showToast(`Impression du ${lot.numero} (${lot.quantite} codes)`, "success");
+    setApercuLot(lot);
+    setApercuOpen(true);
   }
 
   function handleExport(lot) {
@@ -72,46 +99,52 @@ export default function GestionCartesPage() {
       {/* Toast */}
       <Toast msg={toast.msg} type={toast.type} />
 
+      {/* Modal aperçu impression */}
+      <ApercuImpressionModal
+        isOpen={apercuOpen}
+        onClose={() => setApercuOpen(false)}
+        quantite={apercuLot?.quantite || 0}
+        numeroLot={apercuLot?.numero || ""}
+      />
+
       {/* ── 1. TITRE ──────────────────────────────────────────────────────── */}
       <div>
         <h1 className="text-3xl font-bold text-gray-800">Gestion des Cartes</h1>
         <p className="text-gray-500 mt-1 text-sm">Génération et suivi des codes QR prépayés</p>
       </div>
 
-      {/* ── 2. CARTE STAT TOTAL GÉNÉRÉS ───────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="rounded-[20px] p-6 shadow-xl"
-          style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-blue-100 text-sm font-medium mb-1">Total Générés</p>
-              <h2 className="text-5xl font-bold text-white font-mono">
-                {totalGeneres.toLocaleString("fr-FR")}
-              </h2>
-            </div>
-            <div className="bg-white/20 p-3 rounded-full">
-              <TrendingUp className="h-8 w-8 text-white" />
-            </div>
+      {/* ── 2. CARTE STAT TOTAL GÉNÉRÉS — pleine largeur ─────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="rounded-[20px] p-6 shadow-xl w-full"
+        style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-blue-100 text-sm font-medium mb-1">Total Générés</p>
+            <h2 className="text-5xl font-bold text-white font-mono">
+              {totalGeneres.toLocaleString("fr-FR")}
+            </h2>
           </div>
-          {/* Barre de progression */}
-          <div className="mt-4">
-            <div className="h-2 bg-blue-800/50 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-white rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${pctObjectif}%` }}
-                transition={{ duration: 1, delay: 0.3 }}
-              />
-            </div>
-            <p className="text-blue-100 text-xs mt-2">{pctObjectif}% de l'objectif annuel</p>
+          <div className="bg-white/20 p-3 rounded-full">
+            <TrendingUp className="h-8 w-8 text-white" />
           </div>
-        </motion.div>
-      </div>
+        </div>
+        {/* Barre de progression */}
+        <div className="mt-4">
+          <div className="h-2 bg-blue-800/50 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-white rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${pctObjectif}%` }}
+              transition={{ duration: 1, delay: 0.3 }}
+            />
+          </div>
+          <p className="text-blue-100 text-xs mt-2">{pctObjectif}% de l'objectif annuel</p>
+        </div>
+      </motion.div>
 
       {/* ── 3. SECTION GÉNÉRATION QR ──────────────────────────────────────── */}
       <motion.div
@@ -130,7 +163,9 @@ export default function GestionCartesPage() {
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
               Génération de nouveaux codes QR
             </h2>
-            <p className="text-gray-500 text-sm">Sélectionnez la quantité et lancez la production</p>
+            <p className="text-gray-500 text-sm">
+              Sélectionnez la quantité et lancez la production
+            </p>
           </div>
 
           {/* Sélecteur quantité */}
@@ -203,10 +238,12 @@ export default function GestionCartesPage() {
         {/* En-tête */}
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
           <h3 className="text-xl font-bold text-gray-800">Historique des lots générés</h3>
-          <p className="text-sm text-gray-500 mt-0.5">Cliquez sur un lot pour voir les actions</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Cliquez sur un lot pour imprimer ou exporter
+          </p>
         </div>
 
-        {/* Liste */}
+        {/* Liste des lots */}
         <div>
           {lots.length === 0 ? (
             <div className="px-6 py-12 text-center">
@@ -224,7 +261,11 @@ export default function GestionCartesPage() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 layout
               >
-                <LotCarteItem lot={lot} onPrint={handlePrint} onExport={handleExport} />
+                <LotCarteItem
+                  lot={lot}
+                  onPrint={handlePrint}
+                  onExport={handleExport}
+                />
               </motion.div>
             ))
           )}
