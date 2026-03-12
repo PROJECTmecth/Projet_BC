@@ -14,12 +14,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Sanctum frontend (collègue login)
+
+        // Exclure login/logout de la vérification CSRF
+        $middleware->validateCsrfTokens(except: [
+            'login',
+            'logout',
+            'sanctum/csrf-cookie',
+        ]);
+
+        $middleware->web(prepend: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
+
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
-        // Middlewares BOMBA CASH
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
             'isAdmin'  => CheckIsAdmin::class,
