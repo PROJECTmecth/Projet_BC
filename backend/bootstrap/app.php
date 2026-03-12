@@ -1,26 +1,5 @@
 <?php
 
-/**
- * ============================================================
- *  Bootstrap Application — BOMBA CASH
- * ============================================================
- *  Projet  : BOMBA CASH — Johann Finance SA © 2026
- *  Fichier : bootstrap/app.php
- * ============================================================
- *  Ce fichier configure l'application Laravel.
- *  C'est ici qu'on enregistre les middlewares personnalisés
- *  sous forme d'alias pour les utiliser dans routes/api.php.
- *
- *  Middlewares enregistrés :
- *    → 'isAdmin' : CheckIsAdmin — Protège le panel Manager
- *    → 'isAgent' : CheckIsAgent — Protège l'interface Agent
- *
- *  Utilisation dans les routes :
- *    Route::middleware(['auth:sanctum', 'isAdmin'])->group(...)
- *    Route::middleware(['auth:sanctum', 'isAgent'])->group(...)
- * ============================================================
- */
-
 use App\Http\Middleware\CheckIsAdmin;
 use App\Http\Middleware\CheckIsAgent;
 use Illuminate\Foundation\Application;
@@ -34,27 +13,28 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware) {
+    ->withMiddleware(function (Middleware $middleware): void {
 
-        // ----------------------------------------------------------
-        // Enregistrement des middlewares personnalisés BOMBA CASH
-        // ----------------------------------------------------------
-        // Ces alias permettent d'utiliser les middlewares par leur
-        // nom court dans les routes, rendant le code plus lisible.
-        //
-        //   'isAdmin' → CheckIsAdmin::class
-        //      Vérifie : authentifié + rôle admin + compte actif
-        //
-        //   'isAgent' → CheckIsAgent::class
-        //      Vérifie : authentifié + rôle agent + compte actif
-        //               + profil agent existant + kiosque actif
-        // ----------------------------------------------------------
-        $middleware->alias([
-            'isAdmin' => CheckIsAdmin::class,
-            'isAgent' => CheckIsAgent::class,
+        // Exclure login/logout de la vérification CSRF
+        $middleware->validateCsrfTokens(except: [
+            'login',
+            'logout',
+            'sanctum/csrf-cookie',
         ]);
 
+        $middleware->web(prepend: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
+
+        $middleware->api(prepend: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        ]);
+
+        $middleware->alias([
+            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'isAdmin'  => CheckIsAdmin::class,
+            'isAgent'  => CheckIsAgent::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Gestion des exceptions globales (à compléter si besoin)
     })->create();
