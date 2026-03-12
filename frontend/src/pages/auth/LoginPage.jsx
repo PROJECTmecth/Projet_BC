@@ -5,9 +5,11 @@ import Toast           from "../../components/ui/Toast";
 import SanctumFlow     from "../../components/ui/SanctumFlow";
 import { IconUser }    from "../../components/ui/icons";
 import { getCsrfCookie, loginRequest } from "../../services/auth";
+import { useAuth } from "../../context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [name,        setName]        = useState("");
   const [password,    setPassword]    = useState("");
@@ -51,6 +53,7 @@ export default function LoginPage() {
         return;
       }
 
+      login(user); // ← sauvegarde le user dans le contexte
       showToast(`Bienvenue ${user.name} !`, "success");
       setTimeout(() => navigate(user.role === "admin" ? "/admin" : "/dashboard"), 900);
 
@@ -199,20 +202,6 @@ export default function LoginPage() {
         <p className="relative z-10 mt-5 text-[13px] text-white font-medium drop-shadow-sm">
           Johann Finance SA © 2026
         </p>
-
-        <div className="fixed bottom-5 right-5 z-[100] bg-white p-3.5 rounded-xl shadow-xl border border-gray-200 text-xs max-w-[220px]">
-          <p className="font-bold text-[13px] text-gray-900 mb-2">🔑 Comptes de test</p>
-          <div className="flex flex-col gap-1.5">
-            <div className="bg-orange-50 px-2.5 py-1.5 rounded-md border border-orange-200">
-              <span className="font-semibold text-orange-900">Admin : </span>
-              <span className="font-mono text-orange-700">admin / admin123</span>
-            </div>
-            <div className="bg-blue-50 px-2.5 py-1.5 rounded-md border border-blue-200">
-              <span className="font-semibold text-blue-900">Agent : </span>
-              <span className="font-mono text-blue-700">agent / agent123</span>
-            </div>
-          </div>
-        </div>
 
         <Toast msg={toast.msg} type={toast.type} />
       </div>
