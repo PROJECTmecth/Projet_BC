@@ -53,9 +53,11 @@ export default function LoginPage() {
         return;
       }
 
-      login(user); // ← sauvegarde le user dans le contexte
+     login(user, data.token);  // ← sauvegarde le user dans le contexte
       showToast(`Bienvenue ${user.name} !`, "success");
-      setTimeout(() => navigate(user.role === "admin" ? "/admin" : "/dashboard"), 900);
+
+      // ✅ CORRECTION : redirection vers /agent/dashboard au lieu de /dashboard
+      setTimeout(() => navigate(user.role === "admin" ? "/admin" : "/agent/dashboard"), 900);
 
     } catch (err) {
       setFlowStep(0);
