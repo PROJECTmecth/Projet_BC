@@ -1,68 +1,40 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* ─────────────────────────────────────────────────────────────────────────────
+   fichier : src/index.css  (remplace ou complète ton index.css existant)
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+   Ce fichier est le point d'entrée CSS de toute l'application.
+   Il doit être importé UNE SEULE FOIS dans src/main.jsx :
+     import "./index.css";
+   ───────────────────────────────────────────────────────────────────────────── */
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+/* ── Les 3 directives Tailwind OBLIGATOIRES ────────────────────────────────── */
+/* Tailwind les remplace par les centaines de classes CSS utilitaires           */
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+@tailwind base;        /* Reset CSS + styles de base (normalize)                */
+@tailwind components;  /* Classes composants (si tu utilises @layer components) */
+@tailwind utilities;   /* Toutes les classes utilitaires (bg-, text-, p-, etc.) */
+
+
+/* ── Animation du spinner de chargement ───────────────────────────────────── */
+/* Utilisée par IconSpinner dans components/ui/icons.jsx                        */
+/* style={{ animation: "bc-spin 1s linear infinite" }}                          */
+@keyframes bc-spin {
+  to { transform: rotate(360deg); }
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+
+/* ── Style de focus personnalisé pour les champs de formulaire ─────────────── */
+/* Appliqué via className="bc-input" sur <input> dans InputField et PasswordField */
+/* Remplace le focus ring bleu par défaut du navigateur par un focus orange BOMBA */
+.bc-input:focus {
+  outline     : none;
+  border-color: #F97316 !important;                        /* orange-500 Tailwind */
+  box-shadow  : 0 0 0 4px rgba(253, 186, 116, 0.35) !important; /* halo orange doux */
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* ── Reset box-sizing global ───────────────────────────────────────────────── */
+/* Assure que padding et border sont inclus dans la largeur/hauteur             */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
