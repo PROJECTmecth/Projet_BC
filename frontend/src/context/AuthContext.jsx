@@ -1,27 +1,45 @@
-// fichier : src/context/AuthContext.jsx
-//
-// Stocke l'utilisateur connecté dans toute l'application.
-// À entourer autour de <App /> dans main.jsx
-
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // user = { id, name, email, role, statut } — null si non connecté
-  const [user, setUser] = useState(null);
+  // Persister le user dans localStorage pour survivre aux rechargements
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("bc_user");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
-  const login  = (userData) => setUser(userData);
-  const logout = () => setUser(null);
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem("bc_token") ?? null;
+  });
+
+  const login = (userData, accessToken = null) => {
+    setUser(userData);
+    localStorage.setItem("bc_user", JSON.stringify(userData));
+    if (accessToken) {
+      setToken(accessToken);
+      localStorage.setItem("bc_token", accessToken);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("bc_user");
+    localStorage.removeItem("bc_token");
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Hook pour utiliser le contexte dans n'importe quel composant
 export function useAuth() {
   return useContext(AuthContext);
 }

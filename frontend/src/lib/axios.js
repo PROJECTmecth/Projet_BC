@@ -10,16 +10,21 @@ const api = axios.create({
   },
 });
 
-// Intercepteur : lit le cookie XSRF-TOKEN et l'injecte manuellement
-// dans chaque requête POST/PUT/DELETE
+// Intercepteur : injecte le Bearer token si disponible
 api.interceptors.request.use((config) => {
-  const token = document.cookie
+  // Token Bearer (Sanctum token)
+  const token = localStorage.getItem("bc_token");
+  if (token) {
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Cookie XSRF pour les requêtes POST/PUT/DELETE
+  const xsrf = document.cookie
     .split("; ")
     .find((row) => row.startsWith("XSRF-TOKEN="))
     ?.split("=")[1];
-
-  if (token) {
-    config.headers["X-XSRF-TOKEN"] = decodeURIComponent(token);
+  if (xsrf) {
+    config.headers["X-XSRF-TOKEN"] = decodeURIComponent(xsrf);
   }
 
   return config;
