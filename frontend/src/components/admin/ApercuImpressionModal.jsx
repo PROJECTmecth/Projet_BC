@@ -89,12 +89,7 @@ export default function ApercuImpressionModal({
               font-weight: bold;
               letter-spacing: 2px;
             }
-            .carte-numero {
-              font-size: 7pt;
-              color: #6B7280;
-              font-family: monospace;
-              letter-spacing: 1px;
-            }
+
             @media print {
               body { margin: 0; }
             }
@@ -139,7 +134,6 @@ export default function ApercuImpressionModal({
           div.innerHTML = `
             <span style="font-size:8px;color:#FF6600;font-weight:bold;letter-spacing:2px;">BOMBA CASH</span>
             <div id="qr-${carte.qr_code_uid}" style="width:60px;height:60px;"></div>
-            <span style="font-size:7px;color:#6B7280;font-family:monospace;">${carte.numero_carte}</span>
           `;
           container.appendChild(div);
         });
@@ -263,15 +257,7 @@ export default function ApercuImpressionModal({
                         level="M"
                       />
 
-                      {/* Numéro lisible */}
-                      <span style={{
-                        fontSize: "7px",
-                        color: "#6B7280",
-                        fontFamily: "monospace",
-                        letterSpacing: "1px",
-                      }}>
-                        {carte.numero_carte}
-                      </span>
+
                     </div>
                   ))}
                 </div>
