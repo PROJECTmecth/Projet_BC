@@ -1,7 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // fichier : src/App.jsx
-//
-// NE PAS MÉLANGER LES SECTIONS — chaque dev travaille dans sa section
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Routes, Route, Navigate } from "react-router-dom";
@@ -15,7 +13,8 @@ import RequireAuth        from "./components/RequireAuth.jsx";
 // =============================================
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
 import GestionCartesPage  from "./pages/admin/GestionCartesPage.jsx";
-// import JournalTransactionsPage from "./pages/admin/JournalTransactionsPage.jsx"; // à activer quand le fichier existe
+import ProfilAdminPage    from "./pages/admin/ProfilAdminPage.jsx";
+// import JournalTransactionsPage from "./pages/admin/JournalTransactionsPage.jsx";
 
 // =============================================
 // IMPORTS ADMIN PART 2 — Dev 2 — NE PAS TOUCHER
@@ -29,7 +28,6 @@ import GestionCartesPage  from "./pages/admin/GestionCartesPage.jsx";
 // =============================================
 // import AgentDashboardPage  from "./pages/agent/AgentDashboardPage.jsx";
 // import ScannerCartePage    from "./pages/agent/ScannerCartePage.jsx";
-// import HistoriqueAgentPage from "./pages/agent/HistoriqueAgentPage.jsx";
 
 export default function App() {
   return (
@@ -39,14 +37,14 @@ export default function App() {
       <Route path="/"      element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Dashboard agent — protégé */}
+      {/* Dashboard agent */}
       <Route path="/dashboard" element={
         <RequireAuth role="agent">
           <Dashboard />
         </RequireAuth>
       } />
 
-      {/* Zone admin — protégée, role admin obligatoire */}
+      {/* Zone admin */}
       <Route path="/admin" element={
         <RequireAuth role="admin">
           <AdminLayout />
@@ -58,6 +56,7 @@ export default function App() {
             ============================================= */}
         <Route index               element={<AdminDashboardPage />} />
         <Route path="cartes"       element={<GestionCartesPage />} />
+        <Route path="profil"       element={<ProfilAdminPage />} />
         {/* <Route path="transactions" element={<JournalTransactionsPage />} /> */}
 
         {/* =============================================
@@ -65,14 +64,11 @@ export default function App() {
             ============================================= */}
         {/* <Route path="agents"   element={<GestionAgentsPage />} /> */}
         {/* <Route path="kiosques" element={<GestionKiosquesPage />} /> */}
-        {/* <Route path="rapports" element={<RapportsPage />} /> */}
 
         {/* =============================================
             ROUTES AGENT + CLIENT — Dev 3 — NE PAS TOUCHER
             ============================================= */}
         {/* <Route path="agent/dashboard" element={<AgentDashboardPage />} /> */}
-        {/* <Route path="agent/scanner"   element={<ScannerCartePage />} /> */}
-        {/* <Route path="agent/historique" element={<HistoriqueAgentPage />} /> */}
 
       </Route>
     </Routes>
