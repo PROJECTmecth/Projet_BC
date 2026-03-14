@@ -14,7 +14,7 @@ import RequireAuth        from "./components/RequireAuth.jsx";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
 import GestionCartesPage  from "./pages/admin/GestionCartesPage.jsx";
 import ProfilAdminPage    from "./pages/admin/ProfilAdminPage.jsx";
-// import JournalTransactionsPage from "./pages/admin/JournalTransactionsPage.jsx";
+import JournalTransactionsPage from "./pages/admin/JournalTransactionsPage.jsx";
 
 // =============================================
 // IMPORTS ADMIN PART 2 — Dev 2 — NE PAS TOUCHER
@@ -64,7 +64,7 @@ export default function App() {
         <Route index               element={<AdminDashboardPage />} />
         <Route path="cartes"       element={<GestionCartesPage />} />
         <Route path="profil"       element={<ProfilAdminPage />} />
-        {/* <Route path="transactions" element={<JournalTransactionsPage />} /> */}
+        <Route path="transactions" element={<JournalTransactionsPage />} />
 
         {/* ROUTES ADMIN PART 2 — Dev 2 — NE PAS TOUCHER */}
         {/* <Route path="agents"   element={<GestionAgentsPage />} /> */}

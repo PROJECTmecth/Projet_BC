@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL         : "http://127.0.0.1:8000",
+  baseURL         : import.meta.env.VITE_API_URL ?? "http://localhost:8000",
   withCredentials : true,
   headers: {
     "Content-Type"     : "application/json",
@@ -17,7 +17,6 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers["Authorization"] = `Bearer ${token}`;
   }
-
   // Cookie XSRF pour les requêtes POST/PUT/DELETE
   const xsrf = document.cookie
     .split("; ")
@@ -26,7 +25,6 @@ api.interceptors.request.use((config) => {
   if (xsrf) {
     config.headers["X-XSRF-TOKEN"] = decodeURIComponent(xsrf);
   }
-
   return config;
 });
 
