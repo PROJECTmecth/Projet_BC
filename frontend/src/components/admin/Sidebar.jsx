@@ -1,14 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // fichier : src/components/admin/Sidebar.jsx
-//
-// Sidebar Admin — fidèle au Figma BOMBA CASH
-// Fond : #FF6600 orange
-// Lien actif : fond blanc, texte orange, flèche chevron à droite
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, useLocation } from "react-router-dom";
 
-// ── Icônes SVG inline (pas de dépendance externe) ────────────────────────────
 const IcoDashboard = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -44,9 +39,6 @@ const IcoCaisse = () => (
   </svg>
 );
 
-// ── Définition des liens ──────────────────────────────────────────────────────
-// NOTE ÉQUIPE : les paths correspondent aux routes dans App.jsx
-// Ajouter les vraies routes quand les pages collègues seront prêtes
 const NAV_ITEMS = [
   { label: "Accueil",                  path: "/admin",              icon: IcoDashboard, exact: true },
   { label: "Gestion des kiosques",     path: "/admin/kiosques",     icon: IcoKiosque               },
@@ -62,21 +54,19 @@ export default function Sidebar() {
     item.exact ? pathname === item.path : pathname.startsWith(item.path);
 
   return (
-    <aside className="w-[280px] min-h-screen bg-[#FF6600] flex flex-col shrink-0 shadow-2xl">
+    <aside className="w-[280px] h-full bg-[#FF6600] flex flex-col shrink-0 shadow-2xl overflow-y-auto">
 
-      {/* ── LOGO ────────────────────────────────────────────────────────── */}
+      {/* Logo */}
       <div className="px-5 pt-7 pb-3">
         <NavLink to="/admin" className="flex items-center gap-3 mb-4">
-          {/* PROD : remplacer le div par <img src="/images/icon-logo.png" className="w-12 h-12 rounded-xl" /> */}
           <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shrink-0">
-            <span className="text-2xl">🐟</span>
+            <span className="text-2xl">🟠</span>
           </div>
           <span className="font-black text-[19px] leading-tight">
             <span className="text-white">BOMBA </span>
             <span className="text-green-300">CASH</span>
           </span>
         </NavLink>
-        {/* Label MANAGE — visible dans le Figma */}
         <p className="text-[11px] font-bold text-orange-200 uppercase tracking-[0.18em] pl-1">
           MANAGE
         </p>
@@ -85,7 +75,7 @@ export default function Sidebar() {
       {/* Séparateur */}
       <div className="mx-5 border-t border-white/25 mb-2" />
 
-      {/* ── NAV ─────────────────────────────────────────────────────────── */}
+      {/* Nav */}
       <nav className="flex-1 px-3 py-1 flex flex-col gap-[3px]">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item);
@@ -107,7 +97,6 @@ export default function Sidebar() {
                 <Icon />
               </span>
               <span className="flex-1">{item.label}</span>
-              {/* Flèche > uniquement sur le lien actif (Figma exact) */}
               {active && (
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#FF6600] shrink-0">
                   <polyline points="9 18 15 12 9 6"/>
@@ -118,7 +107,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+      {/* Footer */}
       <div className="px-5 pb-6 mt-auto">
         <div className="border-t border-white/20 mb-4" />
         <p className="text-[11px] text-orange-200/60 text-center">
