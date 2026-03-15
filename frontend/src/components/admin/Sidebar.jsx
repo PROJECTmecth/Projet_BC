@@ -4,6 +4,7 @@
 
 import { NavLink, useLocation } from "react-router-dom";
 
+// ── Icônes SVG ────────────────────────────────────────────────────────────────
 const IcoDashboard = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -39,6 +40,22 @@ const IcoCaisse = () => (
   </svg>
 );
 
+// ── Icône toggle (chevron gauche / droit) ─────────────────────────────────────
+const IcoChevron = ({ collapsed }) => (
+  <svg
+    width="18" height="18" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.5"
+    strokeLinecap="round" strokeLinejoin="round"
+    style={{
+      transition: "transform 0.3s",
+      transform: collapsed ? "rotate(180deg)" : "rotate(0deg)",
+    }}
+  >
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+);
+
+// ── Items de navigation ────────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { label: "Accueil",                  path: "/admin",              icon: IcoDashboard, exact: true },
   { label: "Gestion des kiosques",     path: "/admin/kiosques",     icon: IcoKiosque               },
@@ -48,35 +65,59 @@ const NAV_ITEMS = [
   { label: "Mouvement de caisse",      path: "/admin/caisse",       icon: IcoCaisse                },
 ];
 
-export default function Sidebar() {
+// ─────────────────────────────────────────────────────────────────────────────
+export default function Sidebar({ collapsed = false, onToggle }) {
   const { pathname } = useLocation();
+
   const isActive = (item) =>
     item.exact ? pathname === item.path : pathname.startsWith(item.path);
 
   return (
-    <aside className="w-[280px] h-full bg-[#FF6600] flex flex-col shrink-0 shadow-2xl overflow-y-auto">
+    <aside
+      className="h-full bg-[#FF6600] flex flex-col shadow-2xl overflow-hidden"
+      style={{ width: collapsed ? 70 : 280, transition: "width 0.3s ease" }}
+    >
 
-      {/* Logo */}
-      <div className="px-5 pt-7 pb-3">
-        <NavLink to="/admin" className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shrink-0">
-            <span className="text-2xl">🟠</span>
-          </div>
-          <span className="font-black text-[19px] leading-tight">
+      {/* ── Logo + bouton toggle ───────────────────────────────────────────── */}
+      <div
+        className="flex items-center px-4 pt-7 pb-3 cursor-pointer select-none"
+        style={{ justifyContent: collapsed ? "center" : "space-between" }}
+        onClick={onToggle}
+        title={collapsed ? "Agrandir la sidebar" : "Réduire la sidebar"}
+      >
+        {/* Icône poisson — toujours visible */}
+        <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shrink-0">
+          <span className="text-2xl">🐟</span>
+        </div>
+
+        {/* Texte BOMBA CASH — masqué si collapsed */}
+        {!collapsed && (
+          <span className="font-black text-[19px] leading-tight flex-1 ml-3">
             <span className="text-white">BOMBA </span>
             <span className="text-green-300">CASH</span>
           </span>
-        </NavLink>
-        <p className="text-[11px] font-bold text-orange-200 uppercase tracking-[0.18em] pl-1">
-          MANAGE
-        </p>
+        )}
+
+        {/* Chevron toggle — masqué si collapsed */}
+        {!collapsed && (
+          <span className="text-white/80 shrink-0">
+            <IcoChevron collapsed={collapsed} />
+          </span>
+        )}
       </div>
 
-      {/* Séparateur */}
-      <div className="mx-5 border-t border-white/25 mb-2" />
+      {/* ── Label MANAGE — masqué si collapsed ────────────────────────────── */}
+      {!collapsed && (
+        <p className="text-[11px] font-bold text-orange-200 uppercase tracking-[0.18em] px-5 mb-2">
+          MANAGE
+        </p>
+      )}
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-1 flex flex-col gap-[3px]">
+      {/* ── Séparateur ────────────────────────────────────────────────────── */}
+      <div className="mx-4 border-t border-white/25 mb-2" />
+
+      {/* ── Navigation ────────────────────────────────────────────────────── */}
+      <nav className="flex-1 px-2 py-1 flex flex-col gap-[3px] overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item);
           const Icon   = item.icon;
@@ -85,20 +126,32 @@ export default function Sidebar() {
               key={item.path}
               to={item.path}
               end={item.exact}
+              title={collapsed ? item.label : ""}  // tooltip si collapsed
               className={[
-                "flex items-center gap-3 px-4 py-[11px] rounded-xl",
+                "flex items-center rounded-xl",
                 "text-[13.5px] font-semibold transition-all duration-150 select-none",
+                collapsed ? "justify-center px-0 py-[11px]" : "gap-3 px-4 py-[11px]",
                 active
                   ? "bg-white text-[#FF6600] shadow-md"
                   : "text-white hover:bg-white/20",
               ].join(" ")}
             >
-              <span className={active ? "text-[#FF6600]" : "text-white/90 shrink-0"}>
+              {/* Icône — toujours visible */}
+              <span className={`shrink-0 ${active ? "text-[#FF6600]" : "text-white/90"}`}>
                 <Icon />
               </span>
-              <span className="flex-1">{item.label}</span>
-              {active && (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#FF6600] shrink-0">
+
+              {/* Label — masqué si collapsed */}
+              {!collapsed && (
+                <span className="flex-1">{item.label}</span>
+              )}
+
+              {/* Chevron actif — masqué si collapsed */}
+              {!collapsed && active && (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  className="text-[#FF6600] shrink-0">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
               )}
@@ -107,13 +160,21 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-5 pb-6 mt-auto">
+      {/* ── Footer ────────────────────────────────────────────────────────── */}
+      <div className="px-4 pb-6 mt-auto">
         <div className="border-t border-white/20 mb-4" />
-        <p className="text-[11px] text-orange-200/60 text-center">
-          Johann Finance SA © 2026
-        </p>
+        {collapsed ? (
+          /* Petit point si collapsed */
+          <div className="flex justify-center">
+            <div className="w-2 h-2 rounded-full bg-orange-200/50" />
+          </div>
+        ) : (
+          <p className="text-[11px] text-orange-200/60 text-center">
+            Johann Finance SA © 2026
+          </p>
+        )}
       </div>
+
     </aside>
   );
 }
