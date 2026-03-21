@@ -25,7 +25,7 @@ return new class extends Migration {
                   ->cascadeOnDelete(); // FK kiosque (activation)
 
             // Informations sur la carte
-            $table->string('numero_carte',20)->unique();      // Numéro unique lisible
+            $table->string('numero_carte',20)->unique();      // Numéro unique lisible de la carte
             $table->string('qr_code_uid',191)->unique();      // Identifiant QR unique
             $table->text('qr_code_image');                    // Image QR code en base64 ou chemin
             $table->enum('statut',['vierge','actif','expiré','terminé']); // État courant

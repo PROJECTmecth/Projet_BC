@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Exclure login/logout de la vérification CSRF
         $middleware->validateCsrfTokens(except: [
+            'api/*',
             'login',
             'logout',
             'sanctum/csrf-cookie',

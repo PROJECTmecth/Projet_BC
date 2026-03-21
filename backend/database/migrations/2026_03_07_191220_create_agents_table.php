@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('telephone', 20);          // Téléphone (+242 + 9 chiffres)
             $table->string('adresse', 255);           // Adresse physique
             $table->dateTime('derniere_sync')->nullable(); // Dernier horodatage de syncronisation
-            $table->enum('statut_ligne', ['en_ligne', 'hors_ligne'])->default('hors_ligne'); // statu de presence en ligne de l'agent
+            $table->enum('statut_ligne', ['en_ligne', 'hors_ligne'])->default('en_ligne'); // statu de presence en ligne de l'agent
             $table->timestamps();                     // created_at & updated_at
 
            

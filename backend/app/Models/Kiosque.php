@@ -27,7 +27,7 @@ class Kiosque extends Model
      */
     public function admin()
     {
-        return $this->belongsTo(User::class, 'id_admin', 'id_user');
+        return $this->belongsTo(User::class, 'id_admin', 'id');
     }
 
     /**

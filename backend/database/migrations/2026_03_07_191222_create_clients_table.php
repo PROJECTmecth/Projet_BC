@@ -28,7 +28,7 @@ return new class extends Migration {
                   ->cascadeOnDelete();
 
             $table->foreignId('id_user')                                    // FK vers users
-                  ->constrained('users','id_user')
+                  ->constrained('users','id')
                   ->cascadeOnDelete();
 
             // Horodatage

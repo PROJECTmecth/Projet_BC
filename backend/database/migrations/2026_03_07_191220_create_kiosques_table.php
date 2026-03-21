@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->string('nom_kiosque', 150);          //nom kiosque
             $table->string('adresse', 255);             // Adresse physique
             $table->string('ville', 100);              // ville 
-            $table->string('telephone', 20);          // Téléphone (+242 + 9 chiffres)
+            $table->string('telephone', 20)->nullable();// ✅ APRÈS — nullable, sera rempli à la création de l'agent          // Téléphone (+242 + 9 chiffres)
             $table->enum('statut_service', ['actif', 'inactif'])->default('actif');  //état operationnel du kioque
 
 
