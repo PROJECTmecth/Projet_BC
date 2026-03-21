@@ -1,39 +1,72 @@
-// src/App.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// fichier : src/App.jsx
+// NE PAS MÉLANGER LES SECTIONS — chaque dev travaille dans sa section
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage          from "./pages/auth/LoginPage.jsx";
-import Dashboard          from "./pages/Dashboard.jsx";
 import AdminLayout        from "./layouts/AdminLayout.jsx";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
 import RequireAuth        from "./components/RequireAuth.jsx";
 
-//---routes dev3 Djenna à ne pas toucher
+// =============================================
+// IMPORTS ADMIN PART 1 — Dev 1 mechack_rosca
+// =============================================
+import AdminDashboardPage      from "./pages/admin/AdminDashboardPage.jsx";
+import GestionCartesPage       from "./pages/admin/GestionCartesPage.jsx";
+import ProfilAdminPage         from "./pages/admin/ProfilAdminPage.jsx";
+import JournalTransactionsPage from "./pages/admin/JournalTransactionsPage.jsx";
+
+// =============================================
+// IMPORTS ADMIN PART 2 — Dev 3 Djenna — NE PAS TOUCHER
+// =============================================
 import GestionKiosques from "./pages/admin/GestionKiosques.jsx";
-import KiosqueDetail   from "./pages/admin/KiosqueDetail.jsx"; 
-import GestionAgents from "./pages/admin/GestionAgents.jsx"; // ✅ import ajouté
-//---fin routes dev3 Djenna
+import KiosqueDetail   from "./pages/admin/KiosqueDetail.jsx";
+import GestionAgents   from "./pages/admin/GestionAgents.jsx";
+
+// =============================================
+// IMPORTS AGENT — Dev 3 ethane — NE PAS TOUCHER
+// =============================================
+import AgentLayout        from "./layouts/AgentLayout.jsx";
+import AgentDashboardPage from "./pages/agent/AgentDashboardPage.jsx";
 
 export default function App() {
   return (
     <Routes>
+
+      {/* Routes publiques */}
       <Route path="/"      element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
 
-      <Route path="/dashboard" element={
+      {/* =============================================
+          ZONE AGENT — Dev 3 ethane — NE PAS TOUCHER
+          ============================================= */}
+      <Route path="/agent" element={
         <RequireAuth role="agent">
-          <Dashboard />
+          <AgentLayout />
         </RequireAuth>
-      } />
+      }>
+        <Route index element={<Navigate to="/agent/dashboard" replace />} />
+        <Route path="dashboard" element={<AgentDashboardPage />} />
+      </Route>
 
+      {/* =============================================
+          ZONE ADMIN
+          ============================================= */}
       <Route path="/admin" element={
         <RequireAuth role="admin">
           <AdminLayout />
         </RequireAuth>
       }>
-        <Route index                element={<AdminDashboardPage />} />
-        <Route path="kiosques"      element={<GestionKiosques />} />
-        <Route path="kiosques/:id"  element={<KiosqueDetail />} />  {/* ✅ à l'intérieur */}
-        <Route path="agents"        element={<GestionAgents />} />   {/* ✅ nouvelle route */}
+        {/* ROUTES ADMIN PART 1 — Dev 1 mechack_rosca */}
+        <Route index               element={<AdminDashboardPage />} />
+        <Route path="cartes"       element={<GestionCartesPage />} />
+        <Route path="profil"       element={<ProfilAdminPage />} />
+        <Route path="transactions" element={<JournalTransactionsPage />} />
+
+        {/* ROUTES ADMIN PART 2 — Dev 3 Djenna — NE PAS TOUCHER */}
+        <Route path="kiosques"     element={<GestionKiosques />} />
+        <Route path="kiosques/:id" element={<KiosqueDetail />} />
+        <Route path="agents"       element={<GestionAgents />} />
       </Route>
 
     </Routes>
