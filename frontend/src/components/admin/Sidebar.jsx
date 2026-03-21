@@ -20,6 +20,14 @@ const IcoKiosque = () => (
     <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
   </svg>
 );
+const IcoAgents = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+    <path d="M16 3.13a4 4 0 010 7.75"/>
+  </svg>
+);
 const IcoClients = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
@@ -50,6 +58,7 @@ const IcoCaisse = () => (
 const NAV_ITEMS = [
   { label: "Accueil",                  path: "/admin",              icon: IcoDashboard, exact: true },
   { label: "Gestion des kiosques",     path: "/admin/kiosques",     icon: IcoKiosque               },
+  { label: "Gestion des agents",       path: "/admin/agents",       icon: IcoAgents                },
   { label: "Gestion des clients",      path: "/admin/clients",      icon: IcoClients               },
   { label: "Gestion des cartes",       path: "/admin/cartes",       icon: IcoCartes                },
   { label: "Journal des transactions", path: "/admin/transactions", icon: IcoJournal               },
