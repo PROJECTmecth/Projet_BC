@@ -1,23 +1,34 @@
 <?php
+// ⚠️  CORRECTION IMPORTANTE
+// ─────────────────────────────────────────────────────────────────────────
+// Ta migration crée la colonne  id  (pas id_user)
+// Mais ton modèle déclare  protected $primaryKey = 'id_user'
+// → Laravel cherche une colonne "id_user" qui n'existe pas → erreur SQL
+//
+// SOLUTION : retire la ligne primaryKey du modèle
+// (Laravel utilisera "id" par défaut, ce qui correspond à ta migration)
+// ─────────────────────────────────────────────────────────────────────────
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // ✅ ligne manquante
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable; // ✅ HasApiTokens ajouté ici
+    use HasApiTokens, HasFactory, Notifiable;
 
-    protected $primaryKey = 'id_user';
+    // ✅ CORRIGÉ : on retire primaryKey = 'id_user'
+    // La migration utilise $table->id() → colonne "id", Laravel le gère par défaut
 
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
-        'statut'
+        'statut',
     ];
 
     protected $hidden = [
@@ -29,28 +40,30 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public const ROLE_ADMIN = 'admin';
-    public const ROLE_AGENT = 'agent';
+    public const ROLE_ADMIN   = 'admin';
+    public const ROLE_AGENT   = 'agent';
     public const STATUT_ACTIF = 'actif';
     public const STATUT_INACTIF = 'inactif';
 
-    public function isAdmin(): bool
-    {
-        return $this->role === self::ROLE_ADMIN;
-    }
+    public function isAdmin(): bool  { return $this->role   === self::ROLE_ADMIN; }
+    public function isAgent(): bool  { return $this->role   === self::ROLE_AGENT; }
+    public function isActif(): bool  { return $this->statut === self::STATUT_ACTIF; }
 
-    public function isAgent(): bool
-    {
-        return $this->role === self::ROLE_AGENT;
-    }
-
-    public function isActif(): bool
-    {
-        return $this->statut === self::STATUT_ACTIF;
-    }
-
+    /**
+     * Un User (role=agent) possède un profil Agent
+     * FK : agents.id_user → users.id
+     */
     public function agent()
     {
-        return $this->hasOne(Agent::class, 'id_user', 'id_user');
+        return $this->hasOne(Agent::class, 'id_user', 'id');
+    }
+
+    /**
+     * Un User (role=admin) peut être responsable de kiosques
+     * FK : kiosques.id_admin → users.id
+     */
+    public function kiosques()
+    {
+        return $this->hasMany(Kiosque::class, 'id_admin', 'id');
     }
 }

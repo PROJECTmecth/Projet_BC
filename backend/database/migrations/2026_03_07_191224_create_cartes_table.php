@@ -39,7 +39,6 @@ return new class extends Migration {
                   ->cascadeOnDelete();
 
             $table->foreignId('id_kiosque')
-            
                   ->nullable()           // ← nullable : pas de kiosque à la génération
                   ->constrained('kiosques', 'id_kiosque')
                   ->cascadeOnDelete();
