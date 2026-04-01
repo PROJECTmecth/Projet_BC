@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AgentController;
 use App\Http\Controllers\Admin\CarteController;
 use App\Http\Controllers\Admin\ProfilController;
 use App\Http\Controllers\Admin\MouvementCaisseController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,12 +17,29 @@ use App\Http\Controllers\Admin\MouvementCaisseController;
 |--------------------------------------------------------------------------
 */
 
+
+
+
+
 // ══════════════════════════════════════════════════════════════════════════════
 // ROUTE PUBLIQUE — Utilisateur connecté
 // ══════════════════════════════════════════════════════════════════════════════
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
+
+
+// ✅ Route login (POST /api/login)
+Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+
+// ✅ Route user authentifié
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+// ✅ Route logout
+Route::middleware(['auth:sanctum'])->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
+
 
 // Hors groupe admin — TEMPORAIRE (Gestion des QR Codes)
 Route::post('/admin/qrcodes/generer', [CarteController::class, 'generer'])->name('qrcodes.generer');
@@ -65,7 +83,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::get('/transactions',     fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
 
         // Utilisation du contrôleur réel de Djenna pour les mouvements de caisse
-        
+
 
         // ── Profil Admin ──────────────────────────────────────────────────────
         Route::put('/profil',          [ProfilController::class, 'update'])        ->name('profil.update');

@@ -41,27 +41,26 @@ export default function LoginPage() {
     setFlowStep(1);
 
     try {
-      // Étape 1 — Cookie CSRF
-      await getCsrfCookie();
-      setFlowStep(2);
+  // ✅ Pas besoin de getCsrfCookie() pour les tokens
+  // await getCsrfCookie(); // ← Commentez ou supprimez cette ligne
+  
+  // ✅ Login direct avec tokens
+  const { data } = await loginRequest({ name: name.trim(), password });
+  
+  const user = data.user;
+  const token = data.token; // ← Le token vient maintenant de l'API
 
-      // Étape 2 — POST /login → retourne { message, user }
-      const { data } = await loginRequest({ name: name.trim(), password });
-      setFlowStep(3);
+  if (user.statut === "inactif") {
+    showToast("Compte désactivé. Contactez l'administrateur.", "error");
+    return;
+  }
 
-      const user = data.user;
+  // ✅ Sauvegarde user + token
+  login(user, token);
+  showToast(`Bienvenue ${user.name} !`, "success");
 
-      if (user.statut === "inactif") {
-        showToast("Compte désactivé. Contactez l'administrateur.", "error");
-        setFlowStep(0);
-        return;
-      }
-
-     login(user, data.token);  // ← sauvegarde le user dans le contexte
-      showToast(`Bienvenue ${user.name} !`, "success");
-
-      // ✅ CORRECTION : redirection vers /agent/dashboard au lieu de /dashboard
-      setTimeout(() => navigate(user.role === "admin" ? "/admin" : "/agent/dashboard"), 900);
+  // Redirection
+  setTimeout(() => navigate(user.role === "admin" ? "/admin" : "/agent/dashboard"), 900);
 
     } catch (err) {
       setFlowStep(0);

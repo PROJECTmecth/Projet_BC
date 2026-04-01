@@ -1,34 +1,43 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // fichier : src/services/auth.js
 //
-// Service d'authentification — appels RÉELS vers Laravel Sanctum.
+// Service d'authentification — API REST avec tokens Sanctum
 // Login via le champ "name" (colonne name de la table users)
 //
-// ── FLUX ─────────────────────────────────────────────────────────────────────
-//   1. GET  /sanctum/csrf-cookie      → Laravel pose le cookie XSRF-TOKEN
-//   2. POST /login { name, password } → session créée + cookie laravel_session
-//   3. GET  /api/user                 → { id, name, email, role, statut }
+// ── FLUX TOKENS SANCTUM ─────────────────────────────────────────────────────
+//   1. POST /api/login { name, password } → { token, user }
+//   2. GET  /api/user (avec Bearer token)  → { id, name, email, role, statut }
+//   3. POST /api/logout (avec Bearer token) → suppression du token
 // ─────────────────────────────────────────────────────────────────────────────
 
 import api from "../lib/axios";
 
-// ── Étape 1 — Cookie CSRF ─────────────────────────────────────────────────────
-// Obligatoire avant tout POST Sanctum — pose le cookie XSRF-TOKEN
+// ── CSRF Cookie (Optionnel pour tokens, mais gardé pour compatibilité) ────────
 export const getCsrfCookie = () =>
   api.get("/sanctum/csrf-cookie");
 
-// ── Étape 2 — Login ───────────────────────────────────────────────────────────
-// ⚠️  Le backend attend "name" (pas "username" ni "email")
-// name     = colonne "name" de la table users (ex: "admin", "agent")
-// password = mot de passe en clair (Laravel compare avec le hash bcrypt)
+// ── Login avec Tokens Sanctum ─────────────────────────────────────────────────
+// ✅ Retourne { token, user } depuis AuthenticatedSessionController
 export const loginRequest = ({ name, password }) =>
-  api.post("/login", { name, password });
+  api.post("/api/login", { name, password });
 
-// ── Étape 3 — Utilisateur connecté ───────────────────────────────────────────
-// Retourne : { id, name, email, role, statut }
+// ── Utilisateur connecté (avec token Bearer) ──────────────────────────────────
+// ✅ Utilise automatiquement le token Bearer via l'intercepteur Axios
 export const getUser = () =>
   api.get("/api/user");
 
-// ── Déconnexion ───────────────────────────────────────────────────────────────
+// ── Déconnexion (supprime le token côté serveur) ──────────────────────────────
+// ✅ Appelle l'API pour supprimer le token Sanctum
 export const logoutRequest = () =>
-  api.post("/logout");
+  api.post("/api/logout");
+
+// ── Vérification validité token (helper) ──────────────────────────────────────
+// ✅ Utile pour vérifier si le token est encore valide
+export const verifyToken = async () => {
+  try {
+    const response = await getUser();
+    return { valid: true, user: response.data };
+  } catch (error) {
+    return { valid: false, error };
+  }
+};
