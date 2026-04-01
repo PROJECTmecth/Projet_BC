@@ -10,7 +10,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable; // ✅ HasApiTokens ajouté ici
 
-    protected $primaryKey = 'id_user';
+
 
     protected $fillable = [
         'name',
@@ -51,6 +51,6 @@ class User extends Authenticatable
 
     public function agent()
     {
-        return $this->hasOne(Agent::class, 'id_user', 'id_user');
+       return $this->hasOne(Agent::class, 'id_user', 'id');
     }
 }

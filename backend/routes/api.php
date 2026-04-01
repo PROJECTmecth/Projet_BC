@@ -32,16 +32,8 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
 
 
 // ==============================================================
-// ROUTES AGENT — Interface terrain BOMBA CASH
+// INCLUSION DES ROUTES PAR MODULE — NE PAS MODIFIER
 // ==============================================================
-Route::middleware(['auth:sanctum', 'isAgent'])
-    ->prefix('agent')
-    ->name('agent.')
-    ->group(function () {
-        Route::get('/dashboard', fn() => response()->json(['success' => true, 'message' => '✅ Dashboard Agent']))->name('dashboard');
-        Route::get('/mes-clients', fn() => response()->json(['success' => true, 'message' => '✅ Mes clients']))->name('clients.index');
-        Route::get('/historique', fn() => response()->json(['success' => true, 'message' => '✅ Historique']))->name('historique.index');
-        Route::post('/scan-carte', fn() => response()->json(['success' => true, 'message' => '✅ Scan carte']))->name('carte.scan');
-        Route::post('/operations', fn() => response()->json(['success' => true, 'message' => '✅ Opération']))->name('operations.store');
-        Route::get('/rapport-journalier', fn() => response()->json(['success' => true, 'message' => '✅ Rapport journalier']))->name('rapport.journalier');
-    });
+require __DIR__.'/api_agent.php';   // Dev 1 (Toi)
+// require __DIR__.'/api_admin.php';  // Dev 2 — à décommenter quand prêt
+// require __DIR__.'/api_client.php'; // Dev 3 — à décommenter quand prêt

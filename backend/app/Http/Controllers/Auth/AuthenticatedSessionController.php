@@ -24,9 +24,12 @@ class AuthenticatedSessionController extends Controller
             ], 403);
         }
 
-        // Retourne le user avec role + statut pour la redirection frontend
+        // ✅ Créer un token Sanctum pour les requêtes API
+        $token = $user->createToken('auth_token')->plainTextToken;
+
         return response()->json([
             'message' => 'Connecté avec succès.',
+            'token'   => $token,
             'user'    => [
                 'id'     => $user->id,
                 'name'   => $user->name,
@@ -39,6 +42,9 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request)
     {
+        // ✅ Révoquer tous les tokens de l'utilisateur connecté
+        $request->user()?->tokens()->delete();
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

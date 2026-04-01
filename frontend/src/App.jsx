@@ -1,14 +1,18 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import LoginPage          from "./pages/auth/LoginPage.jsx";
-import AdminLayout        from "./layouts/AdminLayout.jsx";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage.jsx";
-import RequireAuth        from "./components/RequireAuth.jsx";
+import LoginPage             from "./pages/auth/LoginPage.jsx";
+import AdminLayout           from "./layouts/AdminLayout.jsx";
+import AdminDashboardPage    from "./pages/admin/AdminDashboardPage.jsx";
+import RequireAuth           from "./components/RequireAuth.jsx";
 
 // =============================================
-// ROUTES AGENT — Dev ethane — NE PAS TOUCHER
+// ROUTES AGENT — Dev 1 — NE PAS TOUCHER
 // =============================================
-import AgentLayout        from "./layouts/AgentLayout.jsx";
-import AgentDashboardPage from "./pages/agent/AgentDashboardPage.jsx";
+import AgentLayout           from "./layouts/AgentLayout.jsx";
+import AgentDashboardPage    from "./pages/agent/AgentDashboardPage.jsx";
+import MesClientsPage        from "./pages/agent/MesClientsPage.jsx";
+import ProfilClientPage      from "./pages/agent/ProfilClientPage.jsx";
+import AjouterOperationPage  from "./pages/agent/AjouterOperationPage.jsx";
+import HistoriquePage        from "./pages/agent/HistoriquePage.jsx";
 
 export default function App() {
   return (
@@ -25,8 +29,11 @@ export default function App() {
         </RequireAuth>
       }>
         <Route index element={<Navigate to="/agent/dashboard" replace />} />
-        <Route path="dashboard" element={<AgentDashboardPage />} />
-        {/* À ajouter plus tard : clients, scanner, historique */}
+        <Route path="dashboard"               element={<AgentDashboardPage />} />
+        <Route path="clients"                 element={<MesClientsPage />} />
+        <Route path="clients/:id"             element={<ProfilClientPage />} />
+        <Route path="clients/:id/operation"   element={<AjouterOperationPage />} />
+        <Route path="historique"              element={<HistoriquePage />} />
       </Route>
 
       {/* =============================================
