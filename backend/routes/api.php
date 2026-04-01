@@ -3,37 +3,79 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// ==============================================================
-// ROUTES PUBLIQUES — Authentification (collègue login)
-// ==============================================================
+use App\Http\Controllers\Admin\KiosqueController;
+use App\Http\Controllers\Admin\AgentController;
+use App\Http\Controllers\Admin\CarteController;
+use App\Http\Controllers\Admin\ProfilController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes - Projet BOMBA_CASH
+|--------------------------------------------------------------------------
+*/
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ROUTES PUBLIQUES
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Login
+Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+
+// Utilisateur connecté
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/auth/admin/login', fn() => response()->json(['message' => 'Route login admin — géré par collègue']));
-Route::post('/auth/agent/login', fn() => response()->json(['message' => 'Route login agent — géré par collègue']));
+// Logout
+Route::middleware(['auth:sanctum'])->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
+// Hors groupe admin — Gestion des QR Codes
+Route::post('/admin/qrcodes/generer', [CarteController::class, 'generer'])->name('qrcodes.generer');
+Route::get('/admin/qrcodes/lots',     [CarteController::class, 'index'])->name('qrcodes.lots');
 
-// ==============================================================
-// ROUTES ADMIN — Panel BOMBA CASH MANAGER
-// ==============================================================
+// ══════════════════════════════════════════════════════════════════════════════
+// ROUTES ADMIN (Protégées par Sanctum et le middleware isAdmin)
+// ══════════════════════════════════════════════════════════════════════════════
 Route::middleware(['auth:sanctum', 'isAdmin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/dashboard', fn() => response()->json(['success' => true, 'message' => '✅ Dashboard Manager']))->name('dashboard');
-        Route::get('/kiosques', fn() => response()->json(['success' => true, 'message' => '✅ Liste kiosques']))->name('kiosques.index');
-        Route::get('/agents', fn() => response()->json(['success' => true, 'message' => '✅ Liste agents']))->name('agents.index');
-        Route::get('/clients', fn() => response()->json(['success' => true, 'message' => '✅ Liste clients']))->name('clients.index');
-        Route::get('/transactions', fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
-        Route::get('/mouvements-solde', fn() => response()->json(['success' => true, 'message' => '✅ Mouvements solde']))->name('mouvements.index');
-        Route::post('/qrcodes/generer', fn() => response()->json(['success' => true, 'message' => '✅ Génération QR codes']))->name('qrcodes.generer');
+
+        // Dashboard
+        Route::get('/dashboard', fn() => response()->json([
+            'success' => true, 'message' => '✅ Dashboard Manager'
+        ]))->name('dashboard');
+
+        // Kiosques
+        Route::get   ('/kiosques',                  [KiosqueController::class, 'index'])        ->name('kiosques.list');
+        Route::post  ('/kiosques',                  [KiosqueController::class, 'store'])        ->name('kiosques.store');
+        Route::get   ('/kiosques/{kiosque}',        [KiosqueController::class, 'show'])         ->name('kiosques.show');
+        Route::put   ('/kiosques/{kiosque}',        [KiosqueController::class, 'update'])       ->name('kiosques.update');
+        Route::delete('/kiosques/{kiosque}',        [KiosqueController::class, 'destroy'])      ->name('kiosques.destroy');
+        Route::patch ('/kiosques/{kiosque}/statut', [KiosqueController::class, 'toggleStatut']) ->name('kiosques.toggle');
+        Route::get   ('/kiosques/{kiosque}/agents', [KiosqueController::class, 'agents'])       ->name('kiosques.agents');
+
+        // Agents
+        Route::get   ('/agents',                [AgentController::class, 'index'])        ->name('agents.list');
+        Route::post  ('/agents',                [AgentController::class, 'store'])        ->name('agents.store');
+        Route::get   ('/agents/{agent}',        [AgentController::class, 'show'])         ->name('agents.show');
+        Route::put   ('/agents/{agent}',        [AgentController::class, 'update'])       ->name('agents.update');
+        Route::delete('/agents/{agent}',        [AgentController::class, 'destroy'])      ->name('agents.destroy');
+        Route::patch ('/agents/{agent}/statut', [AgentController::class, 'toggleStatut']) ->name('agents.toggle');
+
+        // Placeholders
+        Route::get('/clients',      fn() => response()->json(['success' => true, 'message' => '✅ Liste clients']))->name('clients.index');
+        Route::get('/transactions',  fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
+
+        // Profil Admin
+        Route::put('/profil',          [ProfilController::class, 'update'])        ->name('profil.update');
+        Route::put('/profil/password', [ProfilController::class, 'updatePassword'])->name('profil.password');
     });
 
-
-// ==============================================================
+// ══════════════════════════════════════════════════════════════════════════════
 // INCLUSION DES ROUTES PAR MODULE — NE PAS MODIFIER
-// ==============================================================
-require __DIR__.'/api_agent.php';   // Dev 1 (Toi)
+// ══════════════════════════════════════════════════════════════════════════════
+require __DIR__.'/api_agent.php';   // Dev 1 — routes agent complètes
 // require __DIR__.'/api_admin.php';  // Dev 2 — à décommenter quand prêt
 // require __DIR__.'/api_client.php'; // Dev 3 — à décommenter quand prêt

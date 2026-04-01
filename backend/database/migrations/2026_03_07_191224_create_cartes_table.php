@@ -1,8 +1,24 @@
 <?php
+// ─────────────────────────────────────────────────────────────────────────────
+// fichier : database/migrations/xxxx_xx_xx_create_cartes_table.php
+//
+// MODIFICATION IMPORTANTE :
+//   id_client, id_agent, id_kiosque sont maintenant NULLABLE
+//   car un QR vierge n'a pas encore de client/agent/kiosque associé.
+//   Ces champs seront remplis par l'agent lors de l'activation de la carte.
+//
+// AUSSI :
+//   numero_carte   → nullable() car généré après l'insert (basé sur id_carte)
+//   qr_code_image  → nullable() car optionnel à la génération
+//   duree          → nullable() car remplie à l'activation
+//   montant_initial→ default(0)
+//   frais_garde    → default(0)
+//   progression    → default(0)
+// ─────────────────────────────────────────────────────────────────────────────
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration {
     public function up(): void
@@ -10,49 +26,50 @@ return new class extends Migration {
         Schema::create('cartes', function (Blueprint $table) {
             $table->id('id_carte'); // Clé primaire auto-incrémentée
 
-            // Clés étrangères
+            // ── Clés étrangères — NULLABLE car remplies à l'activation ──────
             $table->foreignId('id_client')
-                  ->unique() // Une carte par client
+                  ->nullable()           // ← nullable : pas de client à la génération
+                  ->unique()             // Une carte par client
                   ->constrained('clients', 'id_client')
-                  ->cascadeOnDelete(); // FK client (propriétaire de la carte)
+                  ->cascadeOnDelete();
 
             $table->foreignId('id_agent')
+                  ->nullable()           // ← nullable : pas d'agent à la génération
                   ->constrained('agents', 'id_agent')
-                  ->cascadeOnDelete(); // FK agent (activateur de la carte)
+                  ->cascadeOnDelete();
 
             $table->foreignId('id_kiosque')
+                  ->nullable()           // ← nullable : pas de kiosque à la génération
                   ->constrained('kiosques', 'id_kiosque')
-                  ->cascadeOnDelete(); // FK kiosque (activation)
+                  ->cascadeOnDelete();
 
-            // Informations sur la carte
-            $table->string('numero_carte',20)->unique();      // Numéro unique lisible
-            $table->string('qr_code_uid',191)->unique();      // Identifiant QR unique
-            $table->text('qr_code_image');                    // Image QR code en base64 ou chemin
-            $table->enum('statut',['vierge','actif','expiré','terminé']); // État courant
-            $table->enum('duree',['15 jours','30 jours']);   // Durée de validité
-            $table->decimal('montant_initial',15,2);         // Montant initial versé
-            $table->decimal('frais_garde',15,2);             // Frais de garde (50% montant initial)
-            $table->tinyInteger('progression');              // Pourcentage de progression
+            // ── Informations sur la carte ─────────────────────────────────
+            $table->string('numero_carte', 20)->unique()->nullable(); // ← nullable : généré après insert
+            $table->string('qr_code_uid', 191)->unique();             // UUID v4 — généré à la création
+            $table->text('qr_code_image')->nullable();                // ← nullable : optionnel
+            $table->enum('statut', ['vierge', 'actif', 'expiré', 'terminé'])->default('vierge');
+            $table->enum('duree', ['15 jours', '30 jours'])->nullable(); // ← nullable : rempli à l'activation
 
-            // Dates importantes
-            $table->date('date_creation');                   // Date génération QR code
-            $table->date('date_activation')->nullable();     // Date 1er enregistrement client
-            $table->date('date_expiration')->nullable();     // Date d'expiration
+            $table->decimal('montant_initial', 15, 2)->default(0);   // 0 à la génération
+            $table->decimal('frais_garde', 15, 2)->default(0);       // 0 à la génération
+            $table->tinyInteger('progression')->default(0);           // 0 à la génération
 
-            // Compteurs journaliers
-            $table->tinyInteger('nb_depots_jour')->default(0);   // Dépôts du jour (max 3)
-            $table->tinyInteger('nb_retraits_jour')->default(0); // Retraits du jour
-            
-           // ✅ Fix : CURRENT_DATE non supporté comme default en MySQL
-            // On utilise nullable() + on remplira via le modèle/observer
-            $table->date('reset_date')->nullable(); // Date du dernier reset des compteurs
+            // ── Dates ─────────────────────────────────────────────────────
+            $table->date('date_creation');                            // Date génération QR
+            $table->date('date_activation')->nullable();              // Date 1er enregistrement client
+            $table->date('date_expiration')->nullable();              // Date d'expiration
 
-            $table->timestamps(); // created_at & updated_at
+            // ── Compteurs journaliers ──────────────────────────────────────
+            $table->tinyInteger('nb_depots_jour')->default(0);
+            $table->tinyInteger('nb_retraits_jour')->default(0);
+            $table->date('reset_date')->nullable();
+
+            $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('cartes'); // Rollback
+        Schema::dropIfExists('cartes');
     }
 };

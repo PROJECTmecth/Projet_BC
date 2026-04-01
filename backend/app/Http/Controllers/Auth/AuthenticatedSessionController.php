@@ -3,29 +3,51 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
+use App\Models\User;
 
 class AuthenticatedSessionController extends Controller
 {
-    public function store(LoginRequest $request)
+    public function store(Request $request)
     {
-        $request->authenticate();
-        $request->session()->regenerate();
+        // Vérification rate limiting
+        $this->ensureIsNotRateLimited($request);
 
-        $user = Auth::user();
+        // Validation
+        $request->validate([
+            'name'     => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        // Recherche utilisateur
+        $user = User::where('name', $request->name)->first();
+
+        // Vérification credentials
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            RateLimiter::hit($this->throttleKey($request));
+            throw ValidationException::withMessages([
+                'name' => ['Les informations d\'identification fournies ne correspondent pas à nos enregistrements.'],
+            ]);
+        }
 
         // Compte désactivé
         if ($user->statut === 'inactif') {
-            Auth::logout();
             return response()->json([
-                'message' => 'Votre compte est désactivé.',
+                'message' => 'Votre compte est désactivé. Contactez l\'administrateur.',
             ], 403);
         }
 
-        // ✅ Créer un token Sanctum pour les requêtes API
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // Nettoyer rate limiter en cas de succès
+        RateLimiter::clear($this->throttleKey($request));
+
+        // Supprimer les anciens tokens (sécurité)
+        $user->tokens()->delete();
+
+        // Créer nouveau token Sanctum
+        $token = $user->createToken('bc_token')->plainTextToken;
 
         return response()->json([
             'message' => 'Connecté avec succès.',
@@ -42,13 +64,27 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request)
     {
-        // ✅ Révoquer tous les tokens de l'utilisateur connecté
-        $request->user()?->tokens()->delete();
+        // Suppression du token actuel uniquement
+        if ($request->user() && $request->user()->currentAccessToken()) {
+            $request->user()->currentAccessToken()->delete();
+        }
 
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        return response()->json(['message' => 'Déconnecté avec succès.']);
+    }
 
-        return response()->json(['message' => 'Déconnecté.']);
+    protected function ensureIsNotRateLimited(Request $request): void
+    {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
+            return;
+        }
+        $seconds = RateLimiter::availableIn($this->throttleKey($request));
+        throw ValidationException::withMessages([
+            'name' => "Trop de tentatives de connexion. Veuillez réessayer dans {$seconds} secondes.",
+        ]);
+    }
+
+    protected function throttleKey(Request $request): string
+    {
+        return strtolower($request->input('name')) . '|' . $request->ip();
     }
 }

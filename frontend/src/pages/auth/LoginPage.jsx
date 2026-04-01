@@ -6,6 +6,10 @@ import SanctumFlow     from "../../components/ui/SanctumFlow";
 import { IconUser }    from "../../components/ui/icons";
 import { getCsrfCookie, loginRequest } from "../../services/auth";
 import { useAuth } from "../../context/AuthContext";
+import logoBomba from '../../assets/logos/logo2.jpeg';
+import logoText from '../../assets/logos/logo3.jpeg';
+import logoIcone from '../../assets/logos/logo1.png';
+import profilePic from '../../assets/images/johann.jpeg';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -37,27 +41,26 @@ export default function LoginPage() {
     setFlowStep(1);
 
     try {
-      // Étape 1 — Cookie CSRF
-      await getCsrfCookie();
-      setFlowStep(2);
+  // ✅ Pas besoin de getCsrfCookie() pour les tokens
+  // await getCsrfCookie(); // ← Commentez ou supprimez cette ligne
+  
+  // ✅ Login direct avec tokens
+  const { data } = await loginRequest({ name: name.trim(), password });
+  
+  const user = data.user;
+  const token = data.token; // ← Le token vient maintenant de l'API
 
-      // Étape 2 — POST /login → retourne { message, user }
-      const { data } = await loginRequest({ name: name.trim(), password });
-      setFlowStep(3);
+  if (user.statut === "inactif") {
+    showToast("Compte désactivé. Contactez l'administrateur.", "error");
+    return;
+  }
 
-      const user = data.user;
+  // ✅ Sauvegarde user + token
+  login(user, token);
+  showToast(`Bienvenue ${user.name} !`, "success");
 
-      if (user.statut === "inactif") {
-        showToast("Compte désactivé. Contactez l'administrateur.", "error");
-        setFlowStep(0);
-        return;
-      }
-
-     login(user, data.token);  // ← sauvegarde le user dans le contexte
-      showToast(`Bienvenue ${user.name} !`, "success");
-
-      // ✅ CORRECTION : redirection vers /agent/dashboard au lieu de /dashboard
-      setTimeout(() => navigate(user.role === "admin" ? "/admin" : "/agent/dashboard"), 900);
+  // Redirection
+  setTimeout(() => navigate(user.role === "admin" ? "/admin" : "/agent/dashboard"), 900);
 
     } catch (err) {
       setFlowStep(0);
@@ -98,30 +101,51 @@ export default function LoginPage() {
           </svg>
         </div>
 
-        <div className="absolute top-7 left-8 z-10 w-[72px] h-[72px] bg-white rounded-2xl shadow-lg border border-gray-200 flex items-center justify-center">
-          <span className="text-4xl">🐟</span>
-        </div>
+        <div className="absolute top-7 left-28 z-10 w-[100px] h-[100px] bg-white rounded-2xl shadow-lg border border-gray-200 flex items-center justify-center overflow-hidden">
+        <img 
+          src={logoBomba} 
+          alt="BOMBA CASH Logo" 
+          className="w-full h-full object-contain p-2" 
+        />
+      </div>
+            
 
-        <div className="absolute top-7 right-8 z-10 bg-white rounded-xl shadow-lg px-6 py-2.5 border border-gray-200">
-          <span className="font-black text-xl">
-            <span className="text-gray-900">BOMBA </span>
-            <span className="text-green-600">CASH</span>
-          </span>
+          <div className="absolute top-4 right-15 z-10 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center overflow-hidden ">
+          <img 
+            src={logoText} 
+            alt="BOMBA CASH Brand" 
+            /* - w-64 : Largeur moyenne et équilibrée
+              - h-16 : Hauteur réduite pour un aspect plus "bandeau"
+              - p-2 : Un petit padding pour que le logo respire sans être perdu
+            */
+            className="w-35 h-27 object-contain p-1" 
+          />
         </div>
 
         <div className="relative z-10 w-full max-w-[860px] grid grid-cols-2 rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.28)] border-2 border-gray-300 mt-5">
 
           <div className="bg-gray-900 flex flex-col items-center justify-between min-h-[540px] p-8">
             <div className="w-full flex justify-start">
-              <div className="flex items-center gap-2 bg-white rounded-lg pl-3 pr-4 h-10">
-                <span className="text-lg">🐷</span>
-                <span className="font-extrabold text-[13px] text-green-700">Johann Finance</span>
-              </div>
+              <img 
+                src={logoIcone} 
+                alt="Logo Finance" 
+                /* - w-24 (96px) : Une largeur généreuse pour qu'il soit bien visible
+                  - h-20 (80px) : Une hauteur proportionnelle
+                  - transition-transform : Petit bonus pour qu'il réagisse au survol (effet High-end)
+                */
+                className="w-24 h-25 object-contain rounded-xl hover:scale-105 transition-transform duration-300" 
+              />
             </div>
+
+            <div className="w-[210px] h-[260px] bg-gradient-to-br from-[#1E3A5F] to-[#0C1929] rounded-xl flex items-center justify-center overflow-hidden border border-white/10 shadow-2xl">
+              <img 
+                src={profilePic} 
+                alt="Johann" 
+                className="w-full h-full object-cover" 
+              />
+            </div>
+
             <div className="flex-1 flex items-center justify-center py-5">
-              <div className="w-[210px] h-[260px] bg-gradient-to-br from-[#1E3A5F] to-[#0C1929] rounded-xl flex items-center justify-center">
-                <span className="text-[85px]">🧑‍💼</span>
-              </div>
             </div>
             <div className="w-full text-center">
               <h2 className="text-white text-[19px] font-extrabold leading-snug tracking-widest uppercase m-0">
@@ -196,7 +220,6 @@ export default function LoginPage() {
                 ) : "connexion"}
               </button>
 
-              <SanctumFlow currentStep={flowStep} />
             </form>
           </div>
         </div>

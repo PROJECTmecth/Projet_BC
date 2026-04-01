@@ -15,13 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
-        // Exclure login/logout de la vérification CSRF
-       $middleware->validateCsrfTokens(except: [
-    'login',
-    'logout',
-    'sanctum/csrf-cookie',
-    'api/*',  // ← ajoute cette ligne
-]);
+        // Exclure les routes API et auth du CSRF
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'login',
+            'logout',
+            'sanctum/csrf-cookie',
+        ]);
 
         $middleware->web(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
