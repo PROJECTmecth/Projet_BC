@@ -9,7 +9,7 @@ import AdminLayout        from "./layouts/AdminLayout.jsx";
 import RequireAuth        from "./components/RequireAuth.jsx";
 
 // =============================================
-// IMPORTS ADMIN PART 1 — Dev 1 mechack_rosca
+// IMPORTS ADMIN PART 1 — Dev 2 mechack_rosca
 // =============================================
 import AdminDashboardPage      from "./pages/admin/AdminDashboardPage.jsx";
 import GestionCartesPage       from "./pages/admin/GestionCartesPage.jsx";
@@ -24,10 +24,14 @@ import KiosqueDetail   from "./pages/admin/KiosqueDetail.jsx";
 import GestionAgents   from "./pages/admin/GestionAgents.jsx";
 
 // =============================================
-// IMPORTS AGENT — Dev 3 ethane — NE PAS TOUCHER
+// IMPORTS AGENT — Dev 1 — NE PAS TOUCHER
 // =============================================
-import AgentLayout        from "./layouts/AgentLayout.jsx";
-import AgentDashboardPage from "./pages/agent/AgentDashboardPage.jsx";
+import AgentLayout          from "./layouts/AgentLayout.jsx";
+import AgentDashboardPage   from "./pages/agent/AgentDashboardPage.jsx";
+import MesClientsPage       from "./pages/agent/MesClientsPage.jsx";
+import ProfilClientPage     from "./pages/agent/ProfilClientPage.jsx";
+import AjouterOperationPage from "./pages/agent/AjouterOperationPage.jsx";
+import HistoriquePage       from "./pages/agent/HistoriquePage.jsx";
 
 export default function App() {
   return (
@@ -38,7 +42,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
 
       {/* =============================================
-          ZONE AGENT — Dev 3 ethane — NE PAS TOUCHER
+          ZONE AGENT — Dev 1 — NE PAS TOUCHER
           ============================================= */}
       <Route path="/agent" element={
         <RequireAuth role="agent">
@@ -46,7 +50,11 @@ export default function App() {
         </RequireAuth>
       }>
         <Route index element={<Navigate to="/agent/dashboard" replace />} />
-        <Route path="dashboard" element={<AgentDashboardPage />} />
+        <Route path="dashboard"             element={<AgentDashboardPage />} />
+        <Route path="clients"               element={<MesClientsPage />} />
+        <Route path="clients/:id"           element={<ProfilClientPage />} />
+        <Route path="clients/:id/operation" element={<AjouterOperationPage />} />
+        <Route path="historique"            element={<HistoriquePage />} />
       </Route>
 
       {/* =============================================
@@ -57,7 +65,7 @@ export default function App() {
           <AdminLayout />
         </RequireAuth>
       }>
-        {/* ROUTES ADMIN PART 1 — Dev 1 mechack_rosca */}
+        {/* ROUTES ADMIN PART 1 — Dev 2 mechack_rosca */}
         <Route index               element={<AdminDashboardPage />} />
         <Route path="cartes"       element={<GestionCartesPage />} />
         <Route path="profil"       element={<ProfilAdminPage />} />

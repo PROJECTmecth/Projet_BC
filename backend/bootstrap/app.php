@@ -15,13 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
-        // Exclure login/logout de la vérification CSRF
+        // Exclure les routes API et auth du CSRF
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'login',
             'logout',
             'sanctum/csrf-cookie',
-             'api/*'
         ]);
 
         $middleware->web(prepend: [

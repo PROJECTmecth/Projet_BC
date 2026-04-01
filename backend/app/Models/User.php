@@ -1,13 +1,4 @@
 <?php
-// ⚠️  CORRECTION IMPORTANTE
-// ─────────────────────────────────────────────────────────────────────────
-// Ta migration crée la colonne  id  (pas id_user)
-// Mais ton modèle déclare  protected $primaryKey = 'id_user'
-// → Laravel cherche une colonne "id_user" qui n'existe pas → erreur SQL
-//
-// SOLUTION : retire la ligne primaryKey du modèle
-// (Laravel utilisera "id" par défaut, ce qui correspond à ta migration)
-// ─────────────────────────────────────────────────────────────────────────
 
 namespace App\Models;
 
@@ -20,8 +11,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    // ✅ CORRIGÉ : on retire primaryKey = 'id_user'
-    // La migration utilise $table->id() → colonne "id", Laravel le gère par défaut
+    // ✅ primaryKey = 'id' par défaut (migration utilise $table->id())
 
     protected $fillable = [
         'name',
@@ -40,14 +30,14 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public const ROLE_ADMIN   = 'admin';
-    public const ROLE_AGENT   = 'agent';
-    public const STATUT_ACTIF = 'actif';
+    public const ROLE_ADMIN     = 'admin';
+    public const ROLE_AGENT     = 'agent';
+    public const STATUT_ACTIF   = 'actif';
     public const STATUT_INACTIF = 'inactif';
 
-    public function isAdmin(): bool  { return $this->role   === self::ROLE_ADMIN; }
-    public function isAgent(): bool  { return $this->role   === self::ROLE_AGENT; }
-    public function isActif(): bool  { return $this->statut === self::STATUT_ACTIF; }
+    public function isAdmin(): bool { return $this->role   === self::ROLE_ADMIN; }
+    public function isAgent(): bool { return $this->role   === self::ROLE_AGENT; }
+    public function isActif(): bool { return $this->statut === self::STATUT_ACTIF; }
 
     /**
      * Un User (role=agent) possède un profil Agent

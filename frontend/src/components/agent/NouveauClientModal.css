@@ -1,0 +1,227 @@
+/* ============================================================
+   NouveauClientModal.css — BOMBA CASH
+   ============================================================ */
+
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 16px;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%; max-width: 920px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+/* Header */
+.modal-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  border-radius: 16px 16px 0 0;
+}
+.modal-title { color: #fff; font-size: 18px; font-weight: 800; margin: 0; }
+.modal-close {
+  background: rgba(255,255,255,0.25); border: none;
+  color: #fff; font-size: 18px; font-weight: 700;
+  width: 36px; height: 36px; border-radius: 50%;
+  cursor: pointer; transition: background .2s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.4); }
+
+/* === SCAN SECTION === */
+.scan-section {
+  padding: 32px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 20px;
+}
+.scan-instruction {
+  font-size: 15px; color: #374151; text-align: center;
+}
+.scan-frame {
+  width: 100%; max-width: 420px;
+  border: 3px solid #F97316;
+  border-radius: 12px; overflow: hidden;
+  background: #000; min-height: 220px;
+  position: relative;
+}
+.scan-loading {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px;
+}
+#qr-reader { width: 100%; }
+#qr-reader video { width: 100% !important; }
+.btn-annuler-scan {
+  padding: 10px 32px; border-radius: 8px;
+  border: 2px solid #D1D5DB; background: #fff;
+  font-size: 14px; font-weight: 600;
+  color: #374151; cursor: pointer;
+}
+
+/* === FORM SECTION === */
+.form-section { padding: 24px 28px; }
+
+.form-two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.form-col {
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  overflow: hidden;
+}
+.form-col-header {
+  padding: 14px 20px;
+  font-size: 15px; font-weight: 700; color: #fff;
+}
+.form-col-header--orange { background: #F97316; }
+.form-col-header--green  { background: #16A34A; }
+.form-col-body { padding: 20px; }
+
+.form-group { margin-bottom: 16px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.form-input {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid #D1D5DB; border-radius: 8px;
+  font-size: 14px; color: #111;
+  background: #F9FAFB; outline: none;
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+.form-input:focus { border-color: #F97316; background: #fff; }
+.form-input--error { border-color: #EF4444; }
+.form-input--readonly { background: #F3F4F6; color: #6B7280; cursor: default; }
+.form-error { font-size: 11px; color: #DC2626; margin-top: 3px; display: block; }
+
+/* Radio */
+.radio-group { display: flex; gap: 20px; flex-wrap: wrap; }
+.radio-group--col { flex-direction: column; gap: 6px; }
+.radio-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 14px; color: #374151; cursor: pointer;
+}
+.radio-label input[type="radio"] { accent-color: #F97316; }
+
+/* Info box */
+.info-box {
+  background: #F0FDF4;
+  border-left: 4px solid #16A34A;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 16px;
+}
+.info-box__title { font-weight: 700; color: #15803D; font-size: 14px; margin-bottom: 8px; }
+.info-box ul { margin: 0; padding-left: 16px; }
+.info-box li { font-size: 13px; color: #166534; margin-bottom: 4px; }
+
+/* Actions */
+.form-actions {
+  display: flex; justify-content: flex-end; gap: 12px;
+  margin-top: 24px; padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+}
+.btn-annuler {
+  padding: 11px 28px; border-radius: 8px;
+  border: 2px solid #D1D5DB; background: #fff;
+  font-size: 14px; font-weight: 600;
+  color: #374151; cursor: pointer;
+}
+.btn-enregistrer {
+  padding: 11px 36px; border-radius: 8px;
+  border: none; background: #16A34A;
+  color: #fff; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .2s;
+}
+.btn-enregistrer:hover:not(:disabled) { background: #15803D; }
+.btn-enregistrer:disabled { opacity: .6; cursor: not-allowed; }
+
+@media (max-width: 700px) {
+  .form-two-cols { grid-template-columns: 1fr; }
+}
+
+/* === SCAN SECTION (améliorée) === */
+.scan-section {
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.scan-frame-wrapper {
+  width: 100%;
+  max-width: 440px;
+  background: #1a1a2e;
+  border-radius: 16px;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  border: 2px solid #F97316;
+}
+
+.scan-qr-icon svg {
+  width: 72px;
+  height: 72px;
+  stroke: #F97316;
+  opacity: 0.9;
+}
+
+.scan-title {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.scan-instruction {
+  color: #9CA3AF;
+  font-size: 13px;
+  text-align: center;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.scan-progress {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.scan-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #F97316;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.scan-progress-bar--active {
+  animation: scan-fill 2s ease forwards;
+}
+
+@keyframes scan-fill {
+  0%   { width: 0%; }
+  80%  { width: 90%; }
+  100% { width: 100%; }
+}
+
+.scan-hint {
+  color: #6B7280;
+  font-size: 12px;
+  margin: 0;
+  font-style: italic;
+}
