@@ -72,7 +72,21 @@ export function useAdminStats() {
         if (MOCK_MODE) {
           // ── MODE MOCK : données à zéro en attendant l'API ──────────────────
           await new Promise(r => setTimeout(r, 400));
-          setStats(EMPTY_STATS);
+          
+          let currentStats = { ...EMPTY_STATS };
+          try {
+            // Le client souhaite que les infos des kiosques soient dynamiques dès maintenant
+            const { data: res } = await api.get("/api/admin/kiosques");
+            if (res && res.stats) {
+              currentStats.totalKiosques = res.stats.total || 0;
+              currentStats.kiosquesActifs = res.stats.actifs || 0;
+              currentStats.kiosquesInactifs = res.stats.geles || 0;
+            }
+          } catch (e) {
+            console.error("Impossible de fetcher les kiosques pour le dashboard:", e);
+          }
+
+          setStats(currentStats);
           setDemographics(EMPTY_DEMOGRAPHICS);
           setMonthly(EMPTY_MONTHLY);
           setOperations([]); // tableau vide — pas de données encore

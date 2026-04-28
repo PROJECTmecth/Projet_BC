@@ -8,7 +8,7 @@ use App\Http\Controllers\Admin\AgentController;
 use App\Http\Controllers\Admin\CarteController;
 use App\Http\Controllers\Admin\ProfilController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-
+use App\Http\Controllers\Admin\DashboardController; // ✅ Ajout
 /*
 |--------------------------------------------------------------------------
 | API Routes - Projet BOMBA_CASH
@@ -43,6 +43,11 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
     ->group(function () {
 
         // Dashboard
+    // ── Dashboard Stats ──────────────────────────────────────────────────
+        // ✅ Route pour récupérer le compteur kiosques + autres stats (DEV-A Mechack)
+        Route::get('/stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
+
+        // ── Dashboard ─────────────────────────────────────────────────────────
         Route::get('/dashboard', fn() => response()->json([
             'success' => true, 'message' => '✅ Dashboard Manager'
         ]))->name('dashboard');

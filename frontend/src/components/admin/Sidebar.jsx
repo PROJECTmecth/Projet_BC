@@ -69,11 +69,14 @@ const NAV_ITEMS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function Sidebar({ collapsed = false, onToggle }) {
+export default function Sidebar({ collapsed = false, onToggle, isMobile = false }) {
   const { pathname } = useLocation();
 
-  const isActive = (item) =>
-    item.exact ? pathname === item.path : pathname.startsWith(item.path);
+  const isActive = (item) => {
+    if (item.exact) return pathname === item.path;
+    // Vérification stricte pour la surbrillance même sur les pages de détails (ex: /admin/kiosques/1)
+    return pathname === item.path || pathname.startsWith(`${item.path}/`);
+  };
 
   return (
     <aside
@@ -83,10 +86,10 @@ export default function Sidebar({ collapsed = false, onToggle }) {
 
       {/* ── Logo + bouton toggle ───────────────────────────────────────────── */}
       <div
-        className="flex items-center px-4 pt-7 pb-3 cursor-pointer select-none"
+        className={`flex items-center px-4 pt-7 pb-3 select-none ${isMobile ? "" : "cursor-pointer"}`}
         style={{ justifyContent: collapsed ? "center" : "space-between" }}
-        onClick={onToggle}
-        title={collapsed ? "Agrandir la sidebar" : "Réduire la sidebar"}
+        onClick={isMobile ? undefined : onToggle}
+        title={isMobile ? "" : (collapsed ? "Agrandir la sidebar" : "Réduire la sidebar")}
       >
         {/* Icône poisson — toujours visible */}
         <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shrink-0">
