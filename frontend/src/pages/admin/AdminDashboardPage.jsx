@@ -2,7 +2,7 @@
 // fichier : src/pages/admin/AdminDashboardPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState }          from "react";
+import { useState, useEffect }          from "react";
 import { useNavigate }       from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -49,6 +49,31 @@ export default function AdminDashboardPage() {
 
   const [showClientsDetail,  setShowClientsDetail]  = useState(false);
   const [showKiosquesDetail, setShowKiosquesDetail] = useState(false);
+  const [animatedTotalKiosques, setAnimatedTotalKiosques] = useState(0);
+
+  // ── Animation du total kiosques ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!stats?.totalKiosques || loading) {
+      setAnimatedTotalKiosques(0);
+      return;
+    }
+
+    let start = 0;
+    const target = stats.totalKiosques;
+    const duration = 1500; // 1.5s
+    const increment = target / (duration / 16);
+
+    const animate = () => {
+      start += increment;
+      if (start < target) {
+        setAnimatedTotalKiosques(Math.ceil(start));
+        requestAnimationFrame(animate);
+      } else {
+        setAnimatedTotalKiosques(target);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [stats?.totalKiosques, loading]);
 
   // ── État d'erreur ──────────────────────────────────────────────────────────
   if (error) {
@@ -144,12 +169,12 @@ export default function AdminDashboardPage() {
         >
           <StatCard
             title="Nombre total kiosque"
-            value={loading ? "..." : stats?.totalKiosques}
+            value={loading ? "..." : animatedTotalKiosques}
             subtitle="Points de vente"
             gradient="from-orange-500 via-orange-500 to-yellow-500"
             textColor="text-orange-100"
             icon={<IcoStore />}
-            onClick={() => navigate("/admin/gestion-kiosques")}
+            onClick={() => navigate("/admin/kiosques")}
           />
 
           {/* Dropdown kiosques */}
@@ -282,7 +307,7 @@ export default function AdminDashboardPage() {
                 {/* Grille par catégorie */}
                 <div className="pt-4 border-t border-gray-100">
                   <h4 className="font-bold text-gray-800 mb-3 text-sm">Par catégorie</h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {demographics?.categories?.map(({ label, count, color, bg }) => (
                       <div key={label} className={`${bg} p-3 rounded-xl`}>
                         <p className="text-xs text-gray-500 mb-1">{label}</p>

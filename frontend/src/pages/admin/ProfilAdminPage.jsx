@@ -30,9 +30,21 @@ function ChampEditable({ label, value, onSave, type = "text", icon: Icon, readOn
   const [editing, setEditing] = useState(false);
   const [val, setVal]         = useState(value);
   const [loading, setLoading] = useState(false);
+  const [erreur, setErreur]   = useState("");
 
   async function handleSave() {
-    if (val === value) { setEditing(false); return; }
+    if (val === value) { setEditing(false); setErreur(""); return; }
+    
+    // Validation du format Email
+    if (type === "email") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(val)) {
+        setErreur("Format d'email invalide.");
+        return;
+      }
+    }
+    
+    setErreur("");
     setLoading(true);
     await onSave(val);
     setLoading(false);
@@ -77,6 +89,7 @@ function ChampEditable({ label, value, onSave, type = "text", icon: Icon, readOn
           )
         )}
       </div>
+      {erreur && <p className="text-xs text-red-500 font-medium mt-1">{erreur}</p>}
     </div>
   );
 }

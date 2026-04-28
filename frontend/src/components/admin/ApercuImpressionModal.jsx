@@ -299,57 +299,58 @@ export default function ApercuImpressionModal({
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl shrink-0">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-4 md:px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl shrink-0 overflow-hidden w-full">
 
                 {/* Pagination */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 w-full md:w-auto">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={pageCourante === 1}
-                    className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-40 flex items-center justify-center transition-colors"
+                    className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-40 flex items-center justify-center transition-colors shrink-0"
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
                     Page {pageCourante} / {totalPages}
                   </span>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={pageCourante === totalPages}
-                    className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-40 flex items-center justify-center transition-colors"
+                    className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-40 flex items-center justify-center transition-colors shrink-0"
                   >
                     <ChevronRight size={16} />
                   </button>
-                  <span className="text-xs text-gray-400 ml-2">
+                  <span className="text-xs text-gray-400 md:ml-2 whitespace-nowrap hidden sm:inline">
                     {debut + 1}–{Math.min(debut + QR_PAR_PAGE, cartes.length)} sur {cartes.length} QR
                   </span>
                 </div>
 
                 {/* Boutons */}
-                <div className="flex gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 w-full md:w-auto">
                   <Button
                     onClick={onClose}
                     variant="outline"
-                    className="border-2 border-gray-300 text-gray-600 hover:bg-gray-100 rounded-xl"
+                    className="flex items-center justify-center border-2 border-gray-300 text-gray-600 hover:bg-gray-100 rounded-xl p-2 md:px-4 md:py-2"
                   >
-                    Fermer
+                    <X size={16} className="md:hidden" />
+                    <span className="hidden md:inline">Fermer</span>
                   </Button>
 
                   <Button
                     onClick={handleExportPDF}
                     disabled={exportEnCours || impEnCours}
                     variant="outline"
-                    className="border-2 border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold"
+                    className="flex items-center justify-center border-2 border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold p-2 md:px-4 md:py-2"
                   >
                     {exportEnCours ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-1" />
-                        Export en cours...
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin md:mr-1" />
+                        <span className="hidden md:inline">Export en cours...</span>
                       </>
                     ) : (
                       <>
-                        <Download size={16} className="mr-1" />
-                        Exporter PDF
+                        <Download size={16} className="md:mr-1" />
+                        <span className="hidden md:inline">Exporter PDF</span>
                       </>
                     )}
                   </Button>
@@ -357,17 +358,17 @@ export default function ApercuImpressionModal({
                   <Button
                     onClick={handlePrint}
                     disabled={impEnCours || exportEnCours}
-                    className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold disabled:opacity-50"
+                    className="flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold disabled:opacity-50 p-2 md:px-4 md:py-2"
                   >
                     {impEnCours ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
-                        Préparation...
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin md:mr-1" />
+                        <span className="hidden md:inline">Préparation...</span>
                       </>
                     ) : (
                       <>
-                        <Printer size={16} className="mr-1" />
-                        Imprimer
+                        <Printer size={16} className="md:mr-1" />
+                        <span className="hidden md:inline">Imprimer</span>
                       </>
                     )}
                   </Button>
