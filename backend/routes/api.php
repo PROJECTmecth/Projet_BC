@@ -56,6 +56,12 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::patch ('/kiosques/{kiosque}/statut', [KiosqueController::class, 'toggleStatut']) ->name('kiosques.toggle');
         Route::get   ('/kiosques/{kiosque}/agents', [KiosqueController::class, 'agents'])       ->name('kiosques.agents');
 
+        //Mouvements de caisse
+        Route::get('/mouvements-caisse', [MouvementCaisseController::class, 'index']);
+        // clients-Admin
+        Route::get('/clients',     [ClientController::class, 'index'])->name('clients.index');
+        Route::get('/clients/{id}',[ClientController::class, 'show'])->name('clients.show');
+
         // Agents
         Route::get   ('/agents',                [AgentController::class, 'index'])        ->name('agents.list');
         Route::post  ('/agents',                [AgentController::class, 'store'])        ->name('agents.store');
@@ -63,6 +69,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::put   ('/agents/{agent}',        [AgentController::class, 'update'])       ->name('agents.update');
         Route::delete('/agents/{agent}',        [AgentController::class, 'destroy'])      ->name('agents.destroy');
         Route::patch ('/agents/{agent}/statut', [AgentController::class, 'toggleStatut']) ->name('agents.toggle');
+
 
         // Placeholders
         Route::get('/clients',      fn() => response()->json(['success' => true, 'message' => '✅ Liste clients']))->name('clients.index');
