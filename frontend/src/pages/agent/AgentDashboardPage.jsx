@@ -151,7 +151,8 @@ export default function AgentDashboardPage() {
           <span className="module-card__label">Historique</span>
         </button>
 
-        <button className="module-card module-card--white" onClick={() => navigate("/agent/scanner")}>
+        {/* ✅ CORRECTION ICI : /agent/scanner → /agent/scan */}
+        <button className="module-card module-card--white" onClick={() => navigate("/agent/scan")}>
           <div className="module-card__icon-wrapper module-card__icon-wrapper--gray">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="3" y="3" width="6" height="6" rx="1" />
