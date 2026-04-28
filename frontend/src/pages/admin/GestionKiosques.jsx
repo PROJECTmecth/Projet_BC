@@ -1,24 +1,19 @@
 // src/pages/admin/GestionKiosques.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// ✅ PAS de Sidebar ni Topbar ici — déjà gérés par AdminLayout
-// ✅ Utilise api axios directement (même instance que les collègues)
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useCallback } from "react";
 import api from "../../lib/axios";
-//import { getCsrfCookie }  from "../../services/auth";
-import KiosqueCard from "../../components/admin/kiosques/KiosqueCard";
-import KiosqueStatsBar from "../../components/admin/kiosques/KiosqueStatsBar";
+import KiosqueCard        from "../../components/admin/kiosques/KiosqueCard";
+import KiosqueStatsBar    from "../../components/admin/kiosques/KiosqueStatsBar";
 import AjouterKiosqueCard from "../../components/admin/kiosques/AjouterKiosqueCard";
-import KiosqueModal from "../../components/admin/kiosques/KiosqueModal";
-import { Store } from "lucide-react";
+import KiosqueModal       from "../../components/admin/kiosques/KiosqueModal";
+import { Store }          from "lucide-react";
 
 const BASE = "/api/admin/kiosques";
 
 export default function GestionKiosques() {
   const [kiosques, setKiosques] = useState([]);
   const [stats, setStats] = useState({ total: 0, actifs: 0, geles: 0 });
-  const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [animatedTotal, setAnimatedTotal] = useState(0);  // ✅ Garder l'animation
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modal, setModal] = useState({ open: false, kiosque: null });
@@ -49,8 +44,7 @@ export default function GestionKiosques() {
 
   // ── GET ─────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const { data: res } = await api.get(BASE);
       setKiosques(res.data ?? []);
@@ -62,118 +56,88 @@ export default function GestionKiosques() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  // ── PATCH ───────────────────────────────────────────────────────────────────
   const handleToggle = async (id, statut_service) => {
-    setKiosques((prev) =>
-      prev.map((k) =>
-        k.id === id
-          ? { ...k, statut_service, est_actif: statut_service === "actif" }
-          : k,
-      ),
-    );
+    setKiosques(prev => prev.map(k => k.id === id ? { ...k, statut_service, est_actif: statut_service === "actif" } : k));
     try {
-      // ❌ await getCsrfCookie();  — retirer
-      const { data: res } = await api.patch(`${BASE}/${id}/statut`, {
-        statut_service,
-      });
-      setKiosques((prev) =>
-        prev.map((k) => (k.id === id ? (res.data ?? k) : k)),
-      );
+      const { data: res } = await api.patch(`${BASE}/${id}/statut`, { statut_service });
+      setKiosques(prev => prev.map(k => (k.id === id ? (res.data ?? k) : k)));
       load();
-    } catch {
-      load();
-    }
+    } catch { load(); }
   };
 
   const handleSave = async (form) => {
     try {
-      // ❌ await getCsrfCookie();  — retirer
       if (form.id) {
         const { data: res } = await api.put(`${BASE}/${form.id}`, form);
-        setKiosques((prev) =>
-          prev.map((k) => (k.id === form.id ? (res.data ?? k) : k)),
-        );
+        setKiosques(prev => prev.map(k => (k.id === form.id ? (res.data ?? k) : k)));
       } else {
         const { data: res } = await api.post(BASE, form);
-        if (res.data) setKiosques((prev) => [...prev, res.data]);
+        if (res.data) setKiosques(prev => [...prev, res.data]);
       }
       load();
     } catch (err) {
-      console.error("saveKiosque:", err.response?.data ?? err);
       alert("Erreur : " + (err.response?.data?.message ?? err.message));
     }
   };
+
   return (
     <div>
       {/* ── Bannière orange ─────────────────────────────────────────── */}
-      <div className="relative bg-[#FF6600] rounded-2xl px-8 py-7 flex items-center justify-between mb-7 overflow-hidden">
+      <div className="relative bg-[#FF6600] rounded-2xl px-5 sm:px-8 py-6 sm:py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-7 overflow-hidden">
         <div className="absolute right-36 -top-5 w-24 h-24 rounded-full bg-white/[0.07]" />
 
-        <div className="flex items-center gap-5 z-10">
-          <div className="w-14 h-14 rounded-[14px] bg-white/20 flex items-center justify-center text-white">
-            <Store size={28} />
+        <div className="flex items-center gap-4 z-10">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[14px] bg-white/20 flex items-center justify-center text-white shrink-0">
+            <Store size={26} />
           </div>
           <div>
-            <h1 className="text-white text-[26px] font-black tracking-tight leading-none">
+            <h1 className="text-white text-xl sm:text-[26px] font-black tracking-tight leading-none">
               Gestion de kiosques
             </h1>
-            <p className="text-white/75 text-sm mt-1">
+            <p className="text-white/75 text-xs sm:text-sm mt-1">
               Gérer et surveiller tous les points de vente
             </p>
           </div>
         </div>
 
-        <div className="z-10 bg-white rounded-full w-[90px] h-[90px] flex flex-col items-center justify-center shadow-lg shrink-0">
-          <span className="text-gray-400 text-[11px] font-semibold text-center leading-tight">
-            Total
-            <br />
-            kiosques
+        <div className="z-10 bg-white rounded-full w-[80px] h-[80px] sm:w-[90px] sm:h-[90px] flex flex-col items-center justify-center shadow-lg shrink-0 self-end sm:self-auto">
+          <span className="text-gray-400 text-[10px] sm:text-[11px] font-semibold text-center leading-tight">
+            Total<br />kiosques
           </span>
-          <span className="text-[#FF6600] text-[28px] font-black leading-none">
+          {/* ✅ Utiliser animatedTotal au lieu de stats.total */}
+          <span className="text-[#FF6600] text-2xl sm:text-[28px] font-black leading-none">
             {String(animatedTotal).padStart(2, "0")}
           </span>
         </div>
       </div>
 
       {/* ── Stats bar ───────────────────────────────────────────────── */}
-      <KiosqueStatsBar
-        actifs={stats.actifs}
-        geles={stats.geles}
-        total={stats.total}
-      />
+      <KiosqueStatsBar actifs={stats.actifs} geles={stats.geles} total={stats.total} />
 
       {/* ── Erreur ──────────────────────────────────────────────────── */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-3 text-red-600 text-sm mb-5 flex justify-between">
           <span>⚠️ {error}</span>
-          <button onClick={load} className="font-bold underline">
-            Réessayer
-          </button>
+          <button onClick={load} className="font-bold underline">Réessayer</button>
         </div>
       )}
 
       {/* ── Grille des cards ─────────────────────────────────────────── */}
       {loading ? (
-        <div className="text-center py-16 text-gray-400 text-sm">
-          ⏳ Chargement des kiosques…
-        </div>
+        <div className="text-center py-16 text-gray-400 text-sm">⏳ Chargement des kiosques…</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {kiosques.map((k) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {kiosques.map(k => (
             <KiosqueCard
               key={k.id}
               kiosque={k}
               onToggle={handleToggle}
-              onEdit={(k) => setModal({ open: true, kiosque: k })}
+              onEdit={k => setModal({ open: true, kiosque: k })}
             />
           ))}
-          <AjouterKiosqueCard
-            onClick={() => setModal({ open: true, kiosque: null })}
-          />
+          <AjouterKiosqueCard onClick={() => setModal({ open: true, kiosque: null })} />
         </div>
       )}
 

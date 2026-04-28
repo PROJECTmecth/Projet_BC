@@ -125,35 +125,35 @@ export default function GestionAgents() {
   return (
     <div>
       {/* ── Bannière ────────────────────────────────────────────────────── */}
-      <div className="relative bg-[#1e2a3a] rounded-2xl px-8 py-7 flex items-center justify-between mb-7 overflow-hidden">
+      <div className="relative bg-[#1e2a3a] rounded-2xl px-5 sm:px-8 py-5 sm:py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between mb-7 overflow-hidden gap-4">
         <div className="absolute right-40 -top-6 w-28 h-28 rounded-full bg-white/[0.04]" />
-        <div className="flex items-center gap-5 z-10">
-          <div className="w-14 h-14 rounded-[14px] bg-white/10 flex items-center justify-center text-white">
-            <UserCheck size={28} />
+        <div className="flex items-center gap-4 z-10 min-w-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[14px] bg-white/10 flex items-center justify-center text-white shrink-0">
+            <UserCheck size={26} />
           </div>
-          <div>
-            <h1 className="text-white text-[26px] font-black tracking-tight leading-none">
+          <div className="min-w-0">
+            <h1 className="text-white text-[20px] sm:text-[26px] font-black tracking-tight leading-none truncate">
               Gestion des agents
             </h1>
-            <p className="text-white/50 text-sm mt-1">
+            <p className="text-white/50 text-xs sm:text-sm mt-1">
               Gérer les agents rattachés aux kiosques
             </p>
           </div>
         </div>
-        <div className="z-10 bg-white rounded-full w-[90px] h-[90px] flex flex-col items-center justify-center shadow-lg shrink-0">
-          <span className="text-gray-400 text-[11px] font-semibold text-center leading-tight">
+        <div className="z-10 bg-white rounded-full w-[72px] h-[72px] sm:w-[90px] sm:h-[90px] flex flex-col items-center justify-center shadow-lg shrink-0">
+          <span className="text-gray-400 text-[10px] sm:text-[11px] font-semibold text-center leading-tight">
             Total
             <br />
             agents
           </span>
-          <span className="text-[#1e2a3a] text-[28px] font-black leading-none">
+          <span className="text-[#1e2a3a] text-[22px] sm:text-[28px] font-black leading-none">
             {String(stats.total).padStart(2, "0")}
           </span>
         </div>
       </div>
 
       {/* ── Stats bar ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 items-stretch">
         <StatCard
           label="Total agents"
           value={stats.total}
@@ -175,13 +175,13 @@ export default function GestionAgents() {
       </div>
 
       {/* ── Barre actions ────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
         <h2 className="text-[16px] font-bold text-gray-700">
           Liste des agents
         </h2>
         <button
           onClick={() => setModal(true)}
-          className="flex items-center gap-2 px-5 py-[10px] bg-[#FF6600] hover:bg-orange-700 text-white rounded-xl font-bold text-[13px] transition-colors"
+          className="flex items-center gap-2 px-5 py-[10px] bg-[#FF6600] hover:bg-orange-700 text-white rounded-xl font-bold text-[13px] transition-colors w-full sm:w-auto justify-center sm:justify-start"
         >
           <UserPlus size={16} /> Ajouter un agent
         </button>
@@ -668,12 +668,12 @@ function ModalFooter({ onClose, onSave, saving, saveLabel, savingLabel }) {
 function StatCard({ label, value, color, bg }) {
   return (
     <div
-      className={["rounded-2xl p-5 shadow-sm border border-gray-100", bg].join(
+      className={["h-full rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col justify-between", bg].join(
         " ",
       )}
     >
-      <p className="text-[12px] text-gray-400 font-medium mb-1">{label}</p>
-      <p className={["text-[28px] font-black leading-none", color].join(" ")}>
+      <p className="text-[12px] text-gray-400 font-medium mb-2">{label}</p>
+      <p className={["text-[26px] sm:text-[28px] font-black leading-none", color].join(" ")}>
         {String(value).padStart(2, "0")}
       </p>
     </div>
