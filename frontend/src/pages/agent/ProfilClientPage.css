@@ -1,0 +1,116 @@
+.profil-container {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Header */
+.profil-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.btn-back {
+  display: flex; align-items: center; gap: 8px;
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; font-weight: 700; color: #111;
+}
+.btn-back:hover { color: #F97316; }
+.btn-ajouter-op {
+  background: #16A34A; color: #fff;
+  border: none; border-radius: 8px;
+  padding: 10px 20px; font-size: 14px;
+  font-weight: 700; cursor: pointer;
+}
+.btn-ajouter-op:hover { background: #15803D; }
+
+/* Identité */
+.profil-identite {
+  display: flex; align-items: flex-start; gap: 20px;
+  background: #F3F4F6;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+}
+.profil-avatar {
+  width: 64px; height: 64px; min-width: 64px;
+  background: #E5E7EB; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.profil-avatar svg { width: 36px; height: 36px; }
+.profil-nom { font-size: 20px; font-weight: 800; margin: 0 0 8px; color: #111; }
+.profil-infos p { margin: 3px 0; font-size: 14px; color: #374151; }
+
+/* Carte + progression */
+.profil-carte-section {
+  display: flex; align-items: center; gap: 48px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 40px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.circle-wrapper { display: flex; align-items: center; justify-content: center; }
+.profil-carte-details { flex: 1; }
+.carte-detail-row {
+  display: flex; justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.carte-detail-row:last-child { border-bottom: none; }
+.carte-detail-label { font-size: 13px; color: #6B7280; }
+.carte-detail-value { font-size: 14px; font-weight: 700; color: #111; }
+
+.badge-statut {
+  padding: 4px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+}
+.badge-statut--actif   { background: #DCFCE7; color: #15803D; }
+.badge-statut--expiré  { background: #FEE2E2; color: #DC2626; }
+.badge-statut--vierge  { background: #F3F4F6; color: #6B7280; }
+
+/* Journal */
+.profil-journal {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.journal-title {
+  font-size: 16px; font-weight: 700;
+  padding: 18px 24px; margin: 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.journal-table-wrapper { overflow-x: auto; }
+.journal-table {
+  width: 100%; border-collapse: collapse; font-size: 14px;
+}
+.journal-table thead tr { background: #1F2937; }
+.journal-table th {
+  padding: 12px 16px; text-align: left;
+  color: #fff; font-size: 12px; font-weight: 700;
+  letter-spacing: .5px;
+}
+.journal-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid #F3F4F6;
+  color: #374151;
+}
+.journal-table tbody tr:hover { background: #F9FAFB; }
+.montant-bold { font-weight: 700; color: #111; }
+.journal-empty {
+  text-align: center; padding: 32px;
+  color: #9CA3AF; font-style: italic;
+}
+
+/* Skeleton */
+.skeleton-block {
+  background: #F3F4F6; border-radius: 12px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+@media (max-width: 700px) {
+  .profil-carte-section { flex-direction: column; gap: 24px; }
+}

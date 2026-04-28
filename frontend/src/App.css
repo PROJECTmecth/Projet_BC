@@ -5,6 +5,11 @@
   text-align: center;
 }
 
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
