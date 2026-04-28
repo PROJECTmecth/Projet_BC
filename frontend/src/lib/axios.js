@@ -1,12 +1,13 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL        : import.meta.env.VITE_API_URL ?? "http://localhost:8000",
+  // baseURL doit être "/" ou vide pour utiliser le proxy de Vite
+  baseURL: "/", 
   withCredentials: true,
   headers: {
-    "Content-Type"     : "application/json",
-    "Accept"           : "application/json",
-    "X-Requested-With" : "XMLHttpRequest",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   },
 });
 
