@@ -83,6 +83,32 @@ export default function GestionCartesPage() {
   const totalGeneres     = [...lotsHistorique, ...lotsEnAttente].reduce((sum, l) => sum + l.quantite, 0);
   const tousSelectionnes = tousLots.length > 0 && selectedIds.length === tousLots.length;
 
+  const [animatedTotal, setAnimatedTotal] = useState(0);
+
+  // ── Animation du total ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (totalGeneres === 0) {
+      setAnimatedTotal(0);
+      return;
+    }
+
+    let start = 0;
+    const target = totalGeneres;
+    const duration = 1500; // 1.5s
+    const increment = target / (duration / 16);
+
+    const animate = () => {
+      start += increment;
+      if (start < target) {
+        setAnimatedTotal(Math.ceil(start));
+        requestAnimationFrame(animate);
+      } else {
+        setAnimatedTotal(target);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [totalGeneres]);
+
   // ── Charger historique BDD ────────────────────────────────────────────────
   useEffect(() => {
     if (MOCK_MODE) return;
@@ -238,14 +264,17 @@ export default function GestionCartesPage() {
         className="rounded-[20px] p-8 shadow-xl w-full"
         style={{ background: "linear-gradient(135deg, #2563EB, #1D4ED8)" }}
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-blue-100 text-sm font-medium mb-2">Total Codes QR Générés</p>
-            <h2 className="text-6xl font-bold text-white font-mono">
-              {totalGeneres.toLocaleString("fr-FR")}
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-blue-100 text-sm font-medium mb-2 truncate">Total Codes QR Générés</p>
+            <h2 
+              className="text-5xl md:text-6xl font-bold text-white font-mono truncate whitespace-nowrap overflow-hidden"
+              title={animatedTotal.toLocaleString("fr-FR")}
+            >
+              {animatedTotal.toLocaleString("fr-FR")}
             </h2>
           </div>
-          <div className="bg-white/20 p-4 rounded-full">
+          <div className="bg-white/20 p-4 rounded-full shrink-0">
             <TrendingUp className="h-10 w-10 text-white" />
           </div>
         </div>

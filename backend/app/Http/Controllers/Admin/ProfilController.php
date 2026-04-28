@@ -29,7 +29,7 @@ class ProfilController extends Controller
 
         if ($request->has('name'))  $user->name  = $request->name;
         if ($request->has('email')) $user->email = $request->email;
-        $user = Auth::user();
+        $user->save(); // 💾 Sauvegarde en base de données
 
         return response()->json([
             'success' => true,
@@ -67,7 +67,7 @@ class ProfilController extends Controller
         }
 
         $user->password = Hash::make($request->password);
-        $user = Auth::user();
+        $user->save(); // 💾 Sauvegarde du nouveau mot de passe en base
 
         return response()->json([
             'success' => true,

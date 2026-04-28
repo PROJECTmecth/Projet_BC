@@ -10,11 +10,14 @@ export default function AdminLayout() {
   // ── collapsed = true  → sidebar icônes seules (70px)
   // ── collapsed = false → sidebar complète (280px)
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Petit écran → auto-collapse
+  // Petit écran → auto-collapse et verrouillage
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
+      const mobile = window.innerWidth < 1024; // Seuil de 1024px
+      setIsMobile(mobile);
+      if (mobile) {
         setCollapsed(true);
       } else {
         setCollapsed(false);
@@ -24,6 +27,12 @@ export default function AdminLayout() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Fonction pour basculer l'état (verrouillée sur mobile)
+  const handleToggle = () => {
+    if (isMobile) return; // Ne fait rien si on est sur mobile
+    setCollapsed(prev => !prev);
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F5F0E8]">
@@ -35,7 +44,8 @@ export default function AdminLayout() {
       >
         <Sidebar
           collapsed={collapsed}
-          onToggle={() => setCollapsed(prev => !prev)}
+          onToggle={handleToggle}
+          isMobile={isMobile}
         />
       </div>
 

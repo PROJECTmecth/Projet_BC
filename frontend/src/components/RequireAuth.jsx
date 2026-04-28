@@ -17,7 +17,7 @@ export default function RequireAuth({ role, children }) {
 
   // Rôle insuffisant → login
   if (role && user.role !== role) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />
   }
 
   return children;

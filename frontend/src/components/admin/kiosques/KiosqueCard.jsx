@@ -62,20 +62,31 @@ export default function KiosqueCard({ kiosque, onToggle, onEdit }) {
     setToggling(false);
   };
 
+  const handleCardClick = (e) => {
+    // Empêcher la navigation si on clique sur un bouton ou le toggle
+    if (e.target.closest('button') || e.target.closest('.toggle-switch-container')) return;
+    navigate(`/admin/kiosques/${kiosque.id}`);
+  };
+
   return (
     <>
-      <div className={[
-        "bg-white rounded-2xl p-6 flex flex-col gap-4",
-        "shadow-sm hover:shadow-md transition-shadow duration-200",
-        isActif ? "border-2 border-green-400" : "border-2 border-gray-200",
-      ].join(" ")}>
+      <div 
+        onClick={handleCardClick}
+        className={[
+          "bg-white rounded-2xl p-6 flex flex-col gap-4",
+          "shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer",
+          isActif ? "border-2 border-green-400" : "border-2 border-gray-200",
+        ].join(" ")}
+      >
 
         {/* Icône + toggle */}
         <div className="flex items-start justify-between">
           <div className={["w-[52px] h-[52px] rounded-xl flex items-center justify-center", isActif ? "bg-orange-100 text-[#FF6600]" : "bg-gray-100 text-gray-400"].join(" ")}>
             <Store size={24} />
           </div>
-          <ToggleSwitch checked={isActif} onChange={handleToggle} loading={toggling} />
+          <div className="toggle-switch-container" onClick={e => e.stopPropagation()}>
+            <ToggleSwitch checked={isActif} onChange={handleToggle} loading={toggling} />
+          </div>
         </div>
 
         {/* nom_kiosque + badge */}
@@ -96,12 +107,14 @@ export default function KiosqueCard({ kiosque, onToggle, onEdit }) {
         </div>
 
         {/* CTA */}
-        <button
-          onClick={() => navigate(`/admin/kiosques/${kiosque.id}`)}
-          className={["text-left text-[13px] font-semibold transition-colors", isActif ? "text-[#FF6600] hover:text-orange-700" : "text-gray-400"].join(" ")}
-        >
-          Cliquez pour voir les détails →
-        </button>
+        <div className="mt-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/admin/kiosques/${kiosque.id}`); }}
+            className={["text-left text-[13px] font-semibold transition-colors", isActif ? "text-[#FF6600] hover:text-orange-700" : "text-gray-400"].join(" ")}
+          >
+            Voir les détails →
+          </button>
+        </div>
       </div>
 
       {confirm && (

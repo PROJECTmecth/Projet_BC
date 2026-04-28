@@ -92,57 +92,44 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-center font-sans bg-slate-50">
+      <div className="relative min-h-screen w-full overflow-y-auto flex flex-col items-center justify-center font-sans bg-slate-50">
 
-        <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="fixed inset-0 z-0 pointer-events-none">
           <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" className="w-full h-full block">
             <path d="M 0,600 L 800,100 L 1200,200 L 1200,800 L 0,800 Z" fill="#FF6600" />
             <path d="M 600,0 L 1200,100 L 1200,0 Z" fill="#FF8833" />
           </svg>
         </div>
 
-        <div className="absolute top-7 left-28 z-10 w-[100px] h-[100px] bg-white rounded-2xl shadow-lg border border-gray-200 flex items-center justify-center overflow-hidden">
-        <img 
-          src={logoBomba} 
-          alt="BOMBA CASH Logo" 
-          className="w-full h-full object-contain p-2" 
-        />
-      </div>
+        {/* Logos - Desktop (Absolus) */}
+        <div className="hidden md:flex absolute top-7 left-28 z-10 w-[100px] h-[100px] bg-white rounded-2xl shadow-lg border border-gray-200 items-center justify-center overflow-hidden">
+          <img src={logoBomba} alt="BOMBA CASH Logo" className="w-full h-full object-contain p-2" />
+        </div>
             
-
-          <div className="absolute top-4 right-15 z-10 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center overflow-hidden ">
-          <img 
-            src={logoText} 
-            alt="BOMBA CASH Brand" 
-            /* - w-64 : Largeur moyenne et équilibrée
-              - h-16 : Hauteur réduite pour un aspect plus "bandeau"
-              - p-2 : Un petit padding pour que le logo respire sans être perdu
-            */
-            className="w-35 h-27 object-contain p-1" 
-          />
+        <div className="hidden md:flex absolute top-4 right-15 z-10 bg-white rounded-2xl shadow-lg border border-gray-100 items-center justify-center overflow-hidden">
+          <img src={logoText} alt="BOMBA CASH Brand" className="w-35 h-27 object-contain p-1" />
         </div>
 
-        <div className="relative z-10 w-full max-w-[860px] grid grid-cols-2 rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.28)] border-2 border-gray-300 mt-5">
+        {/* Logos - Mobile (Centrés au-dessus) */}
+        <div className="flex md:hidden relative z-10 items-center justify-center gap-4 mt-8 mb-4">
+          <div className="w-[70px] h-[70px] bg-white rounded-xl shadow-lg border border-gray-200 flex items-center justify-center overflow-hidden">
+            <img src={logoBomba} alt="BOMBA CASH Logo" className="w-full h-full object-contain p-1.5" />
+          </div>
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 flex items-center justify-center overflow-hidden">
+            <img src={logoText} alt="BOMBA CASH Brand" className="w-24 h-16 object-contain p-1" />
+          </div>
+        </div>
 
-          <div className="bg-gray-900 flex flex-col items-center justify-between min-h-[540px] p-8">
+        <div className="relative z-10 w-[92%] md:w-full max-w-[860px] flex flex-col md:grid md:grid-cols-2 rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(0,0,0,0.28)] border-2 border-gray-300 mb-6 md:mb-0 md:mt-5">
+
+          {/* Partie Gauche Sombre - Masquée sur mobile */}
+          <div className="hidden md:flex bg-gray-900 flex-col items-center justify-between min-h-[540px] p-8">
             <div className="w-full flex justify-start">
-              <img 
-                src={logoIcone} 
-                alt="Logo Finance" 
-                /* - w-24 (96px) : Une largeur généreuse pour qu'il soit bien visible
-                  - h-20 (80px) : Une hauteur proportionnelle
-                  - transition-transform : Petit bonus pour qu'il réagisse au survol (effet High-end)
-                */
-                className="w-24 h-25 object-contain rounded-xl hover:scale-105 transition-transform duration-300" 
-              />
+              <img src={logoIcone} alt="Logo Finance" className="w-24 h-25 object-contain rounded-xl hover:scale-105 transition-transform duration-300" />
             </div>
 
             <div className="w-[210px] h-[260px] bg-gradient-to-br from-[#1E3A5F] to-[#0C1929] rounded-xl flex items-center justify-center overflow-hidden border border-white/10 shadow-2xl">
-              <img 
-                src={profilePic} 
-                alt="Johann" 
-                className="w-full h-full object-cover" 
-              />
+              <img src={profilePic} alt="Johann" className="w-full h-full object-cover" />
             </div>
 
             <div className="flex-1 flex items-center justify-center py-5">
@@ -155,11 +142,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="bg-gray-200 px-9 py-10 flex flex-col justify-center">
+          <div className="bg-gray-200 px-6 py-8 md:px-9 md:py-10 flex flex-col justify-center">
 
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-[22px] font-bold text-gray-900 m-0">Compte Agent</h2>
-              <div className="w-[50px] h-[50px] bg-gray-900 rounded-full shadow-md flex items-center justify-center text-white">
+            <div className="flex items-center justify-between mb-6 md:mb-8">
+              <h2 className="text-xl md:text-[22px] font-bold text-gray-900 m-0">Compte Agent</h2>
+              <div className="w-[45px] h-[45px] md:w-[50px] md:h-[50px] bg-gray-900 rounded-full shadow-md flex items-center justify-center text-white shrink-0">
                 <IconUser />
               </div>
             </div>
