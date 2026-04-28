@@ -10,6 +10,7 @@
 use App\Http\Controllers\Agent\AgentDashboardController;
 use App\Http\Controllers\Agent\AgentClientsController;
 use App\Http\Controllers\Agent\AgentHistoriqueController;
+use App\Http\Controllers\Agent\AgentScanController; // ← NOUVEAU
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'isAgent'])
@@ -30,7 +31,7 @@ Route::middleware(['auth:sanctum', 'isAgent'])
             ->name('clients.register');
 
         // ── Scan carte QR ──────────────────────────────────────
-        Route::post('/scan', [AgentClientsController::class, 'scanCarte'])
+        Route::post('/scan', [AgentScanController::class, 'scan'])
             ->name('scan');
 
         // ── Transactions ───────────────────────────────────────
