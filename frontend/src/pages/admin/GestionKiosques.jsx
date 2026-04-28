@@ -12,11 +12,37 @@ const BASE = "/api/admin/kiosques";
 
 export default function GestionKiosques() {
   const [kiosques, setKiosques] = useState([]);
-  const [stats, setStats]       = useState({ total: 0, actifs: 0, geles: 0 });
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
-  const [modal, setModal]       = useState({ open: false, kiosque: null });
+  const [stats, setStats] = useState({ total: 0, actifs: 0, geles: 0 });
+  const [animatedTotal, setAnimatedTotal] = useState(0);  // ✅ Garder l'animation
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [modal, setModal] = useState({ open: false, kiosque: null });
 
+  // ── Animation du total ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (stats.total === 0) {
+      setAnimatedTotal(0);
+      return;
+    }
+
+    let start = 0;
+    const target = stats.total;
+    const duration = 1500; // 1.5s
+    const increment = target / (duration / 16);
+
+    const animate = () => {
+      start += increment;
+      if (start < target) {
+        setAnimatedTotal(Math.ceil(start));
+        requestAnimationFrame(animate);
+      } else {
+        setAnimatedTotal(target);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [stats.total]);
+
+  // ── GET ─────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
@@ -80,8 +106,9 @@ export default function GestionKiosques() {
           <span className="text-gray-400 text-[10px] sm:text-[11px] font-semibold text-center leading-tight">
             Total<br />kiosques
           </span>
+          {/* ✅ Utiliser animatedTotal au lieu de stats.total */}
           <span className="text-[#FF6600] text-2xl sm:text-[28px] font-black leading-none">
-            {String(stats.total).padStart(2, "0")}
+            {String(animatedTotal).padStart(2, "0")}
           </span>
         </div>
       </div>
