@@ -1,8 +1,13 @@
 import axios from "axios";
 
+// === DÉBOGAGE ===
+console.log("🔍 VITE_API_URL:", import.meta.env.VITE_API_URL);
+console.log("🔍 baseURL finale:", import.meta.env.VITE_API_URL ?? "http://localhost:8000");
+// ===============
+
 const api = axios.create({
   // baseURL doit être "/" ou vide pour utiliser le proxy de Vite
-  baseURL: "/", 
+  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
