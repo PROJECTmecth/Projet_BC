@@ -1,9 +1,16 @@
+[build]
+phpVersion = "8.2"
+
 [phases.setup]
-nixPkgs = ["php82", "php82Extensions.composer", "nodejs-18_x"]
+nixPkgs = ["php82", "nodejs-18_x"]
 
 [phases.install]
 cmds = [
+  # Installer Composer manuellement
+  "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer",
+  # Installer les dépendances backend
   "cd backend && composer install --no-dev --optimize-autoloader",
+  # Installer et build le frontend
   "cd frontend && npm install && npm run build"
 ]
 
