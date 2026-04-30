@@ -9,8 +9,7 @@ import {
   Tooltip, ResponsiveContainer,
 } from "recharts";
 
-// import useAdminStats from "../../hooks/useAdminStats"; // ← COMMENTÉ TEMPORAIREMENT
-const useAdminStats = () => ({ data: null, loading: false }); // ← MOCK TEMPORAIRE
+import { useAdminStats } from "../../hooks/useAdminStats";
 import StatCard from "../../components/admin/StatCard";
 import OperationsTable from "../../components/admin/OperationsTable";
 
