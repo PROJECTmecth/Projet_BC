@@ -2,43 +2,44 @@
 // fichier : src/pages/admin/AdminDashboardPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect }          from "react";
-import { useNavigate }       from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from "recharts";
 
-import { useAdminStats }  from "../../hooks/useAdminStats";
-import StatCard           from "../../components/admin/StatCard";
-import OperationsTable    from "../../components/admin/OperationsTable";
+// import useAdminStats from "../../hooks/useAdminStats"; // ← COMMENTÉ TEMPORAIREMENT
+const useAdminStats = () => ({ data: null, loading: false }); // ← MOCK TEMPORAIRE
+import StatCard from "../../components/admin/StatCard";
+import OperationsTable from "../../components/admin/OperationsTable";
 
 // ── Icônes SVG ────────────────────────────────────────────────────────────────
 const IcoUsers = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
   </svg>
 );
 const IcoStore = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
+    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 const IcoTrendUp = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
   </svg>
 );
 const IcoTrendDown = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
+    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" />
   </svg>
 );
 const IcoChevronRight = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6"/>
+    <polyline points="9 18 15 12 9 6" />
   </svg>
 );
 
@@ -47,7 +48,7 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const { stats, demographics, monthly, operations, loading, error } = useAdminStats();
 
-  const [showClientsDetail,  setShowClientsDetail]  = useState(false);
+  const [showClientsDetail, setShowClientsDetail] = useState(false);
   const [showKiosquesDetail, setShowKiosquesDetail] = useState(false);
   const [animatedTotalKiosques, setAnimatedTotalKiosques] = useState(0);
 
@@ -127,9 +128,9 @@ export default function AdminDashboardPage() {
             <div
               className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl p-5 shadow-xl"
               style={{
-                background    : "rgba(255,255,255,0.90)",
+                background: "rgba(255,255,255,0.90)",
                 backdropFilter: "blur(20px)",
-                border        : "1px solid rgba(255,255,255,0.3)",
+                border: "1px solid rgba(255,255,255,0.3)",
               }}
             >
               <div className="space-y-3">
@@ -137,7 +138,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <div className="bg-indigo-100 p-1.5 rounded-lg">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
                     <span className="text-sm font-semibold text-gray-700">Hommes</span>
@@ -149,7 +150,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <div className="bg-pink-100 p-1.5 rounded-lg">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#DB2777" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
                     <span className="text-sm font-semibold text-gray-700">Femmes</span>
@@ -182,9 +183,9 @@ export default function AdminDashboardPage() {
             <div
               className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl p-5 shadow-xl"
               style={{
-                background    : "rgba(255,255,255,0.90)",
+                background: "rgba(255,255,255,0.90)",
                 backdropFilter: "blur(20px)",
-                border        : "1px solid rgba(255,255,255,0.3)",
+                border: "1px solid rgba(255,255,255,0.3)",
               }}
             >
               <div className="space-y-3">
@@ -288,7 +289,7 @@ export default function AdminDashboardPage() {
                 {/* Barres Hommes / Femmes */}
                 {[
                   { label: "Hommes", pct: demographics?.hommes, color: "bg-indigo-500" },
-                  { label: "Femmes", pct: demographics?.femmes, color: "bg-pink-500"   },
+                  { label: "Femmes", pct: demographics?.femmes, color: "bg-pink-500" },
                 ].map(({ label, pct, color }) => (
                   <div key={label}>
                     <div className="flex items-center justify-between mb-1.5">
