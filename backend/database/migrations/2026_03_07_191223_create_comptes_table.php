@@ -23,8 +23,6 @@ return new class extends Migration {
             $table->dateTime('date_ouverture');                        //Date de première activation de la carte
             $table->dateTime('date_cloture')->nullable();             //Date de clôture (retrait solde de compte)
             $table->timestamps();
-
-            $table->foreign('id_client')->references('id_client')->on('clients')->onDelete('cascade'); //FK clients
         });
     }
     public function down(): void
