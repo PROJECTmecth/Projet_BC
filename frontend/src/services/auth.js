@@ -13,7 +13,9 @@
 import api from "../lib/axios";
 
 // ── CSRF Cookie (Optionnel pour tokens, mais gardé pour compatibilité) ────────
-export const getCsrfCookie = () => Promise.resolve();
+export const getCsrfCookie = () =>
+  api.get("/sanctum/csrf-cookie");
+
 
 
 // ── Login avec Tokens Sanctum ─────────────────────────────────────────────────

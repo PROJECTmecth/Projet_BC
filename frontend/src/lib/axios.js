@@ -6,9 +6,8 @@ console.log("🔍 baseURL finale:", import.meta.env.VITE_API_URL ?? "http://loca
 // ===============
 
 const api = axios.create({
-  // baseURL doit être "/" ou vide pour utiliser le proxy de Vite
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
-  withCredentials: false,
+  withCredentials: true, // RÉTABLI
   headers: {
     "Content-Type": "application/json",
     "Accept": "application/json",
