@@ -1,0 +1,5 @@
+railway.toml text eol=lf
+railway.json text eol=lf
+*.php text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
