@@ -1,0 +1,11 @@
+{
+  "name": "projet-bc-temp",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd frontend && npx serve -s dist"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
