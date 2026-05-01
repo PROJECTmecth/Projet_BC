@@ -1,13 +1,20 @@
 import axios from "axios";
 
 // === DÉBOGAGE ===
+let apiURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+// Sécurité : Si l'URL ne commence pas par http (ex: oubli dans Vercel), on force https://
+if (apiURL && !apiURL.startsWith("http")) {
+  apiURL = `https://${apiURL}`;
+}
+
 console.log("🔍 VITE_API_URL:", import.meta.env.VITE_API_URL);
-console.log("🔍 baseURL finale:", import.meta.env.VITE_API_URL ?? "http://localhost:8000");
+console.log("🔍 baseURL finale:", apiURL);
 // ===============
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
-  withCredentials: true, // RÉTABLI
+  baseURL: apiURL,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     "Accept": "application/json",
