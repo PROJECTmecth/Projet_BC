@@ -12,23 +12,18 @@ return [
      | Lister EXPLICITEMENT chaque origine autorisée
      |--------------------------------------------------------------------------
     */
-    'allowed_origins' => [
-        'https://projet-bc.vercel.app',
-        'http://localhost:5173',
-        'http://localhost:3000',
-    ],
+    'allowed_origins' => ['*'],
 
-    'allowed_origins_patterns' => [
-        '#^https://projet-bc-.*\.vercel\.app$#',
-    ],
+    'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
     'exposed_headers' => [],
 
-    'max_age' => 86400,
+    'max_age' => 0,
 
     'supports_credentials' => false,
+
 
 
 

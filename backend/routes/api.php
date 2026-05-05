@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\AgentController;
 use App\Http\Controllers\Admin\CarteController;
 use App\Http\Controllers\Admin\ProfilController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Admin\DashboardController; // ✅ Ajout
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MouvementCaisseController;
+use App\Http\Controllers\Admin\ClientController;
 /*
 |--------------------------------------------------------------------------
 | API Routes - Projet BOMBA_CASH
@@ -76,8 +78,6 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::patch ('/agents/{agent}/statut', [AgentController::class, 'toggleStatut']) ->name('agents.toggle');
 
 
-        // Placeholders
-        Route::get('/clients',      fn() => response()->json(['success' => true, 'message' => '✅ Liste clients']))->name('clients.index');
         Route::get('/transactions',  fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
 
         // Profil Admin
