@@ -11,15 +11,12 @@ import App               from "./App.jsx";
 import api               from "./lib/axios.js";
 import "./index.css";
 
-// ── Récupérer le cookie CSRF au démarrage ────────────────────────────────────
-api.get("/sanctum/csrf-cookie").finally(() => {
-  createRoot(document.getElementById("root")).render(
-    <StrictMode>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
-    </StrictMode>
-  );
-});
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>
+);
