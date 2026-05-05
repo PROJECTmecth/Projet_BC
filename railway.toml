@@ -1,6 +1,0 @@
-[build]
-# On retire workingDirectory pour tout gérer explicitement dans nixpacks.toml
-# workingDirectory = "backend"
-
-[deploy]
-startCommand = "cd backend && php artisan serve --host=0.0.0.0 --port=$PORT"
