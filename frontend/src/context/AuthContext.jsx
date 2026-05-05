@@ -1,129 +1,84 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import api from "../lib/axios"; // ← utilise l'instance axios configurée (URL absolue)
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // État utilisateur depuis localStorage
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem("bc_user");
       return stored ? JSON.parse(stored) : null;
-    } catch (error) {
-      console.warn('Erreur parsing bc_user:', error);
-      localStorage.removeItem("bc_user"); // Nettoyer si corrompu
+    } catch {
+      localStorage.removeItem("bc_user");
       return null;
     }
   });
 
-  // État token depuis localStorage
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem("bc_token") || null;
-  });
-
-  // État de chargement pour les vérifications initiales
+  const [token, setToken] = useState(() => localStorage.getItem("bc_token") || null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fonction login
-  const login = (userData, accessToken) => {
-    if (!accessToken) {
-      console.error('Token manquant lors du login');
-      return;
-    }
-
-    // Mise à jour des états
-    setUser(userData);
-    setToken(accessToken);
-    
-    // Persistance localStorage
-    localStorage.setItem("bc_user", JSON.stringify(userData));
-    localStorage.setItem("bc_token", accessToken);
-    
-    console.log('✅ Login réussi, token stocké');
-  };
-
-  // Fonction logout
-  const logout = async () => {
+  // ✅ useCallback pour que logout soit stable (évite boucle infinie dans useEffect)
+  const logout = useCallback(async () => {
+    const currentToken = localStorage.getItem("bc_token");
     try {
-      // Appel API logout si token présent
-      if (token) {
-        await fetch('/api/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          }
-        });
+      if (currentToken) {
+        // ✅ URL absolue via l'instance api (pas fetch natif avec URL relative)
+        await api.post("/api/logout");
       }
-    } catch (error) {
-      console.warn('Erreur lors du logout API:', error);
+    } catch {
+      // Silencieux : on déconnecte quoi qu'il arrive
     } finally {
-      // Nettoyage local quoi qu'il arrive
       setUser(null);
       setToken(null);
       localStorage.removeItem("bc_user");
       localStorage.removeItem("bc_token");
-      console.log('✅ Logout effectué');
     }
+  }, []);
+
+  const login = (userData, accessToken) => {
+    if (!accessToken) return;
+    setUser(userData);
+    setToken(accessToken);
+    localStorage.setItem("bc_user", JSON.stringify(userData));
+    localStorage.setItem("bc_token", accessToken);
   };
 
-  // Vérification token au démarrage
+  // ✅ Vérification token au démarrage — URL absolue via api
   useEffect(() => {
     const verifyToken = async () => {
-      if (token) {
+      const storedToken = localStorage.getItem("bc_token");
+      if (storedToken) {
         try {
-          const response = await fetch('/api/user', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json',
-            }
-          });
-
-          if (!response.ok) {
-            // Token invalide, nettoyer
-            console.warn('Token invalide, nettoyage...');
-            logout();
-          }
-        } catch (error) {
-          console.warn('Erreur vérification token:', error);
-          logout();
+          await api.get("/api/user");
+        } catch {
+          // Token invalide ou expiré
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem("bc_user");
+          localStorage.removeItem("bc_token");
         }
       }
       setIsLoading(false);
     };
-
     verifyToken();
-  }, []);
-
-  // Helper pour vérifier si authentifié
-  const isAuthenticated = !!user && !!token;
-  
-  // Helper pour vérifier le rôle
-  const isAdmin = user?.role === 'admin';
-  const isAgent = user?.role === 'agent';
+  }, []); // ← pas de dépendance sur logout pour éviter la boucle
 
   const value = {
     user,
     token,
     isLoading,
-    isAuthenticated,
-    isAdmin,
-    isAgent,
+    isAuthenticated: !!user && !!token,
+    isAdmin: user?.role === "admin",
+    isAgent: user?.role === "agent",
     login,
-    logout
+    logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth doit être utilisé dans un AuthProvider');
-  }
+  if (!context) throw new Error("useAuth doit être utilisé dans un AuthProvider");
   return context;
 }
