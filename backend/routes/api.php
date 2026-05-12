@@ -25,14 +25,12 @@ use App\Http\Controllers\Admin\ClientController;
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
 // Route de diagnostic CORS
-Route::get('/cors-debug', function (Request $request) {
+Route::get('/cors-debug', function () {
     return response()->json([
-        'origin' => $request->header('Origin'),
+        'status' => 'ok',
         'allowed_origins' => config('cors.allowed_origins'),
-        'env_cors_origins' => env('CORS_ALLOWED_ORIGINS'),
+        'env_origins' => env('CORS_ALLOWED_ORIGINS'),
         'app_url' => config('app.url'),
-        'all_headers' => $request->headers->all(),
-        'server_info' => $_SERVER,
     ]);
 });
 
