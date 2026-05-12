@@ -4,25 +4,20 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => explode(',', env('CORS_ALLOWED_METHODS', '*')),
 
-    /*
-     |--------------------------------------------------------------------------
-     | IMPORTANT — pas de wildcard '*' avec credentials en production
-     | Lister EXPLICITEMENT chaque origine autorisée
-     |--------------------------------------------------------------------------
-    */
-    'allowed_origins' => ['*'],
+    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'https://projet-bc.vercel.app,http://localhost:5173,http://localhost:3000')),
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => explode(',', env('CORS_ALLOWED_HEADERS', '*')),
 
     'exposed_headers' => [],
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => env('CORS_SUPPORTS_CREDENTIALS', false),
+
 
 
 
