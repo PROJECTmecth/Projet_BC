@@ -31,7 +31,40 @@ Route::get('/cors-debug', function () {
         'allowed_origins' => config('cors.allowed_origins'),
         'env_origins' => env('CORS_ALLOWED_ORIGINS'),
         'app_url' => config('app.url'),
+        'headers' => getallheaders(),
+        'origin' => request()->header('Origin'),
+        'method' => request()->method(),
     ]);
+});
+
+// Route de test CORS complet
+Route::options('/test-cors', function () {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-Token')
+        ->header('Access-Control-Allow-Credentials', 'true');
+});
+
+Route::get('/test-cors', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'CORS test successful',
+        'timestamp' => now()->toISOString(),
+        'origin' => request()->header('Origin'),
+        'method' => request()->method(),
+    ])->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+      ->header('Access-Control-Allow-Credentials', 'true');
+});
+
+Route::post('/test-cors', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'CORS POST test successful',
+        'data' => request()->all(),
+        'timestamp' => now()->toISOString(),
+    ])->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+      ->header('Access-Control-Allow-Credentials', 'true');
 });
 
 // Utilisateur connecté

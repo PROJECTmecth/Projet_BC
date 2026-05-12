@@ -4,9 +4,14 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => explode(',', env('CORS_ALLOWED_METHODS', '*')),
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'https://projet-bc.vercel.app,http://localhost:5173,http://localhost:3000')),
+    'allowed_origins' => [
+        'https://projet-bc.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://projetbc-production-bombacash.up.railway.app'
+    ],
 
     'allowed_origins_patterns' => [],
 
@@ -16,7 +21,7 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => env('CORS_SUPPORTS_CREDENTIALS', false),
+    'supports_credentials' => true,
 
 
 
