@@ -24,6 +24,18 @@ use App\Http\Controllers\Admin\ClientController;
 // Login
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
+// Route de diagnostic CORS
+Route::get('/cors-debug', function (Request $request) {
+    return response()->json([
+        'origin' => $request->header('Origin'),
+        'allowed_origins' => config('cors.allowed_origins'),
+        'env_cors_origins' => env('CORS_ALLOWED_ORIGINS'),
+        'app_url' => config('app.url'),
+        'all_headers' => $request->headers->all(),
+        'server_info' => $_SERVER,
+    ]);
+});
+
 // Utilisateur connecté
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
