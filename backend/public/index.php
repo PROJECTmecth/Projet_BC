@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// DEBUG HEADER - pour vérifier que notre code s'exécute
+header('X-DEBUG-INDEX-PHP', 'EXECUTED');
+
 // FORCE CORS HEADERS ONLY FOR API ROUTES - NOT FOR HEALTH CHECK
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 if (strpos($requestUri, '/api') === 0 || strpos($requestUri, '/login') === 0 || strpos($requestUri, '/logout') === 0) {
@@ -13,6 +16,7 @@ if (strpos($requestUri, '/api') === 0 || strpos($requestUri, '/login') === 0 || 
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-XSRF-Token');
     header('Access-Control-Allow-Credentials: false');
+    header('X-CORS-APPLIED', 'TRUE');
     
     // Handle preflight requests immediately for API routes
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
