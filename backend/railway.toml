@@ -3,5 +3,6 @@ builder = "NIXPACKS"
 
 [deploy]
 startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
-healthcheckPath = "/"
-healthcheckTimeout = 100
+healthcheckPath = "/up"
+healthcheckTimeout = 30
+restartPolicy = "ON_FAILURE"
