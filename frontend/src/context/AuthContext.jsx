@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import api from "../lib/axios";
 
 const AuthContext = createContext(null);
 
@@ -46,14 +47,7 @@ export function AuthProvider({ children }) {
     try {
       // Appel API logout si token présent
       if (token) {
-        await fetch('/api/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          }
-        });
+        await api.post('/api/logout');
       }
     } catch (error) {
       console.warn('Erreur lors du logout API:', error);
@@ -72,21 +66,19 @@ export function AuthProvider({ children }) {
     const verifyToken = async () => {
       if (token) {
         try {
-          const response = await fetch('/api/user', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json',
-            }
-          });
-
-          if (!response.ok) {
-            // Token invalide, nettoyer
-            console.warn('Token invalide, nettoyage...');
-            logout();
+          const response = await api.get('/api/user');
+          // Token valide, mettre à jour l'utilisateur si besoin
+          if (response.data) {
+            setUser(response.data);
+            localStorage.setItem("bc_user", JSON.stringify(response.data));
           }
         } catch (error) {
-          console.warn('Erreur vérification token:', error);
-          logout();
+          // Token invalide, nettoyer
+          console.warn('Token invalide, nettoyage...', error);
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem("bc_user");
+          localStorage.removeItem("bc_token");
         }
       }
       setIsLoading(false);

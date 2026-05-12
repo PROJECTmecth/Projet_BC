@@ -5,6 +5,7 @@ use App\Http\Middleware\CheckIsAgent;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+
+        // ✅ CORS — doit être AVANT tout autre middleware
+        $middleware->prepend(HandleCors::class);
 
         // Exclure les routes API et auth du CSRF
         $middleware->validateCsrfTokens(except: [
@@ -27,9 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
+        // ⚠️ Ne pas mettre EnsureFrontendRequestsAreStateful sur les API en cross-domain
+        // Le token Bearer est utilisé à la place des cookies de session
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
