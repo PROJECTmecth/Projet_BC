@@ -9,4 +9,4 @@
     ]
 
 [start]
-    cmd = "cp .env.railway .env && php artisan config:clear && php artisan cache:clear && php artisan route:clear && node /assets/scripts/prestart.mjs /assets/nginx.template.conf /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
+    cmd = "cp .env.railway .env || true; php artisan config:clear || true; php artisan cache:clear || true; php artisan route:clear || true; node /assets/scripts/prestart.mjs /assets/nginx.template.conf /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
