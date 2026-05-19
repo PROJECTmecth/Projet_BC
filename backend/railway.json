@@ -1,5 +1,10 @@
 {
   "build": {
     "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "cp .env.railway .env || true; php artisan optimize:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}",
+    "healthcheckPath": "/up",
+    "healthcheckTimeout": 300
   }
 }
