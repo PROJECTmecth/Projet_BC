@@ -2,23 +2,38 @@
 
 return [
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login'], 
+    /*
+    |--------------------------------------------------------------------------
+    | CORS Configuration
+    | Frontend Vercel → Backend Railway
+    |--------------------------------------------------------------------------
+    */
 
-    'allowed_methods' => ['*'], 
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'register'],
 
-    'allowed_origins' => [
-        'https://projet-bc.vercel.app',
+    'allowed_methods' => ['*'],
+
+    'allowed_origins' => array_filter(array_unique([
         'http://localhost:5173',
-        'http://localhost:3000',
+        'http://localhost:5174',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
+        'https://projet-bc.vercel.app',
+        env('FRONTEND_URL'),         // Variable Railway
+        env('APP_FRONTEND_URL'),     // Alias de secours
+    ])),
+
+    // Wildcard pattern — couvre toutes les preview URLs Vercel
+    'allowed_origins_patterns' => [
+        '#^https://.*\.vercel\.app$#',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],
 
-    'allowed_headers' => ['*'], 
+    'exposed_headers' => ['Authorization'],
 
-    'exposed_headers' => [],
+    'max_age' => 86400,
 
-    'max_age' => 0,
-
-    'supports_credentials' => false, 
+    // false car on utilise Bearer Token (pas de cookies en cross-domain)
+    'supports_credentials' => false,
 ];
