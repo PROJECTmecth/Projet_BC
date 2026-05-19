@@ -1,0 +1,13 @@
+# Nixpacks configuration for Laravel on Railway
+[variables]
+    NIXPACKS_PHP_ROOT_DIR = "/app/public"
+    APP_ENV = "production"
+
+[phases.build]
+    cmds = [
+        "cp .env.railway .env",
+        "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader",
+        "php artisan config:clear",
+        "php artisan cache:clear",
+        "php artisan route:clear"
+    ]
