@@ -5,9 +5,8 @@
 
 [phases.build]
     cmds = [
-        "cp .env.railway .env",
-        "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader",
-        "php artisan config:clear",
-        "php artisan cache:clear",
-        "php artisan route:clear"
+        "composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader"
     ]
+
+[start]
+    cmd = "cp .env.railway .env && php artisan config:clear && php artisan cache:clear && php artisan route:clear && node /assets/scripts/prestart.mjs /assets/nginx.template.conf /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
