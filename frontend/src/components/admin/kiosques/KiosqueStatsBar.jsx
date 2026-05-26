@@ -10,7 +10,9 @@ export default function KiosqueStatsBar({ actifs, geles, total }) {
       <div className="bg-green-50 rounded-2xl px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between border border-green-100">
         <div>
           <p className="text-[13px] font-semibold text-gray-700 mb-1">Kiosques Actifs</p>
-          <p className="text-[28px] font-black text-gray-900 leading-none">{actifs}</p>
+          <p className="text-[28px] font-black text-gray-900 leading-none">
+            {String(actifs).padStart(2, "0")} {/* ← AJOUT : formatage 03 */}
+          </p>
         </div>
         <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-green-100 flex items-center justify-center">
           <div className="w-[20px] h-[20px] rounded-full bg-green-500 ring-[5px] ring-green-200" />
@@ -21,7 +23,9 @@ export default function KiosqueStatsBar({ actifs, geles, total }) {
       <div className="bg-red-50 rounded-2xl px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between border border-red-100">
         <div>
           <p className="text-[13px] font-semibold text-gray-700 mb-1">Kiosques Gelés</p>
-          <p className="text-[28px] font-black text-gray-900 leading-none">{geles}</p>
+          <p className="text-[28px] font-black text-gray-900 leading-none">
+            {String(geles).padStart(2, "0")} {/* ← AJOUT : formatage 03 */}
+          </p>
         </div>
         <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-red-100 flex items-center justify-center">
           <div className="w-[20px] h-[20px] rounded-full bg-red-500 ring-[5px] ring-red-200" />

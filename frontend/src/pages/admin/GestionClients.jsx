@@ -143,13 +143,38 @@ function ModalClient({ clientId, onClose }) {
 export default function GestionClients() {
   const [clients, setClients]       = useState([]);
   const [total, setTotal]           = useState(0);
+  const [animatedTotal, setAnimatedTotal] = useState(0); //animation du compteur
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
   const [selectedId, setSelectedId] = useState(null);
 
-  useEffect(() => {
+    useEffect(() => {
     api.get("/api/admin/clients")
-      .then(({ data }) => { setClients(data.data ?? []); setTotal(data.total ?? 0); })
+      .then(({ data }) => {
+        const clientsData = data.data ?? [];
+        const totalClients = data.total ?? 0;
+        
+        setClients(clientsData);
+        setTotal(totalClients);
+        
+        // 🎯 ANIMATION DU COMPTEUR — Total clients
+        let start = 0;
+        const target = totalClients;
+        const duration = 1500; // 1.5 secondes
+        const increment = target / (duration / 16); // ~60fps
+
+        const animate = () => {
+          start += increment;
+          if (start < target) {
+            setAnimatedTotal(Math.ceil(start));
+            requestAnimationFrame(animate);
+          } else {
+            setAnimatedTotal(target);
+          }
+        };
+        requestAnimationFrame(animate);
+        // 🔚 FIN ANIMATION
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -235,10 +260,12 @@ export default function GestionClients() {
             <p className="text-white/60 text-xs sm:text-sm mt-0.5">Base de données complète des clients</p>
           </div>
         </div>
-        <div className="z-10 bg-white rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-center shadow shrink-0">
-          <p className="text-xs text-gray-500">Total clients</p>
-          <p className="text-2xl sm:text-3xl font-black text-[#1e2a3a]">{String(total).padStart(2, "0")}</p>
-        </div>
+       <div className="z-10 bg-white rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-center shadow shrink-0">
+        <p className="text-xs text-gray-500">Total clients</p>
+        <p className="text-2xl sm:text-3xl font-black text-[#1e2a3a]">
+          {String(animatedTotal).padStart(2, "0")} {/* ← CHANGEMENT ICI */}
+        </p>
+      </div>
       </div>
 
       {/* Recherche + actions */}

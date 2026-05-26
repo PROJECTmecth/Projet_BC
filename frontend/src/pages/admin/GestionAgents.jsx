@@ -28,26 +28,54 @@ export default function GestionAgents() {
   const [stats, setStats] = useState({ total: 0, en_ligne: 0, hors_ligne: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [animatedTotal, setAnimatedTotal] = useState(0);// pour animation du total agents
+  const [animatedEnLigne, setAnimatedEnLigne] = useState(0);   // pour animation du total en ligne
+const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation du total hors ligne
   const [modal, setModal] = useState(false);
   const [editAgent, setEditAgent] = useState(null); // agent à modifier
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [{ data: a }, { data: k }] = await Promise.all([
-        api.get(BASE),
-        api.get(BASE_KIOSQUE),
-      ]);
-      setAgents(a.data ?? []);
-      setStats(a.stats ?? { total: 0, en_ligne: 0, hors_ligne: 0 });
-      setKiosques(k.data ?? []);
-    } catch {
-      setError("Impossible de charger les agents.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  setLoading(true);
+  setError(null);
+  try {
+    const [{ data: a }, { data: k }] = await Promise.all([
+      api.get(BASE),
+      api.get(BASE_KIOSQUE),
+    ]);
+    setAgents(a.data ?? []);
+    setStats(a.stats ?? { total: 0, en_ligne: 0, hors_ligne: 0 });
+    
+    // 🎯 FONCTION D'ANIMATION RÉUTILISABLE
+    const animateCounter = (setValue, target, delay = 0) => {
+      let start = 0;
+      const duration = 1500;
+      const increment = target / (duration / 16);
+      
+      const animate = () => {
+        start += increment;
+        if (start < target) {
+          setValue(Math.ceil(start));
+          requestAnimationFrame(animate);
+        } else {
+          setValue(target);
+        }
+      };
+      // Délai optionnel pour un effet en cascade
+      setTimeout(() => requestAnimationFrame(animate), delay);
+    };
+
+    // 🚀 Lancer les 3 animations (avec léger décalage pour l'effet cascade)
+    animateCounter(setAnimatedTotal, a.stats?.total ?? 0, 0);
+    animateCounter(setAnimatedEnLigne, a.stats?.en_ligne ?? 0, 200);   // +200ms
+    animateCounter(setAnimatedHorsLigne, a.stats?.hors_ligne ?? 0, 400); // +400ms
+    
+    setKiosques(k.data ?? []);
+  } catch {
+    setError("Impossible de charger les agents.");
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     load();
@@ -140,35 +168,29 @@ export default function GestionAgents() {
             </p>
           </div>
         </div>
+        {/* Dans la bannière circulaire */}
         <div className="z-10 bg-white rounded-full w-[72px] h-[72px] sm:w-[90px] sm:h-[90px] flex flex-col items-center justify-center shadow-lg shrink-0">
           <span className="text-gray-400 text-[10px] sm:text-[11px] font-semibold text-center leading-tight">
-            Total
-            <br />
-            agents
+            Total<br />agents
           </span>
           <span className="text-[#1e2a3a] text-[22px] sm:text-[28px] font-black leading-none">
-            {String(stats.total).padStart(2, "0")}
+            {String(animatedTotal).padStart(2, "0")} {/* ← CHANGEMENT ICI */}
           </span>
         </div>
       </div>
 
       {/* ── Stats bar ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 items-stretch">
-        <StatCard
-          label="Total agents"
-          value={stats.total}
-          color="text-[#1e2a3a]"
-          bg="bg-white"
-        />
+        <StatCard label="Total agents" value={animatedTotal} color="text-[#1e2a3a]" bg="bg-white" />
         <StatCard
           label="En ligne"
-          value={stats.en_ligne}
+          value={animatedEnLigne}  // ← CHANGEMENT : stats.en_ligne → animatedEnLigne
           color="text-green-600"
           bg="bg-green-50"
         />
         <StatCard
           label="Hors ligne"
-          value={stats.hors_ligne}
+          value={animatedHorsLigne}  // ← CHANGEMENT : stats.hors_ligne → animatedHorsLigne
           color="text-red-500"
           bg="bg-red-50"
         />

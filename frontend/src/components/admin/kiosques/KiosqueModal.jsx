@@ -99,12 +99,7 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
             <input value={form.ville}        onChange={e => set("ville", e.target.value)}        placeholder="Ex: Pointe-Noire"                  className={inputCls(errors.ville)} />
           </FormField>
 
-          {/* Téléphone — lecture seule */}
-          <FormField icon={<Phone size={18} />} label="Téléphone agent">
-            <div className="w-full px-4 py-[13px] rounded-xl text-[14px] bg-gray-100 border-2 border-dashed border-gray-300 text-gray-400 italic">
-              {kiosque?.telephone ?? "Sera renseigné à la création de l'agent"}
-            </div>
-          </FormField>
+          
 
           {/* Statut service */}
           <FormField icon={<Lock size={18} />} label="Statut service">

@@ -20,45 +20,65 @@ function BadgeOp({ type }) {
 
 function ModalDetail({ row, onClose }) {
   if (!row) return null;
+  
   const depot   = row.type_op === "dépôt_cash" ? row.montant : 0;
   const retrait = row.type_op !== "dépôt_cash" ? row.montant : 0;
+  const penalite = row.penalite || 0;
+  const calcul = depot - retrait - penalite;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl overflow-hidden">
-        <div className="bg-[#FF6600] px-6 py-4 flex items-center justify-between">
-          <div>
-            <p className="text-white font-bold text-lg">Détails du Calcul</p>
-            <p className="text-white/80 text-sm">{row.nom_client} — {row.id_carte}</p>
-          </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white">
-            <X size={20} />
-          </button>
+        {/* Header */}
+        <div className="bg-[#FF6600] px-6 py-4">
+          <p className="text-white font-bold text-xl">Détails du Calcul</p>
+          <p className="text-white/90 text-sm mt-1">
+            {row.nom_client} - {row.id_carte}
+          </p>
         </div>
 
+        {/* Corps du modal */}
         <div className="p-5 space-y-3">
+          {/* Dépôt Cash */}
           <div className="flex justify-between items-center bg-green-50 border-l-4 border-green-500 rounded-lg px-4 py-3">
-            <span className="text-sm text-gray-700">Dépôt Cash</span>
-            <span className="font-bold text-green-600">+{fmt(depot)} XAF</span>
+            <span className="text-sm text-gray-700 font-medium">Dépôt Cash</span>
+            <span className="font-bold text-green-600 text-lg">+{fmt(depot)} XAF</span>
           </div>
+
+          {/* Retrait Cash */}
           <div className="flex justify-between items-center bg-red-50 border-l-4 border-red-400 rounded-lg px-4 py-3">
-            <span className="text-sm text-gray-700">Retrait Cash</span>
-            <span className="font-bold text-red-500">-{fmt(retrait)} XAF</span>
+            <span className="text-sm text-gray-700 font-medium">Retrait Cash</span>
+            <span className="font-bold text-red-500 text-lg">-{fmt(retrait)} XAF</span>
           </div>
+
+          {/* Frais de Pénalité */}
           <div className="flex justify-between items-center bg-purple-50 border-l-4 border-purple-400 rounded-lg px-4 py-3">
-            <span className="text-sm text-gray-700">Frais de Pénalité</span>
-            <span className="font-bold text-purple-500">-{fmt(row.penalite)} XAF</span>
+            <span className="text-sm text-gray-700 font-medium">Frais de Pénalité</span>
+            <span className="font-bold text-purple-600 text-lg">-{fmt(penalite)} XAF</span>
           </div>
-          <hr className="border-dashed" />
-          <div className="bg-[#FF6600] rounded-xl px-5 py-4 flex justify-between items-center">
-            <span className="text-white font-bold">Solde de Compte</span>
-            <span className="text-white font-extrabold text-xl">{fmt(row.solde_apres)} XAF</span>
+
+          {/* Ligne pointillée */}
+          <div className="border-t-2 border-dashed border-gray-300 my-4"></div>
+
+          {/* Solde de Compte - Orange */}
+          <div className="bg-[#FF6600] rounded-xl px-5 py-4 flex justify-between items-center shadow-md">
+            <span className="text-white font-bold text-base">Solde de Compte</span>
+            <span className="text-white font-extrabold text-2xl">{fmt(row.solde_apres)} XAF</span>
+          </div>
+
+          {/* Détail du calcul */}
+          <div className="bg-blue-50 border-l-4 border-blue-400 rounded-lg px-4 py-3 mt-3">
+            <p className="text-sm text-blue-800">
+              <span className="font-semibold">Calcul:</span> {fmt(depot)} - {fmt(retrait)} - {fmt(penalite)} = {fmt(calcul)} XAF
+            </p>
           </div>
         </div>
 
+        {/* Bouton Fermer */}
         <div className="px-5 pb-5">
-          <button onClick={onClose}
-            className="w-full bg-[#1e2a3a] text-white py-3 rounded-xl font-semibold hover:bg-[#1e2a3a]/90 transition">
+          <button 
+            onClick={onClose}
+            className="w-full bg-[#1e2a3a] text-white py-3 rounded-xl font-semibold hover:bg-[#1e2a3a]/90 transition shadow-md">
             Fermer
           </button>
         </div>
@@ -97,17 +117,15 @@ export default function MouvementCaisse() {
   const handlePrint = () => {
     if (!hasData("imprimer")) return;
     Swal.fire({
-      title: "Imprimer ?",
-      text: "Voulez-vous lancer l'impression du tableau ?",
+      title: "Imprimer le tableau ?",
+      text: "Seul le tableau des transactions sera imprimé.",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#FF6600",
       confirmButtonText: "Oui, imprimer",
       cancelButtonText: "Annuler"
     }).then((result) => {
-      if (result.isConfirmed) {
-        window.print();
-      }
+      if (result.isConfirmed) window.print();
     });
   };
 
@@ -197,7 +215,8 @@ export default function MouvementCaisse() {
       </div>
 
       {/* ── Tableau ───────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-5">
+      {/* 👇 AJOUT DE LA CLASSE print-table-wrapper */}
+      <div className="print-table-wrapper bg-white rounded-2xl shadow-sm overflow-hidden mb-5">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[640px]">
             <thead>
@@ -279,14 +298,54 @@ export default function MouvementCaisse() {
 
       <ModalDetail row={selected} onClose={() => setSelected(null)} />
 
-      {/* Styles CSS pour l'impression */}
+      {/* ✅ Styles CSS pour l'impression — UNIQUEMENT LE TABLEAU */}
       <style>{`
         @media print {
-          .no-print { display: none !important; }
-          body { background: white; }
-          .printable-area { padding: 0; margin: 0; }
-          table { width: 100% !important; border-collapse: collapse; }
-          th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+          /* 1. Cacher tout par défaut */
+          body { margin: 0; background: white; }
+          body * { visibility: hidden; }
+          
+          /* 2. Afficher uniquement le tableau */
+          .print-table-wrapper,
+          .print-table-wrapper * { visibility: visible !important; }
+          .print-table-wrapper {
+            position: static !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 10px 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
+          }
+
+          /* 3. Masquer explicitement les éléments non désirés */
+          .no-print,
+          .printable-area > div:first-child,
+          .printable-area > div:nth-child(2),
+          .printable-area > div:last-child { display: none !important; }
+
+          /* 4. Mise en forme du tableau pour l'impression */
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10pt;
+            page-break-inside: auto;
+          }
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; }
+          th, td {
+            border: 1px solid #333 !important;
+            padding: 6px 8px !important;
+            text-align: left;
+          }
+          th {
+            background-color: #1e2a3a !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          /* Afficher les colonnes masquées sur mobile */
+          .hidden { display: table-cell !important; }
         }
       `}</style>
     </div>
