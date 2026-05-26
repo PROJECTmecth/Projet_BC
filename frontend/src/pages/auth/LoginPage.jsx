@@ -4,7 +4,7 @@ import PasswordField   from "../../components/ui/PasswordField";
 import Toast           from "../../components/ui/Toast";
 import SanctumFlow     from "../../components/ui/SanctumFlow";
 import { IconUser }    from "../../components/ui/icons";
-import { getCsrfCookie, loginRequest } from "../../services/auth";
+import { loginRequest } from "../../services/auth";
 import { useAuth } from "../../context/AuthContext";
 import logoBomba from '../../assets/logos/logo2.jpeg';
 import logoText from '../../assets/logos/logo3.jpeg';
