@@ -505,6 +505,7 @@ function AgentEditModal({ agent, kiosques, onClose, onSave }) {
     id: agent.id,
     nom: agent.nom,
     email: agent.email,
+    password: "",
     telephone: agent.telephone,
     adresse: agent.adresse,
     id_kiosque: agent.kiosque?.id ?? "",
@@ -556,6 +557,16 @@ function AgentEditModal({ agent, kiosques, onClose, onSave }) {
             value={form.email}
             onChange={(e) => set("email", e.target.value)}
             placeholder="Email"
+            className={inputCls}
+          />
+        </Field>
+        <Field icon={<Lock size={18} />} label="Mot de passe (optionnel)">
+          {" "}
+          <input
+            type="password"
+            value={form.password}
+            onChange={(e) => set("password", e.target.value)}
+            placeholder="Laisser vide pour ne pas changer"
             className={inputCls}
           />
         </Field>

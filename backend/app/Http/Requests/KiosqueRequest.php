@@ -19,7 +19,7 @@ class KiosqueRequest extends FormRequest
 
         return [
             'code_kiosque'   => [
-                'required',
+                'sometimes',
                 'string',
                 'max:20',
                 "unique:kiosques,code_kiosque,{$id},id_kiosque",

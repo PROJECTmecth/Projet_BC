@@ -5,7 +5,7 @@ import { User, Tag, MapPin, Phone, Lock, Store, X } from "lucide-react";
 
 export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
   const VIDE = {
-    code_kiosque: "", nom_kiosque: "", adresse: "",
+    nom_kiosque: "", adresse: "",
     ville: "", statut_service: "actif",
   };
   const [form,   setForm]   = useState(VIDE);
@@ -15,7 +15,6 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
   useEffect(() => {
     if (!open) return;
     setForm(kiosque ? {
-      code_kiosque:   kiosque.code_kiosque,
       nom_kiosque:    kiosque.nom_kiosque,
       adresse:        kiosque.adresse,
       ville:          kiosque.ville,
@@ -31,7 +30,6 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
 
   const validate = () => {
     const e = {};
-    if (!form.code_kiosque.trim()) e.code_kiosque = "Requis";
     if (!form.nom_kiosque.trim())  e.nom_kiosque  = "Requis";
     if (!form.adresse.trim())      e.adresse      = "Requis";
     if (!form.ville.trim())        e.ville        = "Requis";
@@ -85,10 +83,6 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
 
           <FormField icon={<User size={18} />}  label="Nom du kiosque"  error={errors.nom_kiosque}>
             <input value={form.nom_kiosque}  onChange={e => set("nom_kiosque", e.target.value)}  placeholder="Ex: KMC 01 MGL"                    className={inputCls(errors.nom_kiosque)} />
-          </FormField>
-
-          <FormField icon={<Tag size={18} />}   label="Code kiosque"    error={errors.code_kiosque}>
-            <input value={form.code_kiosque} onChange={e => set("code_kiosque", e.target.value)} placeholder="Ex: KMC01MGL"                      className={inputCls(errors.code_kiosque)} />
           </FormField>
 
           <FormField icon={<MapPin size={18} />} label="Adresse kiosque" error={errors.adresse}>

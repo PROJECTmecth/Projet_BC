@@ -147,6 +147,8 @@ export default function GestionClients() {
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
     useEffect(() => {
     api.get("/api/admin/clients")
@@ -184,6 +186,17 @@ export default function GestionClients() {
       `${c.nom} ${c.prenom} ${c.telephone} ${c.numero_carte}`
         .toLowerCase().includes(search.toLowerCase())
     ), [clients, search]);
+
+  // ✅ Réinitialiser la page quand la recherche change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  // ✅ Calculer la pagination
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const paginatedClients = filtered.slice(startIdx, endIdx);
 
   // --- ACTIONS & SECURITÉS ---
   const hasData = (label) => {
@@ -308,11 +321,11 @@ export default function GestionClients() {
           <tbody>
             {loading ? (
               <tr><td colSpan={10} className="text-center py-10 text-gray-400">Chargement…</td></tr>
-            ) : filtered.length === 0 ? (
+            ) : paginatedClients.length === 0 ? (
               <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
-            ) : filtered.map((c, i) => (
+            ) : paginatedClients.map((c, i) => (
               <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                <td className="px-4 py-4 text-gray-500">{i + 1}</td>
+                <td className="px-4 py-4 text-gray-500">{startIdx + i + 1}</td>
                 <td className="px-4 py-4">
                   <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${c.genre === "Homme" ? "bg-blue-400" : "bg-pink-400"}`}>
                     {c.genre === "Homme" ? "M" : "F"}
@@ -345,6 +358,48 @@ export default function GestionClients() {
         </table>
         </div>
       </div>
+
+      {/* ✅ Pagination */}
+      {filtered.length > ITEMS_PER_PAGE && (
+        <div className="bg-white rounded-2xl px-5 py-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm no-print">
+          <p className="text-sm text-gray-600">
+            Affichage <span className="font-bold">{startIdx + 1}</span> à <span className="font-bold">{Math.min(endIdx, filtered.length)}</span> sur <span className="font-bold">{filtered.length}</span> client{filtered.length > 1 ? 's' : ''}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Précédent
+            </button>
+            
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                    currentPage === page
+                      ? "bg-[#FF6600] text-white"
+                      : "border border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Suivant →
+            </button>
+          </div>
+        </div>
+      )}
 
       <ModalClient clientId={selectedId} onClose={() => setSelectedId(null)} />
 
