@@ -150,9 +150,13 @@ export function useAdminStats() {
             kiosquesInactifs: kiosquesRes.status === 'fulfilled' 
               ? (kiosquesRes.value.data?.stats?.geles ?? 0) : 0,
             
-            soldeTotal: "0",
+            soldeTotal: (function() {
+              if (opsRes.status !== 'fulfilled') return "0";
+              const total = opsRes.value.data?.totaux?.total_solde ?? 0;
+              return Number(total).toLocaleString('fr-FR');
+            })(),
             soldeGrowth: "+0%",
-            
+
             // 💵 Revenus total
             revenus: revenusRes.status === 'fulfilled' 
               ? String(revenusRes.value.data?.data?.total ?? 0) : "0",
@@ -163,7 +167,10 @@ export function useAdminStats() {
               : { frais_garde: 0, penalites: 0 },
           };
 
-          // 3️⃣ Démographie + Mensuel - 100% DYNAMIQUE, PAS DE HARDCODE
+          // 3️⃣ Calcul clientsGrowth depuis monthly (mois courant vs mois précédent)
+          // Sera mis à jour après le parsing de monthlyData ci-dessous
+
+          // 4️⃣ Démographie + Mensuel - 100% DYNAMIQUE, PAS DE HARDCODE
           let demoData = EMPTY_DEMOGRAPHICS;
           let monthlyData = EMPTY_MONTHLY;
           
@@ -202,7 +209,19 @@ export function useAdminStats() {
             console.warn("⚠️ Analytics API failed:", analyticsRes.reason?.message);
           }
 
-          // 4️⃣ Opérations récentes
+          // Calcul dynamique du growth clients (dernier mois vs avant-dernier)
+          if (monthlyData.length >= 2) {
+            const current  = monthlyData[monthlyData.length - 1].clients;
+            const previous = monthlyData[monthlyData.length - 2].clients;
+            if (previous > 0) {
+              const pct = Math.round(((current - previous) / previous) * 100);
+              currentStats.clientsGrowth = pct >= 0 ? `+${pct}%` : `${pct}%`;
+            } else if (current > 0) {
+              currentStats.clientsGrowth = "+100%";
+            }
+          }
+
+          // 5️⃣ Opérations récentes
           const opsData = (function() {
             if (opsRes.status !== 'fulfilled') return [];
             const data = opsRes.value.data;
