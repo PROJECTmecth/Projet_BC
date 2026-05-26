@@ -145,7 +145,7 @@ export default function LoginPage() {
           <div className="bg-gray-200 px-6 py-8 md:px-9 md:py-10 flex flex-col justify-center">
 
             <div className="flex items-center justify-between mb-6 md:mb-8">
-              <h2 className="text-xl md:text-[22px] font-bold text-gray-900 m-0">Compte Agent</h2>
+              <h2 className="text-xl md:text-[22px] font-bold text-gray-900 m-0">Connexion</h2>
               <div className="w-[45px] h-[45px] md:w-[50px] md:h-[50px] bg-gray-900 rounded-full shadow-md flex items-center justify-center text-white shrink-0">
                 <IconUser />
               </div>

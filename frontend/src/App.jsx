@@ -18,6 +18,7 @@ import JournalTransactionsPage from "./pages/admin/JournalTransactionsPage.jsx";
 import MouvementCaisse from "./pages/admin/Mouvementcaisse.jsx";
 import GestionClients from "./pages/admin/GestionClients.jsx";
 
+
 // =============================================
 // IMPORTS ADMIN PART 2 — Dev 3 Djenna — NE PAS TOUCHER
 // =============================================

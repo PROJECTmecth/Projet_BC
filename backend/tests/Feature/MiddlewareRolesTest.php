@@ -157,7 +157,7 @@ class MiddlewareRolesTest extends TestCase
 
         // Création du profil agent rattaché au kiosque
         Agent::factory()->create([
-            'id_user'    => $userAgent->id_user,
+            'id_user'    => $userAgent->id,
             'id_kiosque' => $kiosque->id_kiosque,
         ]);
 
@@ -207,7 +207,7 @@ class MiddlewareRolesTest extends TestCase
         ]);
 
         Agent::factory()->create([
-            'id_user'    => $userAgent->id_user,
+            'id_user'    => $userAgent->id,
             'id_kiosque' => $kiosque->id_kiosque,
         ]);
 
@@ -241,7 +241,7 @@ class MiddlewareRolesTest extends TestCase
         ]);
 
         Agent::factory()->create([
-            'id_user'    => $userAgent->id_user,
+            'id_user'    => $userAgent->id,
             'id_kiosque' => $kiosque->id_kiosque,
         ]);
 
