@@ -184,7 +184,7 @@ class CheckIsAgent
 
             return response()->json([
                 'success' => false,
-                'message' => 'Votre kiosque est actuellement désactivé. Aucune opération possible.',
+                'message' => 'Ce compte ou votre kiosque a été gelé. Merci de contacter votre administrateur ou la Direction Bomba Cash pour obtenir plus de détails sur la cause afin de pouvoir continuer vos différentes opérations.',
                 'code'    => 'KIOSQUE_INACTIVE',
                 'kiosque' => $codeKiosque,
             ], Response::HTTP_FORBIDDEN); // 403
