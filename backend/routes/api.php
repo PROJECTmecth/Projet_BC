@@ -11,7 +11,6 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MouvementCaisseController;
 use App\Http\Controllers\Admin\ClientController;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes - Projet BOMBA_CASH
@@ -24,6 +23,49 @@ use App\Http\Controllers\Admin\ClientController;
 
 // Login
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+
+// Route de diagnostic CORS
+Route::get('/cors-debug', function () {
+    return response()->json([
+        'status' => 'ok',
+        'allowed_origins' => config('cors.allowed_origins'),
+        'env_origins' => env('CORS_ALLOWED_ORIGINS'),
+        'app_url' => config('app.url'),
+        'headers' => getallheaders(),
+        'origin' => request()->header('Origin'),
+        'method' => request()->method(),
+    ]);
+});
+
+// Route de test CORS complet
+Route::options('/test-cors', function () {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-Token')
+        ->header('Access-Control-Allow-Credentials', 'true');
+});
+
+Route::get('/test-cors', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'CORS test successful',
+        'timestamp' => now()->toISOString(),
+        'origin' => request()->header('Origin'),
+        'method' => request()->method(),
+    ])->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+      ->header('Access-Control-Allow-Credentials', 'true');
+});
+
+Route::post('/test-cors', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'CORS POST test successful',
+        'data' => request()->all(),
+        'timestamp' => now()->toISOString(),
+    ])->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+      ->header('Access-Control-Allow-Credentials', 'true');
+});
 
 // Utilisateur connecté
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -46,7 +88,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
     ->group(function () {
 
         // Dashboard
-        // ── Dashboard Stats ──────────────────────────────────────────────────
+    // ── Dashboard Stats ──────────────────────────────────────────────────
         // ✅ Route pour récupérer le compteur kiosques + autres stats (DEV-A Mechack)
         Route::get('/stats', [DashboardController::class, 'getStats'])->name('dashboard.stats');
 
@@ -64,16 +106,11 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::patch ('/kiosques/{kiosque}/statut', [KiosqueController::class, 'toggleStatut']) ->name('kiosques.toggle');
         Route::get   ('/kiosques/{kiosque}/agents', [KiosqueController::class, 'agents'])       ->name('kiosques.agents');
 
-        // Mouvements de caisse
-        Route::get('/mouvements-caisse/revenus', [MouvementCaisseController::class, 'revenus'])->name('mouvements.revenus');
-        Route::get('/mouvements-caisse',         [MouvementCaisseController::class, 'index'])->name('mouvements.caisse');
-        // ── Revenus — Détail (pour la page /admin/revenus) ──────────────────
-        Route::get('/mouvements-caisse/revenus/detail', [MouvementCaisseController::class, 'revenusDetail'])->name('mouvements.revenus.detail');
-        
-        // Clients-Admin
-        Route::get('/clients',           [ClientController::class, 'index'])->name('clients.index');
-        Route::get('/clients/analytics', [ClientController::class, 'analytics'])->name('clients.analytics');
-        Route::get('/clients/{id}',      [ClientController::class, 'show'])->name('clients.show');
+        //Mouvements de caisse
+        Route::get('/mouvements-caisse', [MouvementCaisseController::class, 'index']);
+        // clients-Admin
+        Route::get('/clients',     [ClientController::class, 'index'])->name('clients.index');
+        Route::get('/clients/{id}',[ClientController::class, 'show'])->name('clients.show');
 
         // Agents
         Route::get   ('/agents',                [AgentController::class, 'index'])        ->name('agents.list');
@@ -83,10 +120,8 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::delete('/agents/{agent}',        [AgentController::class, 'destroy'])      ->name('agents.destroy');
         Route::patch ('/agents/{agent}/statut', [AgentController::class, 'toggleStatut']) ->name('agents.toggle');
 
-        // Placeholders
-        // ⚠️ Route /clients commentée pour ne pas écraser la vraie route ClientController::index
-        // Route::get('/clients', fn() => response()->json(['success' => true, 'message' => '✅ Liste clients']))->name('clients.index');
-        Route::get('/transactions', fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
+
+        Route::get('/transactions',  fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
 
         // Profil Admin
         Route::put('/profil',          [ProfilController::class, 'update'])        ->name('profil.update');

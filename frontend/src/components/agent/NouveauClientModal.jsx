@@ -10,6 +10,7 @@ const initialForm = {
   genre: "Homme", prenom: "", nom: "", adresse: "", ville: "",
   activite: "", nationalite: "Résident", type_piece: "CNI",
   num_piece: "", telephone: "+242 06 ", montant: "", duree: "15 jours",
+  qrCodeUid: "",  // ✅ AJOUTÉ : champ requis par le backend
 };
 
 const SCANNER_ELEMENT_ID = 'nouveau-client-qr-reader';
@@ -23,10 +24,13 @@ const QR_CONFIG = {
   experimentalFeatures: { useBarCodeDetectorIfSupported: true },
 };
 
-export default function NouveauClientModal({ onClose, onSuccess }) {
-  const [etape, setEtape] = useState(ETAPES.SCAN);
-  const [form, setForm] = useState(initialForm);
-  const [carteInfo, setCarteInfo] = useState(null);
+export default function NouveauClientModal({ onClose, onSuccess, initialCarte = null }) {
+  const [etape, setEtape] = useState(initialCarte ? ETAPES.FORMULAIRE : ETAPES.SCAN);
+  const [form, setForm] = useState({
+    ...initialForm,
+    qrCodeUid: initialCarte?.qr_code_uid || initialCarte?.numero_carte || "",
+  });
+  const [carteInfo, setCarteInfo] = useState(initialCarte ? { carte: initialCarte } : null);
   const [scanning, setScanning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -38,6 +42,16 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
   const html5QrRef = useRef(null);
   const processingRef = useRef(false);
   const trackRef = useRef(null);
+
+  // ─── Initialisation avec carte pré-scannée ───────────────────
+  useEffect(() => {
+    if (initialCarte && etape === ETAPES.SCAN) {
+      setCarteInfo({ carte: initialCarte });
+      // ✅ AJOUTÉ : initialiser qrCodeUid avec l'UID de la carte
+      setForm(prev => ({ ...prev, qrCodeUid: initialCarte.qr_code_uid || initialCarte.numero_carte }));
+      setEtape(ETAPES.FORMULAIRE);
+    }
+  }, [initialCarte, etape]);
 
   // ─── Nettoyage ────────────────────────────────────────────────
   const stopScanner = useCallback(async () => {
@@ -59,6 +73,11 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
   const callScanAPI = useCallback(async (qrCodeUid) => {
     try {
       const res = await axiosClient.post("/api/agent/scan", { numero_carte: qrCodeUid });
+
+      if (!res.data.is_vierge) {
+        throw new Error("Carte déjà assignée à un client");
+      }
+
       const result = await Swal.fire({
         title: "Carte détectée",
         html: `<p>Numéro : <b>${res.data.carte.numero_carte}</b></p>
@@ -72,6 +91,8 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
       });
       if (result.isConfirmed) {
         setCarteInfo(res.data);
+        // ✅ AJOUTÉ : mettre à jour qrCodeUid dans le form avec l'uid exact
+        setForm(prev => ({ ...prev, qrCodeUid: res.data.carte.qr_code_uid || res.data.carte.numero_carte }));
         setEtape(ETAPES.FORMULAIRE);
       } else {
         await stopScanner();
@@ -79,7 +100,7 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
       }
     } catch (err) {
       await stopScanner();
-      const msg = err.response?.data?.message || "Carte invalide ou déjà utilisée.";
+      const msg = err.response?.data?.message || err.message || "Carte invalide ou déjà utilisée.";
       await Swal.fire({ icon: "error", title: "Erreur", text: msg, confirmButtonColor: "#F97316" });
       setEtape(ETAPES.SCAN);
     }
@@ -122,7 +143,6 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
           () => { }
         );
 
-        // Récupérer le track pour le torch
         try {
           const videoElem = document.querySelector(`#${SCANNER_ELEMENT_ID} video`);
           if (videoElem?.srcObject) {
@@ -200,6 +220,8 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
     if (!form.num_piece.trim()) e.num_piece = "Requis";
     if (!form.telephone.trim()) e.telephone = "Requis";
     if (!form.montant || Number(form.montant) < 1000) e.montant = "Montant minimum : 1 000 F";
+    // ✅ AJOUTÉ : validation qrCodeUid
+    if (!form.qrCodeUid) e.qrCodeUid = "Veuillez scanner une carte valide";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -210,7 +232,7 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
     const result = await Swal.fire({
       title: "Confirmer l'enregistrement ?",
       html: `<p>Client : <b>${form.prenom} ${form.nom}</b></p>
-             <p>Carte : <b>${carteInfo.carte.numero_carte}</b></p>
+             <p>Carte : <b>${carteInfo?.carte?.numero_carte}</b></p>
              <p>Montant : <b>${Number(form.montant).toLocaleString("fr-FR")} F</b></p>
              <p>Durée : <b>${form.duree}</b></p>`,
       icon: "question",
@@ -225,9 +247,11 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
 
     try {
       setSubmitting(true);
+      // ✅ CORRECTION : envoi de qrCodeUid + numero_carte pour compatibilité
       await axiosClient.post("/api/agent/clients/register", {
         ...form,
-        numero_carte: carteInfo.carte.numero_carte,
+        qr_code_uid: form.qrCodeUid,         // ✅ Remplacé qrCodeUid par qr_code_uid pour correspondre au backend
+        numero_carte: carteInfo?.carte?.numero_carte, // ✅ Pour rétro-compatibilité
         montant: Number(form.montant),
       });
       await stopScanner();
@@ -297,7 +321,7 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
                       <path d="M1 4v6h6" strokeLinecap="round" strokeLinejoin="round" />
                       <path d="M23 20v-6h-6" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     {useFront ? 'Caméra avant' : 'Caméra arrière'}
                   </button>
@@ -458,6 +482,9 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
                       value={form.montant} onChange={handleChange} min="1000" />
                     {errors.montant && <span className="form-error">{errors.montant}</span>}
                   </div>
+
+                  {/* ✅ AJOUTÉ : champ caché pour qrCodeUid (debug) */}
+                  <input type="hidden" name="qrCodeUid" value={form.qrCodeUid} />
 
                   <div className="info-box">
                     <p className="info-box__title">Informations importantes :</p>

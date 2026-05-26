@@ -17,7 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
 
         // ✅ CORS — doit être AVANT tout autre middleware
+        // Lit la config depuis config/cors.php
         $middleware->prepend(HandleCors::class);
+
+        // Trust Proxies (Railway se trouve derrière un reverse proxy)
+        $middleware->trustProxies(at: '*');
 
         // Exclure les routes API et auth du CSRF
         $middleware->validateCsrfTokens(except: [
@@ -27,12 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'sanctum/csrf-cookie',
         ]);
 
-        $middleware->web(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
-
-        // ⚠️ Ne pas mettre EnsureFrontendRequestsAreStateful sur les API en cross-domain
-        // Le token Bearer est utilisé à la place des cookies de session
+        // ⚠️ EnsureFrontendRequestsAreStateful retiré du groupe web :
+        // inutile en cross-domain Bearer Token et peut provoquer
+        // des conflits de session/cookies avec Vercel → Railway.
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,

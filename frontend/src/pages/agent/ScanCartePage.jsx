@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import Swal from 'sweetalert2';
 import axios from '../../lib/axios';
-// ❌ SUPPRIMER : import AgentLayout from '../../layouts/AgentLayout';
+import NouveauClientModal from '../../components/agent/NouveauClientModal';
 
 /* ─── Constantes ──────────────────────────────────────────────── */
 const SCANNER_ELEMENT_ID = 'bc-qrcode-region';
@@ -104,7 +104,7 @@ const Icon = {
     ),
 };
 
-/* ─── Helpers ──────────────────────────────────────────────────── */
+/* ─── Helpers ─────────────────────────────────────────────────── */
 const fmt = (n) =>
     new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0 }).format(n ?? 0);
 
@@ -147,6 +147,10 @@ export default function ScanCartePage() {
     const [manualVal, setManualVal] = useState('');
     const [manualLoading, setManualLoading] = useState(false);
 
+    /* ✅ Bridge vers NouveauClientModal */
+    const [showNouveauClientModal, setShowNouveauClientModal] = useState(false);
+    const [carteViergeDetectee, setCarteViergeDetectee] = useState(null);
+
     /* refs */
     const html5QrRef = useRef(null);
     const processingRef = useRef(false);
@@ -174,6 +178,31 @@ export default function ScanCartePage() {
         try {
             const { data } = await axios.post('/api/agent/scan', { numero_carte: numeroCarte });
             await stopScanner();
+
+            // ✅ NOUVELLE LOGIQUE : Carte vierge détectée
+            if (data.is_vierge) {
+                const result = await Swal.fire({
+                    title: "Carte Vierge",
+                    html: `<p>Numéro : <b>${data.carte.numero_carte}</b></p>
+                           <p>Cette carte n'appartient à aucun client. Voulez-vous enregistrer un nouveau client ?</p>`,
+                    icon: "info",
+                    showCancelButton: true,
+                    confirmButtonText: "Oui, inscrire",
+                    cancelButtonText: "Non",
+                    confirmButtonColor: "#F97316",
+                    cancelButtonColor: "#6B7280",
+                });
+
+                if (result.isConfirmed) {
+                    setCarteViergeDetectee(data.carte);
+                    setShowNouveauClientModal(true);
+                } else {
+                    resetScan();
+                }
+                return;
+            }
+
+            // Ancienne logique si client existant
             setScanData(data);
             setPhase('result');
         } catch (err) {
@@ -189,6 +218,8 @@ export default function ScanCartePage() {
 
     /* ─── Callback QR détecté ───────────────────────────────────── */
     const onQrSuccess = useCallback((decodedText) => {
+        console.log("📱 QR Code scanné :", decodedText);
+
         if (processingRef.current) return;
         processingRef.current = true;
         if (navigator.vibrate) navigator.vibrate([80, 30, 80]);
@@ -287,6 +318,8 @@ export default function ScanCartePage() {
         setTorchOn(false);
         setPhase('idle');
         setShowManual(false);
+        setCarteViergeDetectee(null);
+        setShowNouveauClientModal(false);
     }, [stopScanner]);
 
     /* ─────────────────────────────────────────────────────────────── */
@@ -298,271 +331,293 @@ export default function ScanCartePage() {
     const statutCfg = statutConfig[statut] ?? statutConfig.inactive;
 
     return (
-        // ❌ SUPPRIMER : <AgentLayout>
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 px-4 py-6 md:px-8">
+        <>
+            <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 px-4 py-6 md:px-8">
 
-            {/* ── En-tête ───────────────────────────────────────────── */}
-            <div className="flex items-center gap-3 mb-6">
-                <button
-                    onClick={() => navigate('/agent/dashboard')}
-                    className="p-2 rounded-xl bg-white border border-orange-100 shadow-sm hover:bg-orange-50 transition-colors"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-orange-500">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                </button>
-                <div>
-                    <h1 className="text-xl font-bold text-gray-800 leading-tight">Scanner une carte</h1>
-                    <p className="text-xs text-gray-400">Pointez le QR code de la carte client</p>
+                {/* ── En-tête ───────────────────────────────────────────── */}
+                <div className="flex items-center gap-3 mb-6">
+                    <button
+                        onClick={() => navigate('/agent/dashboard')}
+                        className="p-2 rounded-xl bg-white border border-orange-100 shadow-sm hover:bg-orange-50 transition-colors"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-orange-500">
+                            <polyline points="15 18 9 12 15 6" />
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-800 leading-tight">Scanner une carte</h1>
+                        <p className="text-xs text-gray-400">Pointez le QR code de la carte client</p>
+                    </div>
                 </div>
+
+                {/* ════════════════════════════════════════════════════════ */}
+                {/* PHASE : IDLE                                            */}
+                {/* ════════════════════════════════════════════════════════ */}
+                {phase === 'idle' && (
+                    <div className="flex flex-col items-center gap-6 pt-8">
+                        <div className="relative w-48 h-48">
+                            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-orange-400 to-orange-600 opacity-10 animate-pulse" />
+                            <div className="absolute inset-4 rounded-2xl border-4 border-orange-300 border-dashed" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-orange-500">
+                                    <svg viewBox="0 0 80 80" className="w-24 h-24" fill="none">
+                                        <path d="M10 25 L10 10 L25 10" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M55 10 L70 10 L70 25" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M70 55 L70 70 L55 70" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M25 70 L10 70 L10 55" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+                                        <rect x="28" y="28" width="10" height="10" rx="2" fill="#fdba74" />
+                                        <rect x="42" y="28" width="10" height="10" rx="2" fill="#fdba74" />
+                                        <rect x="28" y="42" width="10" height="10" rx="2" fill="#fdba74" />
+                                        <rect x="44" y="44" width="6" height="6" rx="1" fill="#f97316" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="text-center">
+                            <p className="text-gray-700 font-medium text-base">Prêt à scanner</p>
+                            <p className="text-gray-400 text-sm mt-1">Appuyez sur le bouton pour activer la caméra</p>
+                        </div>
+
+                        <button
+                            onClick={() => startScanner('environment')}
+                            className="flex items-center gap-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold text-base px-8 py-4 rounded-2xl shadow-lg shadow-orange-200 active:scale-95 transition-all hover:shadow-orange-300"
+                        >
+                            {Icon.scan}
+                            Démarrer le scan
+                        </button>
+
+                        <button
+                            onClick={() => setShowManual(true)}
+                            className="flex items-center gap-2 text-orange-500 font-medium text-sm border border-orange-200 px-5 py-2.5 rounded-xl bg-white hover:bg-orange-50 transition-colors"
+                        >
+                            {Icon.keyboard}
+                            Saisir le numéro manuellement
+                        </button>
+                    </div>
+                )}
+
+                {/* ════════════════════════════════════════════════════════ */}
+                {/* PHASE : SCANNING                                        */}
+                {/* ════════════════════════════════════════════════════════ */}
+                {phase === 'scanning' && (
+                    <div className="flex flex-col gap-4">
+                        <div className="relative rounded-3xl overflow-hidden bg-black shadow-xl">
+                            <div id={SCANNER_ELEMENT_ID} className="w-full" style={{ minHeight: 'min(72vw, 360px)' }} />
+                            <div className="absolute inset-0 pointer-events-none">
+                                <span className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-orange-400 rounded-tl-lg" />
+                                <span className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-orange-400 rounded-tr-lg" />
+                                <span className="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-orange-400 rounded-bl-lg" />
+                                <span className="absolute bottom-6 right-6 w-8 h-8 border-b-4 border-r-4 border-orange-400 rounded-br-lg" />
+                                <div className="absolute left-8 right-8 top-1/2 -translate-y-1/2 overflow-hidden" style={{ height: '2px' }}>
+                                    <div className="w-full h-full bg-gradient-to-r from-transparent via-orange-400 to-transparent" style={{ animation: 'scanLine 2s ease-in-out infinite' }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center px-2">
+                            {cameras.length > 1 && (
+                                <button onClick={flipCamera} className="flex items-center gap-2 bg-white border border-orange-200 text-orange-600 text-sm font-medium px-4 py-2.5 rounded-xl shadow-sm hover:bg-orange-50 active:scale-95 transition-all">
+                                    {Icon.flip}
+                                    {useFront ? 'Caméra arrière' : 'Caméra avant'}
+                                </button>
+                            )}
+                            {torchSupported && (
+                                <button onClick={toggleTorch} className={`flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl border shadow-sm active:scale-95 transition-all ${torchOn ? 'bg-orange-500 text-white border-orange-500' : 'bg-white border-orange-200 text-orange-600 hover:bg-orange-50'}`}>
+                                    {Icon.torch}
+                                    Flash
+                                </button>
+                            )}
+                            <button onClick={resetScan} className="flex items-center gap-2 bg-gray-100 text-gray-600 text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-gray-200 active:scale-95 transition-all">✕ Annuler</button>
+                        </div>
+
+                        <p className="text-center text-gray-400 text-xs">Alignez le QR code de la carte BOMBA CASH dans le cadre</p>
+                        <button onClick={() => setShowManual(true)} className="text-center text-orange-500 text-sm underline underline-offset-2">Saisir le numéro manuellement</button>
+                    </div>
+                )}
+
+                {/* ════════════════════════════════════════════════════════ */}
+                {/* ════════════════════════════════════════════════════════ */}
+                {/* PHASE : LOADING                                         */}
+                {/* ════════════════════════════════════════════════════════ */}
+                {phase === 'loading' && (
+                    <div className="flex flex-col items-center gap-5 pt-16">
+                        <div className="relative w-20 h-20">
+                            <div className="absolute inset-0 rounded-full border-4 border-orange-100" />
+                            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
+                            <div className="absolute inset-0 flex items-center justify-center text-orange-400">{Icon.card}</div>
+                        </div>
+                        <p className="text-gray-600 font-medium">Vérification de la carte…</p>
+                        <p className="text-gray-400 text-sm">Connexion au serveur en cours</p>
+                    </div>
+                )}
+
+                {/* ════════════════════════════════════════════════════════ */}
+                {/* PHASE : ERROR                                           */}
+                {/* ════════════════════════════════════════════════════════ */}
+                {phase === 'error' && (
+                    <div className="flex flex-col items-center gap-5 pt-12">
+                        <div className="w-20 h-20 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center text-red-500">{Icon.alert}</div>
+                        <div className="text-center">
+                            <p className="text-gray-800 font-bold text-lg">Scan échoué</p>
+                            <p className="text-gray-500 text-sm mt-1 max-w-xs">{errMsg}</p>
+                        </div>
+                        <button onClick={resetScan} className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg shadow-orange-200 active:scale-95 transition-all">{Icon.refresh} Réessayer</button>
+                        <button onClick={() => setShowManual(true)} className="text-orange-500 text-sm underline underline-offset-2">Saisir manuellement</button>
+                    </div>
+                )}
+
+                {/* ════════════════════════════════════════════════════════ */}
+                {/* PHASE : RESULT                                          */}
+                {/* ════════════════════════════════════════════════════════ */}
+                {phase === 'result' && carte && client && (
+                    <div className="flex flex-col gap-4 animate-fadeIn">
+                        <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
+                            <span className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0">{Icon.check}</span>
+                            <p className="text-emerald-700 font-semibold text-sm">Carte détectée avec succès</p>
+                        </div>
+
+                        <div className="bg-white rounded-3xl border border-orange-100 shadow-sm overflow-hidden">
+                            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-5">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-white font-bold text-xl">{(client.prenom?.[0] ?? '') + (client.nom?.[0] ?? '')}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-bold text-lg leading-tight truncate">{client.prenom} {client.nom}</p>
+                                        <p className="text-orange-100 text-sm">{client.telephone}</p>
+                                        <p className="text-orange-200 text-xs mt-0.5 truncate">{client.ville}</p>
+                                    </div>
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${statutCfg.bg} ${statutCfg.text}`}>
+                                        <span className={`w-2 h-2 rounded-full ${statutCfg.dot}`} />
+                                        {statutCfg.label}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="px-5 py-5 space-y-4">
+                                <div className="flex items-center gap-3 bg-orange-50 rounded-xl px-4 py-3">
+                                    <span className="text-orange-400">{Icon.card}</span>
+                                    <div>
+                                        <p className="text-gray-400 text-xs">Numéro de carte</p>
+                                        <p className="text-gray-800 font-mono font-semibold text-sm tracking-wider">{carte.numero_carte?.replace(/(.{4})/g, '$1 ').trim()}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 bg-orange-50 rounded-xl px-4 py-3">
+                                    <span className="text-orange-400">{Icon.wallet}</span>
+                                    <div className="flex-1">
+                                        <p className="text-gray-400 text-xs">Solde disponible</p>
+                                        <p className="text-orange-600 font-extrabold text-xl">{fmt(compte?.solde_total)} <span className="text-sm font-semibold">FCFA</span></p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-gray-600 text-sm font-medium">Progression épargne</p>
+                                        <span className="text-orange-600 font-bold text-sm">{carte.progression ?? 0}%</span>
+                                    </div>
+                                    <ProgressBar value={carte.progression} />
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 pt-1">
+                                    {[
+                                        { label: 'Dépôts', value: fmt(compte?.total_depots), color: 'text-emerald-600' },
+                                        { label: 'Retraits', value: fmt(compte?.total_retraits), color: 'text-red-500' },
+                                        { label: 'Pénalités', value: fmt(compte?.total_penalites), color: 'text-amber-600' },
+                                    ].map((s) => (
+                                        <div key={s.label} className="bg-gray-50 rounded-xl px-3 py-2.5 text-center">
+                                            <p className="text-gray-400 text-xs">{s.label}</p>
+                                            <p className={`font-bold text-sm ${s.color}`}>{s.value}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex gap-3">
+                                    {carte.date_activation && (
+                                        <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2">
+                                            <p className="text-gray-400 text-xs">Activation</p>
+                                            <p className="text-gray-700 text-xs font-semibold">{new Date(carte.date_activation).toLocaleDateString('fr-FR')}</p>
+                                        </div>
+                                    )}
+                                    {carte.date_expiration && (
+                                        <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2">
+                                            <p className="text-gray-400 text-xs">Expiration</p>
+                                            <p className={`text-xs font-semibold ${new Date(carte.date_expiration) < new Date() ? 'text-red-500' : 'text-gray-700'}`}>{new Date(carte.date_expiration).toLocaleDateString('fr-FR')}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => navigate(`/agent/clients/${client.id_client}/operation`)}
+                                disabled={statut !== 'active'}
+                                className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${statut === 'active' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                            >
+                                {Icon.ops}
+                                Ajouter opération
+                                {statut !== 'active' && <span className="text-xs font-normal opacity-70">Carte {statut}</span>}
+                            </button>
+
+                            <button onClick={() => navigate(`/agent/clients/${client.id_client}`)} className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-white border-2 border-orange-200 text-orange-600 font-bold text-sm hover:bg-orange-50 transition-all active:scale-95">
+                                {Icon.user}
+                                Voir profil
+                                <span className="text-xs font-normal text-gray-400">Détails complets</span>
+                            </button>
+                        </div>
+
+                        <button onClick={resetScan} className="flex items-center justify-center gap-2 text-gray-500 text-sm py-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors active:scale-95">{Icon.refresh} Scanner une autre carte</button>
+                    </div>
+                )}
+
+                {/* ════════════════════════════════════════════════════════ */}
+                {/* OVERLAY : SAISIE MANUELLE                              */}
+                {/* ════════════════════════════════════════════════════════ */}
+                {showManual && (
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowManual(false)} />
+                        <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl z-10 animate-slideUp">
+                            <div className="w-12 h-1.5 rounded-full bg-gray-200 mx-auto mb-6 sm:hidden" />
+                            <h3 className="text-gray-800 font-bold text-lg mb-1">Saisie manuelle</h3>
+                            <p className="text-gray-400 text-sm mb-5">Entrez le numéro imprimé sur la carte</p>
+                            <form onSubmit={handleManualSubmit} className="flex flex-col gap-4">
+                                <input type="text" value={manualVal} onChange={e => setManualVal(e.target.value)} placeholder="Ex : BC-2024-0001" autoFocus className="w-full bg-orange-50 border-2 border-orange-200 rounded-xl px-4 py-3.5 text-gray-800 font-mono text-base placeholder-gray-300 focus:outline-none focus:border-orange-400 transition-colors" />
+                                <div className="flex gap-3">
+                                    <button type="button" onClick={() => setShowManual(false)} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">Annuler</button>
+                                    <button type="submit" disabled={!manualVal.trim() || manualLoading} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-orange-500 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 transition-colors">
+                                        {manualLoading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : Icon.arrow}
+                                        Valider
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* PHASE : IDLE                                            */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {phase === 'idle' && (
-                <div className="flex flex-col items-center gap-6 pt-8">
-                    <div className="relative w-48 h-48">
-                        <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-orange-400 to-orange-600 opacity-10 animate-pulse" />
-                        <div className="absolute inset-4 rounded-2xl border-4 border-orange-300 border-dashed" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-orange-500">
-                                <svg viewBox="0 0 80 80" className="w-24 h-24" fill="none">
-                                    <path d="M10 25 L10 10 L25 10" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M55 10 L70 10 L70 25" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M70 55 L70 70 L55 70" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M25 70 L10 70 L10 55" stroke="#f97316" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-                                    <rect x="28" y="28" width="10" height="10" rx="2" fill="#fdba74" />
-                                    <rect x="42" y="28" width="10" height="10" rx="2" fill="#fdba74" />
-                                    <rect x="28" y="42" width="10" height="10" rx="2" fill="#fdba74" />
-                                    <rect x="44" y="44" width="6" height="6" rx="1" fill="#f97316" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="text-center">
-                        <p className="text-gray-700 font-medium text-base">Prêt à scanner</p>
-                        <p className="text-gray-400 text-sm mt-1">Appuyez sur le bouton pour activer la caméra</p>
-                    </div>
-
-                    <button
-                        onClick={() => startScanner('environment')}
-                        className="flex items-center gap-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold text-base px-8 py-4 rounded-2xl shadow-lg shadow-orange-200 active:scale-95 transition-all hover:shadow-orange-300"
-                    >
-                        {Icon.scan}
-                        Démarrer le scan
-                    </button>
-
-                    <button
-                        onClick={() => setShowManual(true)}
-                        className="flex items-center gap-2 text-orange-500 font-medium text-sm border border-orange-200 px-5 py-2.5 rounded-xl bg-white hover:bg-orange-50 transition-colors"
-                    >
-                        {Icon.keyboard}
-                        Saisir le numéro manuellement
-                    </button>
-                </div>
+            {/* ✅ Bridge : Modal Nouveau Client */}
+            {showNouveauClientModal && (
+                <NouveauClientModal
+                    initialCarte={carteViergeDetectee}
+                    onClose={() => {
+                        setShowNouveauClientModal(false);
+                        resetScan();
+                    }}
+                    onSuccess={() => {
+                        setShowNouveauClientModal(false);
+                        Swal.fire({
+                            icon: "success",
+                            title: "Client enregistré !",
+                            text: "Le nouveau client a été ajouté avec succès.",
+                            confirmButtonColor: "#F97316",
+                        });
+                        resetScan();
+                    }}
+                />
             )}
-
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* PHASE : SCANNING                                        */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {phase === 'scanning' && (
-                <div className="flex flex-col gap-4">
-                    <div className="relative rounded-3xl overflow-hidden bg-black shadow-xl">
-                        <div id={SCANNER_ELEMENT_ID} className="w-full" style={{ minHeight: 'min(72vw, 360px)' }} />
-                        <div className="absolute inset-0 pointer-events-none">
-                            <span className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-orange-400 rounded-tl-lg" />
-                            <span className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-orange-400 rounded-tr-lg" />
-                            <span className="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-orange-400 rounded-bl-lg" />
-                            <span className="absolute bottom-6 right-6 w-8 h-8 border-b-4 border-r-4 border-orange-400 rounded-br-lg" />
-                            <div className="absolute left-8 right-8 top-1/2 -translate-y-1/2 overflow-hidden" style={{ height: '2px' }}>
-                                <div className="w-full h-full bg-gradient-to-r from-transparent via-orange-400 to-transparent" style={{ animation: 'scanLine 2s ease-in-out infinite' }} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between items-center px-2">
-                        {cameras.length > 1 && (
-                            <button onClick={flipCamera} className="flex items-center gap-2 bg-white border border-orange-200 text-orange-600 text-sm font-medium px-4 py-2.5 rounded-xl shadow-sm hover:bg-orange-50 active:scale-95 transition-all">
-                                {Icon.flip}
-                                {useFront ? 'Caméra arrière' : 'Caméra avant'}
-                            </button>
-                        )}
-                        {torchSupported && (
-                            <button onClick={toggleTorch} className={`flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-xl border shadow-sm active:scale-95 transition-all ${torchOn ? 'bg-orange-500 text-white border-orange-500' : 'bg-white border-orange-200 text-orange-600 hover:bg-orange-50'}`}>
-                                {Icon.torch}
-                                Flash
-                            </button>
-                        )}
-                        <button onClick={resetScan} className="flex items-center gap-2 bg-gray-100 text-gray-600 text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-gray-200 active:scale-95 transition-all">✕ Annuler</button>
-                    </div>
-
-                    <p className="text-center text-gray-400 text-xs">Alignez le QR code de la carte BOMBA CASH dans le cadre</p>
-                    <button onClick={() => setShowManual(true)} className="text-center text-orange-500 text-sm underline underline-offset-2">Saisir le numéro manuellement</button>
-                </div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* PHASE : LOADING                                         */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {phase === 'loading' && (
-                <div className="flex flex-col items-center gap-5 pt-16">
-                    <div className="relative w-20 h-20">
-                        <div className="absolute inset-0 rounded-full border-4 border-orange-100" />
-                        <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
-                        <div className="absolute inset-0 flex items-center justify-center text-orange-400">{Icon.card}</div>
-                    </div>
-                    <p className="text-gray-600 font-medium">Vérification de la carte…</p>
-                    <p className="text-gray-400 text-sm">Connexion au serveur en cours</p>
-                </div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* PHASE : ERROR                                           */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {phase === 'error' && (
-                <div className="flex flex-col items-center gap-5 pt-12">
-                    <div className="w-20 h-20 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center text-red-500">{Icon.alert}</div>
-                    <div className="text-center">
-                        <p className="text-gray-800 font-bold text-lg">Scan échoué</p>
-                        <p className="text-gray-500 text-sm mt-1 max-w-xs">{errMsg}</p>
-                    </div>
-                    <button onClick={resetScan} className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg shadow-orange-200 active:scale-95 transition-all">{Icon.refresh} Réessayer</button>
-                    <button onClick={() => setShowManual(true)} className="text-orange-500 text-sm underline underline-offset-2">Saisir manuellement</button>
-                </div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* PHASE : RESULT                                          */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {phase === 'result' && carte && client && (
-                <div className="flex flex-col gap-4 animate-fadeIn">
-                    <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
-                        <span className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0">{Icon.check}</span>
-                        <p className="text-emerald-700 font-semibold text-sm">Carte détectée avec succès</p>
-                    </div>
-
-                    <div className="bg-white rounded-3xl border border-orange-100 shadow-sm overflow-hidden">
-                        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-5">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-white font-bold text-xl">{(client.prenom?.[0] ?? '') + (client.nom?.[0] ?? '')}</span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white font-bold text-lg leading-tight truncate">{client.prenom} {client.nom}</p>
-                                    <p className="text-orange-100 text-sm">{client.telephone}</p>
-                                    <p className="text-orange-200 text-xs mt-0.5 truncate">{client.ville}</p>
-                                </div>
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${statutCfg.bg} ${statutCfg.text}`}>
-                                    <span className={`w-2 h-2 rounded-full ${statutCfg.dot}`} />
-                                    {statutCfg.label}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="px-5 py-5 space-y-4">
-                            <div className="flex items-center gap-3 bg-orange-50 rounded-xl px-4 py-3">
-                                <span className="text-orange-400">{Icon.card}</span>
-                                <div>
-                                    <p className="text-gray-400 text-xs">Numéro de carte</p>
-                                    <p className="text-gray-800 font-mono font-semibold text-sm tracking-wider">{carte.numero_carte?.replace(/(.{4})/g, '$1 ').trim()}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 bg-orange-50 rounded-xl px-4 py-3">
-                                <span className="text-orange-400">{Icon.wallet}</span>
-                                <div className="flex-1">
-                                    <p className="text-gray-400 text-xs">Solde disponible</p>
-                                    <p className="text-orange-600 font-extrabold text-xl">{fmt(compte?.solde_total)} <span className="text-sm font-semibold">FCFA</span></p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <p className="text-gray-600 text-sm font-medium">Progression épargne</p>
-                                    <span className="text-orange-600 font-bold text-sm">{carte.progression ?? 0}%</span>
-                                </div>
-                                <ProgressBar value={carte.progression} />
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-2 pt-1">
-                                {[
-                                    { label: 'Dépôts', value: fmt(compte?.total_depots), color: 'text-emerald-600' },
-                                    { label: 'Retraits', value: fmt(compte?.total_retraits), color: 'text-red-500' },
-                                    { label: 'Pénalités', value: fmt(compte?.total_penalites), color: 'text-amber-600' },
-                                ].map((s) => (
-                                    <div key={s.label} className="bg-gray-50 rounded-xl px-3 py-2.5 text-center">
-                                        <p className="text-gray-400 text-xs">{s.label}</p>
-                                        <p className={`font-bold text-sm ${s.color}`}>{s.value}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="flex gap-3">
-                                {carte.date_activation && (
-                                    <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2">
-                                        <p className="text-gray-400 text-xs">Activation</p>
-                                        <p className="text-gray-700 text-xs font-semibold">{new Date(carte.date_activation).toLocaleDateString('fr-FR')}</p>
-                                    </div>
-                                )}
-                                {carte.date_expiration && (
-                                    <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2">
-                                        <p className="text-gray-400 text-xs">Expiration</p>
-                                        <p className={`text-xs font-semibold ${new Date(carte.date_expiration) < new Date() ? 'text-red-500' : 'text-gray-700'}`}>{new Date(carte.date_expiration).toLocaleDateString('fr-FR')}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => navigate(`/agent/clients/${client.id_client}/operation`)}
-                            disabled={statut !== 'active'}
-                            className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${statut === 'active' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                        >
-                            {Icon.ops}
-                            Ajouter opération
-                            {statut !== 'active' && <span className="text-xs font-normal opacity-70">Carte {statut}</span>}
-                        </button>
-
-                        <button onClick={() => navigate(`/agent/clients/${client.id_client}`)} className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-white border-2 border-orange-200 text-orange-600 font-bold text-sm hover:bg-orange-50 transition-all active:scale-95">
-                            {Icon.user}
-                            Voir profil
-                            <span className="text-xs font-normal text-gray-400">Détails complets</span>
-                        </button>
-                    </div>
-
-                    <button onClick={resetScan} className="flex items-center justify-center gap-2 text-gray-500 text-sm py-3 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors active:scale-95">{Icon.refresh} Scanner une autre carte</button>
-                </div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════ */}
-            {/* OVERLAY : SAISIE MANUELLE                              */}
-            {/* ════════════════════════════════════════════════════════ */}
-            {showManual && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowManual(false)} />
-                    <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl z-10 animate-slideUp">
-                        <div className="w-12 h-1.5 rounded-full bg-gray-200 mx-auto mb-6 sm:hidden" />
-                        <h3 className="text-gray-800 font-bold text-lg mb-1">Saisie manuelle</h3>
-                        <p className="text-gray-400 text-sm mb-5">Entrez le numéro imprimé sur la carte</p>
-                        <form onSubmit={handleManualSubmit} className="flex flex-col gap-4">
-                            <input type="text" value={manualVal} onChange={e => setManualVal(e.target.value)} placeholder="Ex : BC-2024-0001" autoFocus className="w-full bg-orange-50 border-2 border-orange-200 rounded-xl px-4 py-3.5 text-gray-800 font-mono text-base placeholder-gray-300 focus:outline-none focus:border-orange-400 transition-colors" />
-                            <div className="flex gap-3">
-                                <button type="button" onClick={() => setShowManual(false)} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors">Annuler</button>
-                                <button type="submit" disabled={!manualVal.trim() || manualLoading} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-orange-500 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 transition-colors">
-                                    {manualLoading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : Icon.arrow}
-                                    Valider
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-        </div>
-        // ❌ SUPPRIMER : </AgentLayout>
+        </>
     );
 }

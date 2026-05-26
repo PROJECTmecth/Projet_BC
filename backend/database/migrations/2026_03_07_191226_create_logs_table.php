@@ -12,7 +12,7 @@ return new class extends Migration {
 
             // Clé étrangère vers l'admin utilisateur
             $table->foreignId('id_admin')
-                  ->constrained('users', 'id_user')
+                  ->constrained('users', 'id')
                   ->cascadeOnDelete(); // FK vers users (Admin ayant déclenché l'action)
 
             // Informations sur l'action

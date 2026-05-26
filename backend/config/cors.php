@@ -23,7 +23,7 @@ return [
         env('APP_FRONTEND_URL'),     // Alias de secours
     ])),
 
-    // Wildcard pattern si FRONTEND_URL contient *.vercel.app
+    // Wildcard pattern — couvre toutes les preview URLs Vercel
     'allowed_origins_patterns' => [
         '#^https://.*\.vercel\.app$#',
     ],
@@ -34,7 +34,6 @@ return [
 
     'max_age' => 86400,
 
-    // ✅ false car on utilise Bearer Token (pas de cookies en cross-domain)
-    // Mettre true SEULEMENT si le frontend et le backend sont sur le même domaine
+    // false car on utilise Bearer Token (pas de cookies en cross-domain)
     'supports_credentials' => false,
 ];
