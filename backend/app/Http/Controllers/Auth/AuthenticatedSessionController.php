@@ -22,8 +22,10 @@ class AuthenticatedSessionController extends Controller
             'password' => 'required|string',
         ]);
 
-        // Recherche utilisateur
-        $user = User::where('name', $request->name)->first();
+        // Recherche utilisateur par nom d'utilisateur OU par email
+        $user = User::where('name', $request->name)
+                    ->orWhere('email', $request->name)
+                    ->first();
 
         // Vérification credentials
         if (!$user || !Hash::check($request->password, $user->password)) {

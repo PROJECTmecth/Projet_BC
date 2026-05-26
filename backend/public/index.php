@@ -1,22 +1,5 @@
 <?php
 
-// ── FORÇAGE CORS MANUEL (Solution Ultime) ──────────────────────────────────
-if (isset($_SERVER['HTTP_ORIGIN'])) {
-    header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
-    header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Max-Age: 86400');
-}
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
-        header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH");
-    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
-        header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
-    header("HTTP/1.1 200 OK");
-    exit(0);
-}
-// ─────────────────────────────────────────────────────────────────────────────
-
-
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
@@ -31,6 +14,8 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 require __DIR__.'/../vendor/autoload.php';
 
 // Bootstrap Laravel and handle the request...
+// CORS is handled entirely by Laravel's HandleCors middleware (config/cors.php).
+// Ne pas dupliquer les headers CORS ici — cela crée des conflits de headers doubles.
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 

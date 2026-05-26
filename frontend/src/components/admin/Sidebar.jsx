@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { UserCheck } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import logo from "../../assets/logos/logo2.jpeg";
 
 // ── Icônes SVG ────────────────────────────────────────────────────────────────
 const IcoDashboard = () => (
@@ -92,8 +93,8 @@ export default function Sidebar({ collapsed = false, onToggle, isMobile = false 
         title={isMobile ? "" : (collapsed ? "Agrandir la sidebar" : "Réduire la sidebar")}
       >
         {/* Icône poisson — toujours visible */}
-        <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg shrink-0">
-          <span className="text-2xl">🐟</span>
+        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shrink-0 overflow-hidden border border-white/20">
+          <img src={logo} alt="BombaCash Logo" className="w-full h-full object-cover" />
         </div>
 
         {/* Texte BOMBA CASH — masqué si collapsed */}

@@ -41,6 +41,16 @@ const IcoChevronRight = () => (
     <polyline points="9 18 15 12 9 6" />
   </svg>
 );
+const IcoShield = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+);
+const IcoAlert = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
@@ -49,6 +59,7 @@ export default function AdminDashboardPage() {
 
   const [showClientsDetail, setShowClientsDetail] = useState(false);
   const [showKiosquesDetail, setShowKiosquesDetail] = useState(false);
+  const [showRevenusDetail,  setShowRevenusDetail]  = useState(false);  // ← AJOUT
   const [animatedTotalKiosques, setAnimatedTotalKiosques] = useState(0);
 
   // ── Animation du total kiosques ──────────────────────────────────────────────
@@ -60,7 +71,7 @@ export default function AdminDashboardPage() {
 
     let start = 0;
     const target = stats.totalKiosques;
-    const duration = 1500; // 1.5s
+    const duration = 1500;
     const increment = target / (duration / 16);
 
     const animate = () => {
@@ -226,20 +237,70 @@ export default function AdminDashboardPage() {
           textColor="text-green-100"
         />
 
-        {/* ── Carte Revenus ── */}
-        <StatCard
-          title="Revenus encaissés"
-          value={loading ? "..." : `${stats?.revenus} F`}
-          subtitle={<span className="flex items-center gap-1"><IcoTrendUp /> Ce mois</span>}
-          gradient="from-yellow-500 to-yellow-600"
-          textColor="text-yellow-100"
-          onClick={() => navigate("/admin/revenus")}
+        {/* ── Carte Revenus ── AVEC DROPDOWN AU HOVER */}
+        <div
+          className="relative"
+          onMouseEnter={() => setShowRevenusDetail(true)}
+          onMouseLeave={() => setShowRevenusDetail(false)}
         >
-          <p className="text-yellow-100 text-xs mt-3 flex items-center gap-1">
-            <span>Cliquez pour voir les détails</span>
-            <IcoChevronRight />
-          </p>
-        </StatCard>
+          <StatCard
+            title="Revenus encaissés"
+            value={loading ? "..." : `${stats?.revenus} F`}
+            subtitle={<span className="flex items-center gap-1"><IcoTrendUp /> Ce mois</span>}
+            gradient="from-yellow-500 to-yellow-600"
+            textColor="text-yellow-100"
+          >
+            <p className="text-yellow-100 text-xs mt-3 flex items-center gap-1 opacity-80">
+              <span>Survolez pour voir le détail</span>
+            </p>
+          </StatCard>
+
+          {/* Dropdown glassmorphic au hover */}
+          {showRevenusDetail && !loading && (
+            <div
+              className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl p-5 shadow-xl"
+              style={{
+                background    : "rgba(255,255,255,0.90)",
+                backdropFilter: "blur(20px)",
+                border        : "1px solid rgba(255,255,255,0.3)",
+              }}
+            >
+              <div className="space-y-3">
+                
+                {/* Frais de garde */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-blue-100 p-1.5 rounded-lg">
+                      <IcoShield />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">Frais de garde</span>
+                  </div>
+                  <span className="text-2xl font-bold text-blue-600">
+                    {(stats?.revenusBreakdown?.frais_garde ?? 0).toLocaleString('fr-FR')} F
+                  </span>
+                </div>
+                
+                <div className="border-t border-gray-100" />
+                
+                {/* Pénalités */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-orange-100 p-1.5 rounded-lg">
+                      <IcoAlert />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">Pénalités</span>
+                  </div>
+                  <span className="text-2xl font-bold text-orange-600">
+                    {(stats?.revenusBreakdown?.penalites ?? 0).toLocaleString('fr-FR')} F
+                  </span>
+                </div>
+
+                
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ══ 4. GRAPHIQUES ════════════════════════════════════════════════════ */}

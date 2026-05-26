@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\AgentController;
 use App\Http\Controllers\Admin\CarteController;
 use App\Http\Controllers\Admin\ProfilController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Admin\DashboardController; // ✅ Ajout
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MouvementCaisseController;
+use App\Http\Controllers\Admin\ClientController;
 /*
 |--------------------------------------------------------------------------
 | API Routes - Projet BOMBA_CASH
@@ -21,6 +23,49 @@ use App\Http\Controllers\Admin\DashboardController; // ✅ Ajout
 
 // Login
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+
+// Route de diagnostic CORS
+Route::get('/cors-debug', function () {
+    return response()->json([
+        'status' => 'ok',
+        'allowed_origins' => config('cors.allowed_origins'),
+        'env_origins' => env('CORS_ALLOWED_ORIGINS'),
+        'app_url' => config('app.url'),
+        'headers' => getallheaders(),
+        'origin' => request()->header('Origin'),
+        'method' => request()->method(),
+    ]);
+});
+
+// Route de test CORS complet
+Route::options('/test-cors', function () {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-XSRF-Token')
+        ->header('Access-Control-Allow-Credentials', 'true');
+});
+
+Route::get('/test-cors', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'CORS test successful',
+        'timestamp' => now()->toISOString(),
+        'origin' => request()->header('Origin'),
+        'method' => request()->method(),
+    ])->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+      ->header('Access-Control-Allow-Credentials', 'true');
+});
+
+Route::post('/test-cors', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'CORS POST test successful',
+        'data' => request()->all(),
+        'timestamp' => now()->toISOString(),
+    ])->header('Access-Control-Allow-Origin', 'https://projet-bc.vercel.app')
+      ->header('Access-Control-Allow-Credentials', 'true');
+});
 
 // Utilisateur connecté
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
@@ -76,8 +121,6 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::patch ('/agents/{agent}/statut', [AgentController::class, 'toggleStatut']) ->name('agents.toggle');
 
 
-        // Placeholders
-        Route::get('/clients',      fn() => response()->json(['success' => true, 'message' => '✅ Liste clients']))->name('clients.index');
         Route::get('/transactions',  fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
 
         // Profil Admin

@@ -3,12 +3,14 @@ import { useState, useEffect, useMemo } from "react";
 import { Search, Printer, Download, FileText, User, X } from "lucide-react";
 import api from "../../lib/axios";
 import Swal from "sweetalert2";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
+// Formatage des nombres
 const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
 
+// ── Composant : Progression circulaire ─────────────────────────────────────
 function CircleProgress({ pct = 0 }) {
   const r = 54, circ = 2 * Math.PI * r, dash = (pct / 100) * circ;
   return (
@@ -22,6 +24,7 @@ function CircleProgress({ pct = 0 }) {
   );
 }
 
+// ── Composant : Modal détail client ────────────────────────────────────────
 function ModalClient({ clientId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,36 +102,36 @@ function ModalClient({ clientId, onClose }) {
                 </div>
                 <div className="bg-orange-50 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[500px]">
-                    <thead>
-                      <tr className="bg-orange-100 text-[#1e2a3a] text-xs">
-                        <th className="px-3 py-3 text-left">No.</th>
-                        <th className="px-3 py-3 text-left">Date</th>
-                        <th className="px-3 py-3 text-left">Heure</th>
-                        <th className="px-3 py-3 text-left">Opération</th>
-                        <th className="px-3 py-3 text-right">Montant</th>
-                        <th className="px-3 py-3 text-left">Kiosque</th>
-                        <th className="px-3 py-3 text-left">Agent</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.transactions.length === 0 ? (
-                        <tr><td colSpan={7} className="text-center py-6 text-gray-400 text-xs">Aucune opération</td></tr>
-                      ) : data.transactions.map((t, i) => (
-                        <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-orange-50/50"}>
-                          <td className="px-3 py-3 text-gray-500">{i + 1}</td>
-                          <td className="px-3 py-3">{t.date}</td>
-                          <td className="px-3 py-3 text-gray-500">{t.heure}</td>
-                          <td className="px-3 py-3 font-semibold">{t.operation}</td>
-                          <td className={`px-3 py-3 text-right font-bold ${t.type_op === "dépôt_cash" ? "text-green-600" : "text-red-500"}`}>
-                            {t.type_op === "dépôt_cash" ? "+" : "-"}{fmt(t.montant)} FCFA
-                          </td>
-                          <td className="px-3 py-3 text-gray-600">{t.kiosque}</td>
-                          <td className="px-3 py-3 text-gray-600">{t.agent}</td>
+                    <table className="w-full text-sm min-w-[500px]">
+                      <thead>
+                        <tr className="bg-orange-100 text-[#1e2a3a] text-xs">
+                          <th className="px-3 py-3 text-left">No.</th>
+                          <th className="px-3 py-3 text-left">Date</th>
+                          <th className="px-3 py-3 text-left">Heure</th>
+                          <th className="px-3 py-3 text-left">Opération</th>
+                          <th className="px-3 py-3 text-right">Montant</th>
+                          <th className="px-3 py-3 text-left">Kiosque</th>
+                          <th className="px-3 py-3 text-left">Agent</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {data.transactions.length === 0 ? (
+                          <tr><td colSpan={7} className="text-center py-6 text-gray-400 text-xs">Aucune opération</td></tr>
+                        ) : data.transactions.map((t, i) => (
+                          <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-orange-50/50"}>
+                            <td className="px-3 py-3 text-gray-500">{i + 1}</td>
+                            <td className="px-3 py-3">{t.date}</td>
+                            <td className="px-3 py-3 text-gray-500">{t.heure}</td>
+                            <td className="px-3 py-3 font-semibold">{t.operation}</td>
+                            <td className={`px-3 py-3 text-right font-bold ${t.type_op === "dépôt_cash" ? "text-green-600" : "text-red-500"}`}>
+                              {t.type_op === "dépôt_cash" ? "+" : "-"}{fmt(t.montant)} FCFA
+                            </td>
+                            <td className="px-3 py-3 text-gray-600">{t.kiosque}</td>
+                            <td className="px-3 py-3 text-gray-600">{t.agent}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -140,6 +143,7 @@ function ModalClient({ clientId, onClose }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 export default function GestionClients() {
   const [clients, setClients]       = useState([]);
   const [total, setTotal]           = useState(0);
@@ -198,7 +202,7 @@ export default function GestionClients() {
   const endIdx = startIdx + ITEMS_PER_PAGE;
   const paginatedClients = filtered.slice(startIdx, endIdx);
 
-  // --- ACTIONS & SECURITÉS ---
+  // --- UTILITAIRES ---
   const hasData = (label) => {
     if (filtered.length === 0) {
       Swal.fire("Action impossible", `Aucune donnée à ${label}.`, "warning");
@@ -207,62 +211,231 @@ export default function GestionClients() {
     return true;
   };
 
+  // ── IMPRIMER (window.print) ─────────────────────────────────────────────
   const handlePrint = () => {
     if (!hasData("imprimer")) return;
+    
     Swal.fire({
-      title: "Imprimer ?",
-      text: "Voulez-vous imprimer la liste filtrée ?",
+      title: "Imprimer la liste ?",
+      text: "Voulez-vous imprimer la liste filtrée des clients ?",
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#1e2a3a",
-      confirmButtonText: "Oui, imprimer"
-    }).then(res => res.isConfirmed && window.print());
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Oui, imprimer",
+      cancelButtonText: "Annuler"
+    }).then(res => {
+      if (res.isConfirmed) {
+        // Ajouter la date au tableau pour l'afficher dans le CSS print
+        const table = document.getElementById('clients-table');
+        if (table) {
+          table.setAttribute('data-export-date', new Date().toLocaleDateString('fr-FR'));
+        }
+        // Petit délai pour laisser le CSS s'appliquer
+        setTimeout(() => {
+          window.print();
+        }, 200);
+      }
+    });
   };
 
+  // ── EXPORT PDF (jsPDF + autoTable) ──────────────────────────────────────
   const exportPDF = () => {
     if (!hasData("exporter")) return;
+    
     Swal.fire({
       title: "Export PDF",
-      text: "Générer le fichier PDF ?",
+      text: "Générer le fichier PDF avec la liste filtrée ?",
       icon: "info",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
-      confirmButtonText: "Exporter"
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Exporter",
+      cancelButtonText: "Annuler"
     }).then(res => {
       if (res.isConfirmed) {
-        const doc = new jsPDF('landscape');
-        doc.text("Liste des Clients", 14, 15);
-        const head = [["No.", "Nom & Prénom", "Carte", "Adresse", "Nationalité", "Tél.", "Activité"]];
-        const body = filtered.map((c, i) => [i + 1, `${c.nom} ${c.prenom}`, c.numero_carte, c.adresse, c.nationalite, c.telephone, c.activite]);
-        doc.autoTable({ head, body, startY: 20, theme: 'grid', headStyles: { fillColor: [30, 42, 58] } });
-        doc.save("liste_clients.pdf");
+        try {
+          // jsPDF en mode landscape pour plus de colonnes
+          const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+          });
+          
+          // Titre - CENTRÉ
+          doc.setFontSize(16);
+          doc.setFont("helvetica", "bold");
+          const title = "Liste des Clients - BOMBA CASH";
+          const pageWidth = doc.internal.pageSize.getWidth();
+          doc.text(title, pageWidth / 2, 15, { align: 'center' });
+          
+          // Date d'export - CENTRÉE
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Exporté le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 22, { align: 'center' });
+          
+          // Données pour le tableau
+          const head = [
+            ["No.", "Genre", "Nom & Prénom", "Carte", "Adresse", "Nationalité", "Tél.", "Activité"]
+          ];
+          
+          const body = filtered.map((c, i) => [
+            i + 1,
+            c.genre === "Homme" ? "M" : "F",
+            `${c.nom} ${c.prenom}`,
+            c.numero_carte,
+            c.adresse,
+            c.nationalite,
+            c.telephone,
+            c.activite
+          ]);
+          
+          // Calcul des largeurs pour centrer le tableau
+          // A4 landscape = 297mm de large, marges 14mm = 269mm utilisables
+          // Largeur totale des colonnes = 222mm → centré avec margin left/right = (269-222)/2 ≈ 23mm
+          const totalColWidth = 12+15+40+25+45+20+20+25; // = 202mm
+          const availableWidth = pageWidth - 28; // 297 - 28 = 269mm
+          const centeredMargin = (availableWidth - totalColWidth) / 2; // ≈ 33mm
+          
+          // Génération du tableau avec autoTable - CENTRÉ
+          autoTable(doc, {
+            head,
+            body,
+            startY: 28,
+            theme: 'grid',
+            // Centrage horizontal avec autoTable
+            margin: { left: 14, right: 14 },
+            tableWidth: 'auto',
+            
+            styles: { 
+              fontSize: 8,
+              cellPadding: 3,
+              overflow: 'linebreak'
+            },
+            
+            headStyles: { 
+              fillColor: [30, 42, 58],
+              textColor: 255,
+              fontSize: 9,
+              fontStyle: 'bold',
+              halign: 'center'
+            },
+            
+            // Largeurs de colonnes fixes
+            columnStyles: {
+              0: { cellWidth: 12, halign: 'center' },   // No.
+              1: { cellWidth: 15, halign: 'center' },   // Genre
+              2: { cellWidth: 40, halign: 'left' },     // Nom & Prénom
+              3: { cellWidth: 25, halign: 'center' },   // Carte
+              4: { cellWidth: 45, halign: 'left' },     // Adresse
+              5: { cellWidth: 20, halign: 'center' },   // Nationalité
+              6: { cellWidth: 20, halign: 'center' },   // Tél.
+              7: { cellWidth: 25, halign: 'left' },     // Activité
+            },
+            
+            // Gestion des sauts de page et du texte long
+            didParseCell: (data) => {
+              if (data.column.index === 4 && data.cell.text[0]?.length > 40) {
+                // Laisse autoTable gérer, ou on peut juste réduire la police
+                data.cell.styles.fontSize = 7;
+              }
+            },
+            
+            tableLineWidth: 0.3,
+            tableLineColor: [200, 200, 200],
+          });
+          
+          // Pied de page avec numéro de page - CENTRÉ
+          const pageCount = doc.internal.getNumberOfPages();
+          for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text(
+              `Page ${i} sur ${pageCount} - BOMBA CASH`,
+              pageWidth / 2,
+              doc.internal.pageSize.getHeight() - 10,
+              { align: 'center' }
+            );
+          }
+          
+          // Téléchargement
+          doc.save(`clients_bomba_cash_${new Date().toISOString().slice(0,10)}.pdf`);
+          
+          Swal.fire("Succès", "PDF généré avec succès !", "success");
+          
+        } catch (err) {
+          console.error("Erreur PDF:", err);
+          Swal.fire("Erreur", "Impossible de générer le PDF. Voir console pour détails.", "error");
+        }
       }
     });
   };
 
+  // ── EXPORT EXCEL (xlsx) ─────────────────────────────────────────────────
   const exportExcel = () => {
     if (!hasData("exporter")) return;
+    
     Swal.fire({
       title: "Export Excel",
-      text: "Générer le fichier Excel ?",
+      text: "Générer le fichier Excel avec la liste filtrée ?",
       icon: "info",
       showCancelButton: true,
       confirmButtonColor: "#16a34a",
-      confirmButtonText: "Exporter"
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Exporter",
+      cancelButtonText: "Annuler"
     }).then(res => {
       if (res.isConfirmed) {
-        const ws = XLSX.utils.json_to_sheet(filtered);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Clients");
-        XLSX.writeFile(wb, "liste_clients.xlsx");
+        try {
+          // Préparer les données
+          const data = filtered.map((c, i) => ({
+            "No.": i + 1,
+            "Genre": c.genre === "Homme" ? "Masculin" : "Féminin",
+            "Nom": c.nom,
+            "Prénom": c.prenom,
+            "Carte": c.numero_carte,
+            "Adresse": c.adresse,
+            "Ville": c.adresse?.split(', ')[1] || "",
+            "Nationalité": c.nationalite,
+            "Type pièce": c.type_piece,
+            "No. pièce": c.num_piece,
+            "Activité": c.activite,
+            "Téléphone": c.telephone,
+          }));
+          
+          // Créer le worksheet
+          const ws = XLSX.utils.json_to_sheet(data);
+          
+          // Ajuster les largeurs de colonnes
+          const colWidths = [
+            { wch: 5 }, { wch: 12 }, { wch: 20 }, { wch: 20 },
+            { wch: 18 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
+            { wch: 12 }, { wch: 20 }, { wch: 18 }, { wch: 15 },
+          ];
+          ws['!cols'] = colWidths;
+          
+          // Créer le workbook et exporter
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Clients");
+          XLSX.writeFile(wb, `clients_bomba_cash_${new Date().toISOString().slice(0,10)}.xlsx`);
+          
+          Swal.fire("Succès", "Excel généré avec succès !", "success");
+          
+        } catch (err) {
+          console.error("Erreur Excel:", err);
+          Swal.fire("Erreur", "Impossible de générer le fichier Excel.", "error");
+        }
       }
     });
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="printable-area">
-      {/* Bannière */}
-      <div className="relative bg-[#1e2a3a] rounded-2xl px-5 sm:px-8 py-5 sm:py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between mb-7 overflow-hidden gap-4">
+      
+      {/* ══ Bannière ═════════════════════════════════════════════════════ */}
+      <div className="relative bg-[#1e2a3a] rounded-2xl px-5 sm:px-8 py-5 sm:py-7 flex flex-col sm:flex-row items-start sm:items-center justify-between mb-7 overflow-hidden gap-4 no-print">
         <div className="absolute right-40 -top-6 w-28 h-28 rounded-full bg-white/[0.04]" />
         <div className="flex items-center gap-4 z-10 min-w-0">
           <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[14px] bg-white/10 flex items-center justify-center text-white shrink-0">
@@ -281,7 +454,7 @@ export default function GestionClients() {
       </div>
       </div>
 
-      {/* Recherche + actions */}
+      {/* ══ Recherche + Actions ══════════════════════════════════════════ */}
       <div className="bg-white rounded-2xl px-5 py-4 flex flex-wrap items-center gap-3 mb-6 shadow-sm no-print">
         <div className="flex-1 relative min-w-[180px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -289,20 +462,27 @@ export default function GestionClients() {
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none" />
         </div>
-        <button onClick={handlePrint} className="flex items-center gap-1.5 border border-[#1e2a3a] text-[#1e2a3a] px-3 py-2 rounded-lg text-sm hover:bg-gray-50" title="Imprimer">
+        <button onClick={handlePrint} 
+          className="flex items-center gap-1.5 border border-[#1e2a3a] text-[#1e2a3a] px-3 py-2 rounded-lg text-sm hover:bg-gray-50" 
+          title="Imprimer">
           <Printer size={15} /><span className="hidden sm:inline">Imprimer</span>
         </button>
-        <button onClick={exportPDF} className="flex items-center gap-1.5 border border-red-500 text-red-500 px-3 py-2 rounded-lg text-sm hover:bg-red-50" title="PDF">
+        <button onClick={exportPDF} 
+          className="flex items-center gap-1.5 border border-red-500 text-red-500 px-3 py-2 rounded-lg text-sm hover:bg-red-50" 
+          title="Exporter en PDF">
           <FileText size={15} /><span className="hidden sm:inline">PDF</span>
         </button>
-        <button onClick={exportExcel} className="flex items-center gap-1.5 border border-green-600 text-green-600 px-3 py-2 rounded-lg text-sm hover:bg-green-50" title="Excel">
+        <button onClick={exportExcel} 
+          className="flex items-center gap-1.5 border border-green-600 text-green-600 px-3 py-2 rounded-lg text-sm hover:bg-green-50" 
+          title="Exporter en Excel">
           <Download size={15} /><span className="hidden sm:inline">Excel</span>
         </button>
       </div>
 
-      {/* Tableau */}
+      {/* ══ Tableau des clients ══════════════════════════════════════════ */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
+<<<<<<< HEAD
         <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="bg-[#1e2a3a] text-white text-xs uppercase">
@@ -352,13 +532,65 @@ export default function GestionClients() {
                     </svg>
                   </button>
                 </td>
+=======
+          <table className="w-full text-sm min-w-[900px]" id="clients-table">
+            <thead>
+              <tr className="bg-[#1e2a3a] text-white text-xs uppercase">
+                <th className="px-4 py-4 text-left">No.</th>
+                <th className="px-4 py-4 text-left">Genre</th>
+                <th className="px-4 py-4 text-left">Nom & Prénom</th>
+                <th className="px-4 py-4 text-left">Adresse</th>
+                <th className="px-4 py-4 text-left">Nationalité</th>
+                <th className="px-4 py-4 text-left">Pièce</th>
+                <th className="px-4 py-4 text-left">No. Pièce</th>
+                <th className="px-4 py-4 text-left">Activité</th>
+                <th className="px-4 py-4 text-left">Tél.</th>
+                <th className="px-4 py-4 text-center no-print">Détail</th>
+>>>>>>> developpement
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={10} className="text-center py-10 text-gray-400">Chargement…</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
+              ) : filtered.map((c, i) => (
+                <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                  <td className="px-4 py-4 text-gray-500">{i + 1}</td>
+                  <td className="px-4 py-4">
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${c.genre === "Homme" ? "bg-blue-400" : "bg-pink-400"}`}>
+                      {c.genre === "Homme" ? "M" : "F"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="font-bold text-[#1e2a3a]">{c.nom} {c.prenom}</p>
+                    <p className="text-xs text-[#FF6600]">{c.numero_carte}</p>
+                  </td>
+                  <td className="px-4 py-4 text-gray-600">{c.adresse}</td>
+                  <td className="px-4 py-4 text-gray-600">{c.nationalite}</td>
+                  <td className="px-4 py-4 text-gray-600">{c.type_piece}</td>
+                  <td className="px-4 py-4 text-gray-600">{c.num_piece}</td>
+                  <td className="px-4 py-4 text-gray-600">{c.activite}</td>
+                  <td className="px-4 py-4 text-gray-600">{c.telephone}</td>
+                  <td className="px-4 py-4 text-center no-print">
+                    <button onClick={() => setSelectedId(c.id_client)}
+                      className="border border-blue-400 text-blue-500 rounded-lg p-1.5 hover:bg-blue-50">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* ✅ Pagination */}
       {filtered.length > ITEMS_PER_PAGE && (
         <div className="bg-white rounded-2xl px-5 py-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm no-print">
@@ -401,17 +633,129 @@ export default function GestionClients() {
         </div>
       )}
 
+=======
+      {/* Modal détail client */}
+>>>>>>> developpement
       <ModalClient clientId={selectedId} onClose={() => setSelectedId(null)} />
 
-      {/* Styles CSS pour l'impression propre */}
+      {/* ══ CSS POUR L'IMPRESSION - VERSION ROBUSTE ═══════════════════════ */}
       <style>{`
         @media print {
-          @page { size: auto; margin: 5mm; }
-          .no-print { display: none !important; }
-          body { background: white !important; -webkit-print-color-adjust: exact; }
-          .printable-area { padding: 0 !important; margin: 0 !important; }
-          table { border-collapse: collapse !important; width: 100% !important; }
-          th, td { border: 1px solid #ddd !important; padding: 8px !important; }
+          @page { 
+            size: landscape;
+            margin: 8mm; 
+          }
+          
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box !important;
+          }
+          
+          body {
+            background: white !important;
+            color: black !important;
+            font-size: 8pt !important;
+            font-family: Arial, sans-serif !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
+          /* Cacher les éléments non imprimables */
+          .no-print, nav, aside, header {
+            display: none !important;
+          }
+          
+          /* Ajuster la zone imprimable */
+          .printable-area {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
+          /* Afficher le tableau correctement */
+          #clients-table {
+            display: table !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 7pt !important;
+            table-layout: fixed !important;
+            margin: 0 auto !important;
+          }
+          
+          #clients-table thead {
+            display: table-header-group !important;
+          }
+          
+          #clients-table tbody {
+            display: table-row-group !important;
+          }
+          
+          #clients-table tr {
+            display: table-row !important;
+            page-break-inside: avoid !important;
+          }
+          
+          #clients-table th,
+          #clients-table td {
+            display: table-cell !important;
+            border: 1px solid #333 !important;
+            padding: 3px 4px !important;
+            text-align: left !important;
+            word-wrap: break-word !important;
+          }
+          
+          #clients-table th {
+            background-color: #1e2a3a !important;
+            color: white !important;
+            font-weight: bold !important;
+            text-transform: uppercase !important;
+          }
+          
+          #clients-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9 !important;
+          }
+          
+          /* Largeurs de colonnes */
+          #clients-table th:nth-child(1), #clients-table td:nth-child(1) { width: 8%; }
+          #clients-table th:nth-child(2), #clients-table td:nth-child(2) { width: 7%; }
+          #clients-table th:nth-child(3), #clients-table td:nth-child(3) { width: 22%; }
+          #clients-table th:nth-child(4), #clients-table td:nth-child(4) { width: 24%; }
+          #clients-table th:nth-child(5), #clients-table td:nth-child(5) { width: 10%; }
+          #clients-table th:nth-child(6), #clients-table td:nth-child(6) { width: 9%; }
+          #clients-table th:nth-child(7), #clients-table td:nth-child(7) { width: 12%; }
+          #clients-table th:nth-child(8), #clients-table td:nth-child(8) { width: 10%; }
+          #clients-table th:nth-child(9), #clients-table td:nth-child(9) { width: 8%; }
+          
+          /* Cacher colonne Détail */
+          #clients-table th:nth-child(10),
+          #clients-table td:nth-child(10) {
+            display: none !important;
+          }
+          
+          /* En-tête de rapport */
+          #clients-table::before {
+            content: "BOMBA CASH - Liste des Clients";
+            display: table-caption;
+            caption-side: top;
+            font-size: 14pt;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px 0;
+            color: #1e2a3a;
+          }
+          
+          #clients-table::after {
+            content: "Exporté le: " attr(data-export-date);
+            display: table-caption;
+            caption-side: bottom;
+            font-size: 8pt;
+            text-align: right;
+            padding: 5px 0;
+            color: #666;
+          }
         }
       `}</style>
     </div>
