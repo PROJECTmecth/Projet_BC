@@ -124,12 +124,13 @@ class CarteController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     // GET /api/admin/qrcodes/lots
     //
-    // Retourne la liste des lots groupés par date_creation
+    // Par défaut : exclut les lots annulés.
+    // Avec ?include_annule=1 : retourne tous les lots (pour rapport complet PDF).
     // ─────────────────────────────────────────────────────────────────────────
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $lots = Carte::select(
+            $query = Carte::select(
                         'date_creation',
                         'statut',
                         DB::raw('COUNT(*) as quantite'),
@@ -137,17 +138,22 @@ class CarteController extends Controller
                         DB::raw('MAX(id_carte) as dernier_id')
                     )
                     ->groupBy('date_creation', 'statut')
-                    ->orderByDesc('date_creation')
-                    ->get()
-                    ->map(function ($lot, $index) {
-                        return [
-                            'id'             => $lot->premier_id,
-                            'numero'         => 'Lot #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
-                            'quantite'       => $lot->quantite,
-                            'dateGeneration' => \Carbon\Carbon::parse($lot->date_creation)->format('d/m/Y'),
-                            'statut'         => ucfirst($lot->statut),
-                        ];
-                    });
+                    ->orderByDesc('date_creation');
+
+            if (!$request->boolean('include_annule')) {
+                $query->where('statut', '!=', 'annulé');
+            }
+
+            $lots = $query->get()->map(function ($lot, $index) {
+                return [
+                    'id'             => $lot->premier_id,
+                    'numero'         => 'Lot #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                    'quantite'       => $lot->quantite,
+                    'dateGeneration' => \Carbon\Carbon::parse($lot->date_creation)->format('d/m/Y'),
+                    'statut'         => ucfirst($lot->statut),
+                    'annule'         => $lot->statut === 'annulé',
+                ];
+            });
 
             return response()->json([
                 'success' => true,
@@ -161,5 +167,36 @@ class CarteController extends Controller
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/admin/qrcodes/annuler
+    //
+    // Body JSON : { "carte_ids": [1, 2, 3, ...] }
+    // Marque les cartes vierges comme annulées.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function annuler(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'carte_ids'   => 'required|array|min:1',
+            'carte_ids.*' => 'integer',
+        ], [
+            'carte_ids.required' => 'La liste des cartes est obligatoire.',
+            'carte_ids.array'    => 'Le format est invalide.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $count = Carte::whereIn('id_carte', $request->carte_ids)
+            ->where('statut', 'vierge')
+            ->update(['statut' => 'annulé']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} carte(s) annulée(s).",
+            'annulees' => $count,
+        ]);
     }
 }

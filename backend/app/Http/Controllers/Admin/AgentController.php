@@ -33,6 +33,23 @@ class AgentController extends Controller
 
         $agents = $query->orderBy('id_agent')->get();
 
+        // Synchroniser statut_ligne avec les tokens Sanctum réels (1 seule requête)
+        $userIds = $agents->pluck('id_user')->filter()->values();
+        $onlineUserIds = DB::table('personal_access_tokens')
+            ->where('tokenable_type', 'App\\Models\\User')
+            ->whereIn('tokenable_id', $userIds)
+            ->pluck('tokenable_id')
+            ->unique()
+            ->toArray();
+
+        foreach ($agents as $agent) {
+            $realStatus = in_array($agent->id_user, $onlineUserIds) ? 'en_ligne' : 'hors_ligne';
+            if ($agent->statut_ligne !== $realStatus) {
+                $agent->update(['statut_ligne' => $realStatus]);
+                $agent->statut_ligne = $realStatus;
+            }
+        }
+
         return response()->json([
             'data'  => $agents->map(fn($a) => $this->format($a)),
             'stats' => [

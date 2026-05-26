@@ -76,8 +76,9 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 Route::middleware(['auth:sanctum'])->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
 // Hors groupe admin — Gestion des QR Codes
-Route::post('/admin/qrcodes/generer', [CarteController::class, 'generer'])->name('qrcodes.generer');
-Route::get('/admin/qrcodes/lots',     [CarteController::class, 'index'])->name('qrcodes.lots');
+Route::post('/admin/qrcodes/generer', [CarteController::class, 'generer']) ->name('qrcodes.generer');
+Route::get ('/admin/qrcodes/lots',    [CarteController::class, 'index'])   ->name('qrcodes.lots');
+Route::post('/admin/qrcodes/annuler', [CarteController::class, 'annuler']) ->name('qrcodes.annuler');
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ROUTES ADMIN (Protégées par Sanctum et le middleware isAdmin)

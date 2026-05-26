@@ -1,8 +1,7 @@
 // src/pages/admin/GestionClients.jsx
 import { useState, useEffect, useMemo } from "react";
-import { Search, Printer, Download, FileText, User, X } from "lucide-react";
+import { Search, Printer, Download, FileText, User, X, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import api from "../../lib/axios";
-import Swal from "sweetalert2";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -147,9 +146,24 @@ function ModalClient({ clientId, onClose }) {
 export default function GestionClients() {
   const [clients, setClients]       = useState([]);
   const [total, setTotal]           = useState(0);
+  const [animatedTotal, setAnimatedTotal] = useState(0);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
   const [selectedId, setSelectedId] = useState(null);
+
+  // ── Notifications toast ────────────────────────────────────────────────────
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", text: "", onConfirm: null, btnColor: "#FF6600" });
+
+  useEffect(() => {
+    if (!toast.show) return;
+    const t = setTimeout(() => setToast(s => ({ ...s, show: false })), 3500);
+    return () => clearTimeout(t);
+  }, [toast.show]);
+
+  const showToast = (message, type = "success") => setToast({ show: true, message, type });
+  const askConfirm = (title, text, onConfirm, btnColor = "#1e2a3a") =>
+    setConfirmModal({ show: true, title, text, onConfirm, btnColor });
 
   useEffect(() => {
     api.get("/api/admin/clients")
@@ -167,7 +181,7 @@ export default function GestionClients() {
   // --- UTILITAIRES ---
   const hasData = (label) => {
     if (filtered.length === 0) {
-      Swal.fire("Action impossible", `Aucune donnée à ${label}.`, "warning");
+      showToast(`Aucune donnée à ${label}.`, "warning");
       return false;
     }
     return true;
@@ -176,71 +190,72 @@ export default function GestionClients() {
   // ── IMPRIMER (window.print) ─────────────────────────────────────────────
   const handlePrint = () => {
     if (!hasData("imprimer")) return;
-    
-    Swal.fire({
-      title: "Imprimer la liste ?",
-      text: "Voulez-vous imprimer la liste filtrée des clients ?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#1e2a3a",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Oui, imprimer",
-      cancelButtonText: "Annuler"
-    }).then(res => {
-      if (res.isConfirmed) {
-        // Ajouter la date au tableau pour l'afficher dans le CSS print
-        const table = document.getElementById('clients-table');
-        if (table) {
-          table.setAttribute('data-export-date', new Date().toLocaleDateString('fr-FR'));
-        }
-        // Petit délai pour laisser le CSS s'appliquer
-        setTimeout(() => {
-          window.print();
-        }, 200);
-      }
-    });
+    askConfirm(
+      "Imprimer la liste ?",
+      "Voulez-vous imprimer la liste filtrée des clients ?",
+      () => {
+        const table = document.getElementById("clients-table");
+        if (table) table.setAttribute("data-export-date", new Date().toLocaleDateString("fr-FR"));
+        setTimeout(() => window.print(), 200);
+      },
+      "#1e2a3a"
+    );
   };
 
   // ── EXPORT PDF (jsPDF + autoTable) ──────────────────────────────────────
   const exportPDF = () => {
     if (!hasData("exporter")) return;
-    
-    Swal.fire({
-      title: "Export PDF",
-      text: "Générer le fichier PDF avec la liste filtrée ?",
-      icon: "info",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Exporter",
-      cancelButtonText: "Annuler"
-    }).then(res => {
-      if (res.isConfirmed) {
+
+    askConfirm(
+      "Export PDF",
+      "Générer le fichier PDF avec la liste filtrée ?",
+      () => {
         try {
-          // jsPDF en mode landscape pour plus de colonnes
-          const doc = new jsPDF({
-            orientation: 'landscape',
-            unit: 'mm',
-            format: 'a4'
-          });
-          
-          // Titre - CENTRÉ
-          doc.setFontSize(16);
+          const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+          const W = doc.internal.pageSize.getWidth();
+          const H = doc.internal.pageSize.getHeight();
+
+          // ── Bannière orange ────────────────────────────────────────────
+          doc.setFillColor(255, 102, 0);
+          doc.rect(0, 0, W, 24, "F");
+
+          // Logo cercle blanc
+          doc.setFillColor(255, 255, 255);
+          doc.circle(17, 12, 7, "F");
+          doc.setTextColor(255, 102, 0);
+          doc.setFontSize(9);
           doc.setFont("helvetica", "bold");
-          const title = "Liste des Clients - BOMBA CASH";
-          const pageWidth = doc.internal.pageSize.getWidth();
-          doc.text(title, pageWidth / 2, 15, { align: 'center' });
-          
-          // Date d'export - CENTRÉE
-          doc.setFontSize(10);
+          doc.text("BC", 17, 13.5, { align: "center" });
+
+          // Nom de l'application
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(17);
+          doc.setFont("helvetica", "bold");
+          doc.text("BOMBA CASH", 28, 11);
+          doc.setFontSize(8);
           doc.setFont("helvetica", "normal");
-          doc.text(`Exporté le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 22, { align: 'center' });
-          
-          // Données pour le tableau
-          const head = [
-            ["No.", "Genre", "Nom & Prénom", "Carte", "Adresse", "Nationalité", "Tél.", "Activité"]
-          ];
-          
+          doc.text("Systeme de gestion d'epargne communautaire", 28, 17);
+
+          // Titre du document + date (droite)
+          doc.setFontSize(13);
+          doc.setFont("helvetica", "bold");
+          doc.text("LISTE DES CLIENTS", W - 14, 10, { align: "right" });
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Genere le : ${new Date().toLocaleDateString("fr-FR")}`, W - 14, 17, { align: "right" });
+
+          // ── Barre sombre avec stats ────────────────────────────────────
+          doc.setFillColor(30, 42, 58);
+          doc.rect(0, 24, W, 8, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(7.5);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Total : ${filtered.length} client${filtered.length > 1 ? "s" : ""}`, 14, 29);
+          doc.text("Tous statuts confondus", W / 2, 29, { align: "center" });
+          doc.text(`Export complet`, W - 14, 29, { align: "right" });
+
+          // ── Tableau ────────────────────────────────────────────────────
+          const head = [["No.", "Genre", "Nom & Prenom", "No. Carte", "Adresse", "Nationalite", "Tel.", "Activite"]];
           const body = filtered.map((c, i) => [
             i + 1,
             c.genre === "Homme" ? "M" : "F",
@@ -249,147 +264,107 @@ export default function GestionClients() {
             c.adresse,
             c.nationalite,
             c.telephone,
-            c.activite
+            c.activite,
           ]);
-          
-          // Calcul des largeurs pour centrer le tableau
-          // A4 landscape = 297mm de large, marges 14mm = 269mm utilisables
-          // Largeur totale des colonnes = 222mm → centré avec margin left/right = (269-222)/2 ≈ 23mm
-          const totalColWidth = 12+15+40+25+45+20+20+25; // = 202mm
-          const availableWidth = pageWidth - 28; // 297 - 28 = 269mm
-          const centeredMargin = (availableWidth - totalColWidth) / 2; // ≈ 33mm
-          
-          // Génération du tableau avec autoTable - CENTRÉ
+
           autoTable(doc, {
             head,
             body,
-            startY: 28,
-            theme: 'grid',
-            // Centrage horizontal avec autoTable
+            startY: 34,
+            theme: "grid",
             margin: { left: 14, right: 14 },
-            tableWidth: 'auto',
-            
-            styles: { 
-              fontSize: 8,
-              cellPadding: 3,
-              overflow: 'linebreak'
-            },
-            
-            headStyles: { 
+            styles: { fontSize: 8, cellPadding: 2.5, overflow: "linebreak" },
+            headStyles: {
               fillColor: [30, 42, 58],
               textColor: 255,
-              fontSize: 9,
-              fontStyle: 'bold',
-              halign: 'center'
+              fontSize: 8.5,
+              fontStyle: "bold",
+              halign: "center",
             },
-            
-            // Largeurs de colonnes fixes
+            alternateRowStyles: { fillColor: [255, 248, 242] },
             columnStyles: {
-              0: { cellWidth: 12, halign: 'center' },   // No.
-              1: { cellWidth: 15, halign: 'center' },   // Genre
-              2: { cellWidth: 40, halign: 'left' },     // Nom & Prénom
-              3: { cellWidth: 25, halign: 'center' },   // Carte
-              4: { cellWidth: 45, halign: 'left' },     // Adresse
-              5: { cellWidth: 20, halign: 'center' },   // Nationalité
-              6: { cellWidth: 20, halign: 'center' },   // Tél.
-              7: { cellWidth: 25, halign: 'left' },     // Activité
+              0: { cellWidth: 10, halign: "center" },
+              1: { cellWidth: 14, halign: "center" },
+              2: { cellWidth: 44 },
+              3: { cellWidth: 30, halign: "center" },
+              4: { cellWidth: 48 },
+              5: { cellWidth: 24, halign: "center" },
+              6: { cellWidth: 26, halign: "center" },
+              7: { cellWidth: 30 },
             },
-            
-            // Gestion des sauts de page et du texte long
-            didParseCell: (data) => {
-              if (data.column.index === 4 && data.cell.text[0]?.length > 40) {
-                // Laisse autoTable gérer, ou on peut juste réduire la police
-                data.cell.styles.fontSize = 7;
-              }
-            },
-            
-            tableLineWidth: 0.3,
-            tableLineColor: [200, 200, 200],
+            tableLineWidth: 0.2,
+            tableLineColor: [220, 220, 220],
           });
-          
-          // Pied de page avec numéro de page - CENTRÉ
+
+          // ── Pied de page ───────────────────────────────────────────────
           const pageCount = doc.internal.getNumberOfPages();
           for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(100);
-            doc.text(
-              `Page ${i} sur ${pageCount} - BOMBA CASH`,
-              pageWidth / 2,
-              doc.internal.pageSize.getHeight() - 10,
-              { align: 'center' }
-            );
+            doc.setDrawColor(255, 102, 0);
+            doc.setLineWidth(0.4);
+            doc.line(14, H - 12, W - 14, H - 12);
+            doc.setFontSize(7);
+            doc.setTextColor(130);
+            doc.setFont("helvetica", "normal");
+            doc.text("BOMBA CASH - Document confidentiel", 14, H - 7);
+            doc.text(`Page ${i} / ${pageCount}`, W / 2, H - 7, { align: "center" });
+            doc.text(new Date().toLocaleDateString("fr-FR"), W - 14, H - 7, { align: "right" });
           }
-          
-          // Téléchargement
-          doc.save(`clients_bomba_cash_${new Date().toISOString().slice(0,10)}.pdf`);
-          
-          Swal.fire("Succès", "PDF généré avec succès !", "success");
-          
+
+          doc.save(`clients_bomba_cash_${new Date().toISOString().slice(0, 10)}.pdf`);
+          showToast("PDF généré avec succès !", "success");
+
         } catch (err) {
           console.error("Erreur PDF:", err);
-          Swal.fire("Erreur", "Impossible de générer le PDF. Voir console pour détails.", "error");
+          showToast("Impossible de générer le PDF.", "error");
         }
-      }
-    });
+      },
+      "#ef4444"
+    );
   };
 
   // ── EXPORT EXCEL (xlsx) ─────────────────────────────────────────────────
   const exportExcel = () => {
     if (!hasData("exporter")) return;
-    
-    Swal.fire({
-      title: "Export Excel",
-      text: "Générer le fichier Excel avec la liste filtrée ?",
-      icon: "info",
-      showCancelButton: true,
-      confirmButtonColor: "#16a34a",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Exporter",
-      cancelButtonText: "Annuler"
-    }).then(res => {
-      if (res.isConfirmed) {
+
+    askConfirm(
+      "Export Excel",
+      "Générer le fichier Excel avec la liste filtrée ?",
+      () => {
         try {
-          // Préparer les données
           const data = filtered.map((c, i) => ({
-            "No.": i + 1,
-            "Genre": c.genre === "Homme" ? "Masculin" : "Féminin",
-            "Nom": c.nom,
-            "Prénom": c.prenom,
-            "Carte": c.numero_carte,
-            "Adresse": c.adresse,
-            "Ville": c.adresse?.split(', ')[1] || "",
-            "Nationalité": c.nationalite,
-            "Type pièce": c.type_piece,
-            "No. pièce": c.num_piece,
-            "Activité": c.activite,
-            "Téléphone": c.telephone,
+            "No."         : i + 1,
+            "Genre"       : c.genre === "Homme" ? "Masculin" : "Féminin",
+            "Nom"         : c.nom,
+            "Prénom"      : c.prenom,
+            "Carte"       : c.numero_carte,
+            "Adresse"     : c.adresse,
+            "Nationalité" : c.nationalite,
+            "Type pièce"  : c.type_piece,
+            "No. pièce"   : c.num_piece,
+            "Activité"    : c.activite,
+            "Téléphone"   : c.telephone,
           }));
-          
-          // Créer le worksheet
+
           const ws = XLSX.utils.json_to_sheet(data);
-          
-          // Ajuster les largeurs de colonnes
-          const colWidths = [
+          ws["!cols"] = [
             { wch: 5 }, { wch: 12 }, { wch: 20 }, { wch: 20 },
-            { wch: 18 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
-            { wch: 12 }, { wch: 20 }, { wch: 18 }, { wch: 15 },
+            { wch: 18 }, { wch: 30 }, { wch: 15 }, { wch: 12 },
+            { wch: 20 }, { wch: 18 }, { wch: 15 },
           ];
-          ws['!cols'] = colWidths;
-          
-          // Créer le workbook et exporter
+
           const wb = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(wb, ws, "Clients");
-          XLSX.writeFile(wb, `clients_bomba_cash_${new Date().toISOString().slice(0,10)}.xlsx`);
-          
-          Swal.fire("Succès", "Excel généré avec succès !", "success");
-          
+          XLSX.writeFile(wb, `clients_bomba_cash_${new Date().toISOString().slice(0, 10)}.xlsx`);
+          showToast("Excel généré avec succès !", "success");
+
         } catch (err) {
           console.error("Erreur Excel:", err);
-          Swal.fire("Erreur", "Impossible de générer le fichier Excel.", "error");
+          showToast("Impossible de générer le fichier Excel.", "error");
         }
-      }
-    });
+      },
+      "#16a34a"
+    );
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -497,9 +472,138 @@ export default function GestionClients() {
           </table>
         </div>
       </div>
+      {/* Pagination */}
+      {filtered.length > ITEMS_PER_PAGE && (
+        <div className="bg-white rounded-2xl px-6 py-4 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm border border-gray-100 no-print">
+
+          {/* Info */}
+          <p className="text-sm text-gray-500">
+            Affichage{" "}
+            <span className="font-semibold text-gray-800">{startIdx + 1}</span>
+            {" "}&agrave;{" "}
+            <span className="font-semibold text-gray-800">{Math.min(endIdx, filtered.length)}</span>
+            {" "}sur{" "}
+            <span className="font-semibold text-[#FF6600]">{filtered.length}</span>
+            {" "}client{filtered.length > 1 ? "s" : ""}
+          </p>
+
+          {/* Boutons */}
+          <div className="flex items-center gap-1">
+
+            {/* Précédent */}
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span className="hidden sm:inline">Pr&eacute;c&eacute;dent</span>
+            </button>
+
+            {/* Numéros de pages avec ellipsis */}
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const delta = 1;
+                const left  = currentPage - delta;
+                const right = currentPage + delta;
+
+                let prev = null;
+                for (let p = 1; p <= totalPages; p++) {
+                  if (p === 1 || p === totalPages || (p >= left && p <= right)) {
+                    if (prev !== null && p - prev > 1) {
+                      pages.push("...");
+                    }
+                    pages.push(p);
+                    prev = p;
+                  }
+                }
+
+                return pages.map((p, i) =>
+                  p === "..." ? (
+                    <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm select-none">
+                      &hellip;
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                        currentPage === p
+                          ? "bg-[#FF6600] text-white shadow-md shadow-orange-200 scale-105"
+                          : "text-gray-600 border border-gray-200 bg-white hover:bg-orange-50 hover:border-orange-200 hover:text-[#FF6600]"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                );
+              })()}
+            </div>
+
+            {/* Suivant */}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <span className="hidden sm:inline">Suivant</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+
+          </div>
+        </div>
+      )}
 
       {/* Modal détail client */}
       <ModalClient clientId={selectedId} onClose={() => setSelectedId(null)} />
+
+      {/* ── Toast notification ──────────────────────────────────────────── */}
+      {toast.show && (
+        <div className={`fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-xl text-white text-sm font-medium animate-fade-in no-print ${
+          toast.type === "success" ? "bg-green-500" :
+          toast.type === "error"   ? "bg-red-500"   : "bg-orange-500"
+        }`}>
+          {toast.type === "success" ? <CheckCircle size={18} /> :
+           toast.type === "error"   ? <XCircle size={18} />     : <AlertTriangle size={18} />}
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(s => ({ ...s, show: false }))} className="ml-2 opacity-70 hover:opacity-100">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Modal de confirmation ────────────────────────────────────────── */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9998] p-4 no-print">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="font-bold text-lg text-gray-800 mb-2">{confirmModal.title}</h3>
+            <p className="text-gray-500 text-sm mb-6">{confirmModal.text}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal(s => ({ ...s, show: false }))}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmModal(s => ({ ...s, show: false }));
+                  confirmModal.onConfirm?.();
+                }}
+                style={{ background: confirmModal.btnColor }}
+                className="px-5 py-2 rounded-lg text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══ CSS POUR L'IMPRESSION - VERSION ROBUSTE ═══════════════════════ */}
       <style>{`
