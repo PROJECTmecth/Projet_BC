@@ -106,11 +106,15 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::patch ('/kiosques/{kiosque}/statut', [KiosqueController::class, 'toggleStatut']) ->name('kiosques.toggle');
         Route::get   ('/kiosques/{kiosque}/agents', [KiosqueController::class, 'agents'])       ->name('kiosques.agents');
 
-        //Mouvements de caisse
-        Route::get('/mouvements-caisse', [MouvementCaisseController::class, 'index']);
-        // clients-Admin
-        Route::get('/clients',     [ClientController::class, 'index'])->name('clients.index');
-        Route::get('/clients/{id}',[ClientController::class, 'show'])->name('clients.show');
+        // Mouvements de caisse
+        Route::get('/mouvements-caisse',               [MouvementCaisseController::class, 'index']);
+        Route::get('/mouvements-caisse/revenus',       [MouvementCaisseController::class, 'revenus']);
+        Route::get('/mouvements-caisse/revenus/detail',[MouvementCaisseController::class, 'revenusDetail']);
+
+        // clients-Admin — analytics AVANT {id} sinon "analytics" est capturé comme ID
+        Route::get('/clients',           [ClientController::class, 'index'])    ->name('clients.index');
+        Route::get('/clients/analytics', [ClientController::class, 'analytics'])->name('clients.analytics');
+        Route::get('/clients/{id}',      [ClientController::class, 'show'])     ->name('clients.show');
 
         // Agents
         Route::get   ('/agents',                [AgentController::class, 'index'])        ->name('agents.list');
