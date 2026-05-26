@@ -119,7 +119,7 @@ function ModalClient({ clientId, onClose }) {
                           <tr><td colSpan={7} className="text-center py-6 text-gray-400 text-xs">Aucune opération</td></tr>
                         ) : data.transactions.map((t, i) => (
                           <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-orange-50/50"}>
-                            <td className="px-3 py-3 text-gray-500">{i + 1}</td>
+                            <td className="px-3 py-3 text-gray-500">{startIdx + i + 1}</td>
                             <td className="px-3 py-3">{t.date}</td>
                             <td className="px-3 py-3 text-gray-500">{t.heure}</td>
                             <td className="px-3 py-3 font-semibold">{t.operation}</td>
@@ -482,57 +482,6 @@ export default function GestionClients() {
       {/* ══ Tableau des clients ══════════════════════════════════════════ */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-<<<<<<< HEAD
-        <table className="w-full text-sm min-w-[700px]">
-          <thead>
-            <tr className="bg-[#1e2a3a] text-white text-xs uppercase">
-              <th className="px-4 py-4 text-left">No.</th>
-              <th className="px-4 py-4 text-left">Genre</th>
-              <th className="px-4 py-4 text-left">Nom & Prénom</th>
-              <th className="px-4 py-4 text-left">Adresse</th>
-              <th className="px-4 py-4 text-left">Nationalité</th>
-              <th className="px-4 py-4 text-left">Pièce ID</th>
-              <th className="px-4 py-4 text-left">No. Pièce</th>
-              <th className="px-4 py-4 text-left">Activité</th>
-              <th className="px-4 py-4 text-left">Tél.</th>
-              <th className="px-4 py-4 text-center no-print">Détail</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={10} className="text-center py-10 text-gray-400">Chargement…</td></tr>
-            ) : paginatedClients.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
-            ) : paginatedClients.map((c, i) => (
-              <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                <td className="px-4 py-4 text-gray-500">{startIdx + i + 1}</td>
-                <td className="px-4 py-4">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${c.genre === "Homme" ? "bg-blue-400" : "bg-pink-400"}`}>
-                    {c.genre === "Homme" ? "M" : "F"}
-                  </span>
-                </td>
-                <td className="px-4 py-4">
-                  <p className="font-bold text-[#1e2a3a]">{c.nom} {c.prenom}</p>
-                  <p className="text-xs text-[#FF6600]">{c.numero_carte}</p>
-                </td>
-                <td className="px-4 py-4 text-gray-600">{c.adresse}</td>
-                <td className="px-4 py-4 text-gray-600">{c.nationalite}</td>
-                <td className="px-4 py-4 text-gray-600">{c.type_piece}</td>
-                <td className="px-4 py-4 text-gray-600">{c.num_piece}</td>
-                <td className="px-4 py-4 text-gray-600">{c.activite}</td>
-                <td className="px-4 py-4 text-gray-600">{c.telephone}</td>
-                <td className="px-4 py-4 text-center no-print">
-                  <button onClick={() => setSelectedId(c.id_client)}
-                    className="border border-blue-400 text-blue-500 rounded-lg p-1.5 hover:bg-blue-50">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="12" y1="8" x2="12" y2="12"/>
-                      <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                  </button>
-                </td>
-=======
           <table className="w-full text-sm min-w-[900px]" id="clients-table">
             <thead>
               <tr className="bg-[#1e2a3a] text-white text-xs uppercase">
@@ -546,17 +495,16 @@ export default function GestionClients() {
                 <th className="px-4 py-4 text-left">Activité</th>
                 <th className="px-4 py-4 text-left">Tél.</th>
                 <th className="px-4 py-4 text-center no-print">Détail</th>
->>>>>>> developpement
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Chargement…</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : paginatedClients.length === 0 ? (
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
-              ) : filtered.map((c, i) => (
+              ) : paginatedClients.map((c, i) => (
                 <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="px-4 py-4 text-gray-500">{i + 1}</td>
+                  <td className="px-4 py-4 text-gray-500">{startIdx + i + 1}</td>
                   <td className="px-4 py-4">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${c.genre === "Homme" ? "bg-blue-400" : "bg-pink-400"}`}>
                       {c.genre === "Homme" ? "M" : "F"}
@@ -589,13 +537,11 @@ export default function GestionClients() {
           </table>
         </div>
       </div>
-
-<<<<<<< HEAD
-      {/* ✅ Pagination */}
+      {/* Pagination */}
       {filtered.length > ITEMS_PER_PAGE && (
         <div className="bg-white rounded-2xl px-5 py-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm no-print">
           <p className="text-sm text-gray-600">
-            Affichage <span className="font-bold">{startIdx + 1}</span> à <span className="font-bold">{Math.min(endIdx, filtered.length)}</span> sur <span className="font-bold">{filtered.length}</span> client{filtered.length > 1 ? 's' : ''}
+            Affichage <span className="font-bold">{startIdx + 1}</span> � <span className="font-bold">{Math.min(endIdx, filtered.length)}</span> sur <span className="font-bold">{filtered.length}</span> client{filtered.length > 1 ? 's' : ''}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -603,9 +549,9 @@ export default function GestionClients() {
               disabled={currentPage === 1}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ← Précédent
+              Pr�c�dent
             </button>
-            
+
             <div className="flex gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <button
@@ -627,15 +573,14 @@ export default function GestionClients() {
               disabled={currentPage === totalPages}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Suivant →
+              Suivant
             </button>
           </div>
         </div>
       )}
 
-=======
+
       {/* Modal détail client */}
->>>>>>> developpement
       <ModalClient clientId={selectedId} onClose={() => setSelectedId(null)} />
 
       {/* ══ CSS POUR L'IMPRESSION - VERSION ROBUSTE ═══════════════════════ */}
