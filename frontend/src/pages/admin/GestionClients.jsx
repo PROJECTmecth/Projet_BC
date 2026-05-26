@@ -143,13 +143,15 @@ function ModalClient({ clientId, onClose }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+const ITEMS_PER_PAGE = 10;
+
 export default function GestionClients() {
   const [clients, setClients]       = useState([]);
   const [total, setTotal]           = useState(0);
-  const [animatedTotal, setAnimatedTotal] = useState(0);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // ── Notifications toast ────────────────────────────────────────────────────
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
@@ -177,6 +179,13 @@ export default function GestionClients() {
       `${c.nom} ${c.prenom} ${c.telephone} ${c.numero_carte}`
         .toLowerCase().includes(search.toLowerCase())
     ), [clients, search]);
+
+  useEffect(() => { setCurrentPage(1); }, [search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const startIdx   = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIdx     = startIdx + ITEMS_PER_PAGE;
+  const paginated  = filtered.slice(startIdx, endIdx);
 
   // --- UTILITAIRES ---
   const hasData = (label) => {
@@ -437,7 +446,7 @@ export default function GestionClients() {
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Chargement…</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
-              ) : filtered.map((c, i) => (
+              ) : paginated.map((c, i) => (
                 <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   <td className="px-4 py-4 text-gray-500">{i + 1}</td>
                   <td className="px-4 py-4">
