@@ -52,6 +52,7 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
   useEffect(() => {
     if (etape !== ETAPES.SCAN) return;
     let scanner;
+    let isStopping = false;
 
     const startScanner = async () => {
       try {
@@ -62,7 +63,13 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 280, height: 140 } },
           async (decodedText) => {
-            await scanner.stop();
+            if (isStopping) return;
+            isStopping = true;
+            try {
+              await scanner.stop();
+            } catch (e) {
+              console.warn("Scanner already stopped or failed to stop:", e);
+            }
             setScanning(false);
             await handleScanResult(decodedText);
           },
@@ -77,7 +84,9 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
 
     return () => {
       if (html5QrRef.current) {
-        html5QrRef.current.stop().catch(() => {});
+        try {
+          html5QrRef.current.stop().catch(() => {});
+        } catch(e) {}
       }
     };
   }, [etape]);
@@ -186,34 +195,42 @@ export default function NouveauClientModal({ onClose, onSuccess }) {
         {etape === ETAPES.SCAN && (
           <div className="scan-section">
             <div className="scan-frame-wrapper">
-              {/* Icône QR */}
-              <div className="scan-qr-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="3" y="3" width="6" height="6" rx="1" />
-                  <rect x="15" y="3" width="6" height="6" rx="1" />
-                  <rect x="3" y="15" width="6" height="6" rx="1" />
-                  <path d="M15 15h2v2h-2zM19 15h2v2h-2zM15 19h2v2h-2zM19 19h2v2h-2z" />
-                </svg>
-              </div>
+              
+              {/* Masquer la fausse animation quand la caméra tourne */}
+              {!scanning && (
+                <>
+                  <div className="scan-qr-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="3" y="3" width="6" height="6" rx="1" />
+                      <rect x="15" y="3" width="6" height="6" rx="1" />
+                      <rect x="3" y="15" width="6" height="6" rx="1" />
+                      <path d="M15 15h2v2h-2zM19 15h2v2h-2zM15 19h2v2h-2zM19 19h2v2h-2z" />
+                    </svg>
+                  </div>
+                  <p className="scan-title">Initialisation...</p>
+                </>
+              )}
 
-              <p className="scan-title">Scan en cours...</p>
+              {scanning && (
+                <p className="scan-title">Scan en cours...</p>
+              )}
+
               <p className="scan-instruction">
                 Placez le QR code de la carte vierge devant la caméra
               </p>
 
-              {/* Barre de progression animée */}
-              <div className="scan-progress">
-                <div className={`scan-progress-bar ${scanning ? "scan-progress-bar--active" : ""}`} />
-              </div>
-
-              <p className="scan-hint">
-                {scanning
-                  ? "Détection automatique en cours..."
-                  : "Initialisation..."}
-              </p>
-
-              {/* Zone caméra cachée (utilisée en production) */}
-              <div id="qr-reader" ref={scannerRef} style={{ display: "none" }} />
+              {/* Zone caméra rendue visible */}
+              <div 
+                id="qr-reader" 
+                ref={scannerRef} 
+                style={{ 
+                  width: "100%", 
+                  borderRadius: "12px", 
+                  overflow: "hidden", 
+                  background: "#000",
+                  marginTop: "8px"
+                }} 
+              />
             </div>
 
             <button className="btn-annuler-scan" onClick={onClose}>Annuler</button>
