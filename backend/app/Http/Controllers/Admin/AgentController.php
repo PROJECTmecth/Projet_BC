@@ -112,10 +112,13 @@ class AgentController extends Controller
         $request->validate([
             'nom'        => ['sometimes', 'string', 'max:100'],
             'email'      => ['sometimes', 'email', 'unique:users,email,' . $agent->id_user . ',id'],
+            'password'   => ['sometimes', 'string', 'min:6'],
             'telephone'  => ['sometimes', 'string', 'max:20', 'regex:/^\+242\s?\d{2}\s?\d{3}\s?\d{4}$/'],
             'adresse'    => ['sometimes', 'string', 'max:255'],
             'id_kiosque' => ['sometimes', 'exists:kiosques,id_kiosque'],
             'statut'     => ['sometimes', 'in:actif,inactif'],
+        ], [
+            'password.min' => 'Le mot de passe doit faire au moins 6 caractères.',
         ]);
 
         // ✅ Vérifier si le nouveau kiosque est déjà pris (sauf par cet agent lui-même)
@@ -129,11 +132,18 @@ class AgentController extends Controller
         }
 
         DB::transaction(function () use ($request, $agent) {
-            $agent->user->update(array_filter([
+            $userUpdate = array_filter([
                 'name'   => $request->nom,
                 'email'  => $request->email,
                 'statut' => $request->statut,
-            ]));
+            ]);
+
+            // ✅ Ajouter le mot de passe hashé s'il est fourni
+            if ($request->filled('password')) {
+                $userUpdate['password'] = Hash::make($request->password);
+            }
+
+            $agent->user->update($userUpdate);
 
             $agent->update(array_filter([
                 'telephone'  => $request->telephone,

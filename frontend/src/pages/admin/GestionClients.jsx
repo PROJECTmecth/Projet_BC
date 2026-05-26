@@ -119,7 +119,7 @@ function ModalClient({ clientId, onClose }) {
                           <tr><td colSpan={7} className="text-center py-6 text-gray-400 text-xs">Aucune opération</td></tr>
                         ) : data.transactions.map((t, i) => (
                           <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-orange-50/50"}>
-                            <td className="px-3 py-3 text-gray-500">{i + 1}</td>
+                            <td className="px-3 py-3 text-gray-500">{startIdx + i + 1}</td>
                             <td className="px-3 py-3">{t.date}</td>
                             <td className="px-3 py-3 text-gray-500">{t.heure}</td>
                             <td className="px-3 py-3 font-semibold">{t.operation}</td>
@@ -147,13 +147,40 @@ function ModalClient({ clientId, onClose }) {
 export default function GestionClients() {
   const [clients, setClients]       = useState([]);
   const [total, setTotal]           = useState(0);
+  const [animatedTotal, setAnimatedTotal] = useState(0); //animation du compteur
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
-  useEffect(() => {
+    useEffect(() => {
     api.get("/api/admin/clients")
-      .then(({ data }) => { setClients(data.data ?? []); setTotal(data.total ?? 0); })
+      .then(({ data }) => {
+        const clientsData = data.data ?? [];
+        const totalClients = data.total ?? 0;
+        
+        setClients(clientsData);
+        setTotal(totalClients);
+        
+        // 🎯 ANIMATION DU COMPTEUR — Total clients
+        let start = 0;
+        const target = totalClients;
+        const duration = 1500; // 1.5 secondes
+        const increment = target / (duration / 16); // ~60fps
+
+        const animate = () => {
+          start += increment;
+          if (start < target) {
+            setAnimatedTotal(Math.ceil(start));
+            requestAnimationFrame(animate);
+          } else {
+            setAnimatedTotal(target);
+          }
+        };
+        requestAnimationFrame(animate);
+        // 🔚 FIN ANIMATION
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -163,6 +190,17 @@ export default function GestionClients() {
       `${c.nom} ${c.prenom} ${c.telephone} ${c.numero_carte}`
         .toLowerCase().includes(search.toLowerCase())
     ), [clients, search]);
+
+  // ✅ Réinitialiser la page quand la recherche change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  // ✅ Calculer la pagination
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const paginatedClients = filtered.slice(startIdx, endIdx);
 
   // --- UTILITAIRES ---
   const hasData = (label) => {
@@ -408,10 +446,12 @@ export default function GestionClients() {
             <p className="text-white/60 text-xs sm:text-sm mt-0.5">Base de données complète des clients</p>
           </div>
         </div>
-        <div className="z-10 bg-white rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-center shadow shrink-0">
-          <p className="text-xs text-gray-500">Total clients</p>
-          <p className="text-2xl sm:text-3xl font-black text-[#1e2a3a]">{String(total).padStart(2, "0")}</p>
-        </div>
+       <div className="z-10 bg-white rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-center shadow shrink-0">
+        <p className="text-xs text-gray-500">Total clients</p>
+        <p className="text-2xl sm:text-3xl font-black text-[#1e2a3a]">
+          {String(animatedTotal).padStart(2, "0")} {/* ← CHANGEMENT ICI */}
+        </p>
+      </div>
       </div>
 
       {/* ══ Recherche + Actions ══════════════════════════════════════════ */}
@@ -460,11 +500,11 @@ export default function GestionClients() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Chargement…</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : paginatedClients.length === 0 ? (
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
-              ) : filtered.map((c, i) => (
+              ) : paginatedClients.map((c, i) => (
                 <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="px-4 py-4 text-gray-500">{i + 1}</td>
+                  <td className="px-4 py-4 text-gray-500">{startIdx + i + 1}</td>
                   <td className="px-4 py-4">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${c.genre === "Homme" ? "bg-blue-400" : "bg-pink-400"}`}>
                       {c.genre === "Homme" ? "M" : "F"}
@@ -497,6 +537,48 @@ export default function GestionClients() {
           </table>
         </div>
       </div>
+      {/* Pagination */}
+      {filtered.length > ITEMS_PER_PAGE && (
+        <div className="bg-white rounded-2xl px-5 py-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm no-print">
+          <p className="text-sm text-gray-600">
+            Affichage <span className="font-bold">{startIdx + 1}</span> � <span className="font-bold">{Math.min(endIdx, filtered.length)}</span> sur <span className="font-bold">{filtered.length}</span> client{filtered.length > 1 ? 's' : ''}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Pr�c�dent
+            </button>
+
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+                    currentPage === page
+                      ? "bg-[#FF6600] text-white"
+                      : "border border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Suivant
+            </button>
+          </div>
+        </div>
+      )}
+
 
       {/* Modal détail client */}
       <ModalClient clientId={selectedId} onClose={() => setSelectedId(null)} />
