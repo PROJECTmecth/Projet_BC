@@ -486,7 +486,6 @@ export default function ScanCartePage() {
                                     <p className="text-orange-100 text-sm">{client.telephone}</p>
                                     <p className="text-orange-200 text-xs mt-0.5 truncate">{client.ville}</p>
                                 </div>
-                                </div>
                                 <div className="flex flex-col items-end gap-2">
                                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${statutCfg.bg} ${statutCfg.text}`}>
                                         <span className={`w-2 h-2 rounded-full ${statutCfg.dot}`} />
