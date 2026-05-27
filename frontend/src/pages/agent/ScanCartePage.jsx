@@ -110,6 +110,7 @@ const fmt = (n) =>
 
 const statutConfig = {
     active: { label: 'Active', bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    actif: { label: 'Actif', bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
     inactive: { label: 'Inactive', bg: 'bg-gray-100', text: 'text-gray-500', dot: 'bg-gray-400' },
     bloquée: { label: 'Bloquée', bg: 'bg-red-100', text: 'text-red-600', dot: 'bg-red-500' },
     expirée: { label: 'Expirée', bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
@@ -325,6 +326,8 @@ export default function ScanCartePage() {
     const { carte, client, compte } = scanData ?? {};
     const statut = carte?.statut?.toLowerCase() ?? 'inactive';
     const statutCfg = statutConfig[statut] ?? statutConfig.inactive;
+    const isActif = statut === 'actif' || statut === 'active';
+    const isEnRetard = carte?.date_expiration && new Date(carte.date_expiration) < new Date() && (carte?.progression ?? 0) < 100;
 
     return (
         // ❌ SUPPRIMER : <AgentLayout>
@@ -483,9 +486,17 @@ export default function ScanCartePage() {
                                     <p className="text-orange-100 text-sm">{client.telephone}</p>
                                     <p className="text-orange-200 text-xs mt-0.5 truncate">{client.ville}</p>
                                 </div>
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${statutCfg.bg} ${statutCfg.text}`}>
-                                    <span className={`w-2 h-2 rounded-full ${statutCfg.dot}`} />
-                                    {statutCfg.label}
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${statutCfg.bg} ${statutCfg.text}`}>
+                                        <span className={`w-2 h-2 rounded-full ${statutCfg.dot}`} />
+                                        {statutCfg.label}
+                                    </div>
+                                    {isEnRetard && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                            ⚠️ En retard
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -548,12 +559,12 @@ export default function ScanCartePage() {
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={() => navigate(`/agent/clients/${client.id_client}/operation`)}
-                            disabled={statut !== 'active'}
-                            className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${statut === 'active' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                            disabled={!isActif}
+                            className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${isActif ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                         >
                             {Icon.ops}
                             Ajouter opération
-                            {statut !== 'active' && <span className="text-xs font-normal opacity-70">Carte {statut}</span>}
+                            {!isActif && <span className="text-xs font-normal opacity-70">Carte {statut}</span>}
                         </button>
 
                         <button onClick={() => navigate(`/agent/clients/${client.id_client}`)} className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-white border-2 border-orange-200 text-orange-600 font-bold text-sm hover:bg-orange-50 transition-all active:scale-95">
