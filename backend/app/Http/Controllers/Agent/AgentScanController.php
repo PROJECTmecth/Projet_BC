@@ -54,7 +54,10 @@ class AgentScanController extends Controller
         $numeroCarte = trim($validated['numero_carte']);
 
         // ── 2. Récupération de la carte ────────────────────────
-        $carte = Carte::where('numero_carte', $numeroCarte)->first();
+        // ✅ Cherche par UUID (qr_code_uid) OU par numero_carte
+        $carte = Carte::where('qr_code_uid', $numeroCarte)
+            ->orWhere('numero_carte', $numeroCarte)
+            ->first();
 
         if (! $carte) {
             return response()->json([
@@ -65,14 +68,16 @@ class AgentScanController extends Controller
         // ── 3. Récupération du client ──────────────────────────
         $client = Client::find($carte->id_client);
 
+        // ✅ Carte vierge : pas de client associé
         if (! $client) {
             return response()->json([
-                'message' => 'Client associé à cette carte introuvable.',
-            ], 404);
+                'carte'     => $this->formatCarte($carte),
+                'is_vierge' => true,
+                'message'   => 'Carte vierge, prête à être assignée.',
+            ], 200);
         }
 
         // ── 4. Vérification du périmètre agent ─────────────────
-        //    L'agent ne peut scanner que les cartes de SES clients.
         $agent = Agent::where('id_user', Auth::id())->first();
 
         if ($agent && (int) $client->id_agent !== (int) $agent->id_agent) {
@@ -86,9 +91,10 @@ class AgentScanController extends Controller
 
         // ── 6. Retour ──────────────────────────────────────────
         return response()->json([
-            'carte'  => $this->formatCarte($carte),
-            'client' => $this->formatClient($client),
-            'compte' => $this->formatCompte($compte),
+            'carte'     => $this->formatCarte($carte),
+            'client'    => $this->formatClient($client),
+            'compte'    => $this->formatCompte($compte),
+            'is_vierge' => false,
         ], 200);
     }
 
@@ -98,6 +104,7 @@ class AgentScanController extends Controller
     {
         return [
             'id_carte'         => $c->id_carte,
+            'qr_code_uid'      => $c->qr_code_uid,
             'numero_carte'     => $c->numero_carte,
             'statut'           => $c->statut,
             'progression'      => (float) ($c->progression ?? 0),

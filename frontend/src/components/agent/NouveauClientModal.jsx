@@ -10,17 +10,27 @@ const initialForm = {
   genre: "Homme", prenom: "", nom: "", adresse: "", ville: "",
   activite: "", nationalite: "Résident", type_piece: "CNI",
   num_piece: "", telephone: "+242 06 ", montant: "", duree: "15 jours",
+  qrCodeUid: "",
 };
 
-export default function NouveauClientModal({ onClose, onSuccess }) {
-  const [etape, setEtape]           = useState(ETAPES.SCAN);
-  const [form, setForm]             = useState(initialForm);
-  const [carteInfo, setCarteInfo]   = useState(null);
+export default function NouveauClientModal({ onClose, onSuccess, initialCarte = null }) {
+  const [etape, setEtape]           = useState(initialCarte ? ETAPES.FORMULAIRE : ETAPES.SCAN);
+  const [form, setForm]             = useState({ ...initialForm, qrCodeUid: initialCarte?.qr_code_uid || initialCarte?.numero_carte || "" });
+  const [carteInfo, setCarteInfo]   = useState(initialCarte ? { carte: initialCarte } : null);
   const [scanning, setScanning]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors]         = useState({});
   const scannerRef                  = useRef(null);
   const html5QrRef                  = useRef(null);
+
+  // ─── Initialisation avec carte pré-scannée (depuis ScanCartePage) ────────
+  useEffect(() => {
+    if (initialCarte && etape === ETAPES.SCAN) {
+      setCarteInfo({ carte: initialCarte });
+      setForm(prev => ({ ...prev, qrCodeUid: initialCarte.qr_code_uid || initialCarte.numero_carte }));
+      setEtape(ETAPES.FORMULAIRE);
+    }
+  }, [initialCarte, etape]);
 
   // ============================================================
   // ✅ MODE TEST — SIMULATION SCAN (actif pendant les tests)

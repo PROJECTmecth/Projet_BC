@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import Swal from 'sweetalert2';
 import axios from '../../lib/axios';
-// ❌ SUPPRIMER : import AgentLayout from '../../layouts/AgentLayout';
+import NouveauClientModal from '../../components/agent/NouveauClientModal';
 
 /* ─── Constantes ──────────────────────────────────────────────── */
 const SCANNER_ELEMENT_ID = 'bc-qrcode-region';
@@ -147,6 +147,10 @@ export default function ScanCartePage() {
     const [manualVal, setManualVal] = useState('');
     const [manualLoading, setManualLoading] = useState(false);
 
+    /* ✅ Bridge vers NouveauClientModal */
+    const [showNouveauClientModal, setShowNouveauClientModal] = useState(false);
+    const [carteViergeDetectee, setCarteViergeDetectee] = useState(null);
+
     /* refs */
     const html5QrRef = useRef(null);
     const processingRef = useRef(false);
@@ -174,6 +178,29 @@ export default function ScanCartePage() {
         try {
             const { data } = await axios.post('/api/agent/scan', { numero_carte: numeroCarte });
             await stopScanner();
+
+            // ✅ Carte vierge : proposer d'enregistrer un nouveau client
+            if (data.is_vierge) {
+                const result = await Swal.fire({
+                    title: 'Carte Vierge',
+                    html: `<p>Numéro : <b>${data.carte.numero_carte}</b></p>
+                           <p>Cette carte n'appartient à aucun client. Voulez-vous enregistrer un nouveau client ?</p>`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, inscrire',
+                    cancelButtonText: 'Non',
+                    confirmButtonColor: '#F97316',
+                    cancelButtonColor: '#6B7280',
+                });
+                if (result.isConfirmed) {
+                    setCarteViergeDetectee(data.carte);
+                    setShowNouveauClientModal(true);
+                } else {
+                    resetScan();
+                }
+                return;
+            }
+
             setScanData(data);
             setPhase('result');
         } catch (err) {
@@ -185,7 +212,7 @@ export default function ScanCartePage() {
             setErrMsg(msg);
             setPhase('error');
         }
-    }, [stopScanner]);
+    }, [stopScanner, resetScan]);
 
     /* ─── Callback QR détecté ───────────────────────────────────── */
     const onQrSuccess = useCallback((decodedText) => {
@@ -287,6 +314,8 @@ export default function ScanCartePage() {
         setTorchOn(false);
         setPhase('idle');
         setShowManual(false);
+        setCarteViergeDetectee(null);
+        setShowNouveauClientModal(false);
     }, [stopScanner]);
 
     /* ─────────────────────────────────────────────────────────────── */
@@ -562,7 +591,23 @@ export default function ScanCartePage() {
                 </div>
             )}
 
+            {/* ✅ Bridge : Modal Nouveau Client (carte vierge) */}
+            {showNouveauClientModal && (
+                <NouveauClientModal
+                    initialCarte={carteViergeDetectee}
+                    onClose={() => { setShowNouveauClientModal(false); resetScan(); }}
+                    onSuccess={() => {
+                        setShowNouveauClientModal(false);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Client enregistré !',
+                            text: 'Le nouveau client a bien été associé à cette carte.',
+                            confirmButtonColor: '#F97316',
+                        }).then(() => resetScan());
+                    }}
+                />
+            )}
+
         </div>
-        // ❌ SUPPRIMER : </AgentLayout>
     );
 }
