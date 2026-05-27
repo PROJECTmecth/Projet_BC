@@ -12,13 +12,21 @@ const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0
 // ── Composant : Progression circulaire ─────────────────────────────────────
 function CircleProgress({ pct = 0 }) {
   const r = 54, circ = 2 * Math.PI * r, dash = (pct / 100) * circ;
+  const color = pct === 0 ? "#e5e7eb"
+    : pct <= 25  ? "#ef4444"
+    : pct <= 50  ? "#FF6600"
+    : pct <= 75  ? "#eab308"
+    : "#16a34a";
+  const textColor = pct === 0 ? "#9ca3af" : color;
   return (
     <svg width="140" height="140" viewBox="0 0 140 140">
       <circle cx="70" cy="70" r={r} fill="none" stroke="#e5e7eb" strokeWidth="12" />
-      <circle cx="70" cy="70" r={r} fill="none" stroke="#FF6600" strokeWidth="12"
-        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" transform="rotate(-90 70 70)" />
+      {pct > 0 && (
+        <circle cx="70" cy="70" r={r} fill="none" stroke={color} strokeWidth="12"
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" transform="rotate(-90 70 70)" />
+      )}
       <text x="70" y="70" textAnchor="middle" dominantBaseline="central"
-        fill="#FF6600" fontSize="22" fontWeight="bold">{pct}%</text>
+        fill={textColor} fontSize="22" fontWeight="bold">{pct}%</text>
     </svg>
   );
 }
@@ -448,7 +456,7 @@ export default function GestionClients() {
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
               ) : paginated.map((c, i) => (
                 <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="px-4 py-4 text-gray-500">{i + 1}</td>
+                  <td className="px-4 py-4 text-gray-500">{startIdx + i + 1}</td>
                   <td className="px-4 py-4">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${c.genre === "Homme" ? "bg-blue-400" : "bg-pink-400"}`}>
                       {c.genre === "Homme" ? "M" : "F"}
