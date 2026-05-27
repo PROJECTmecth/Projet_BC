@@ -172,6 +172,19 @@ export default function ScanCartePage() {
         return () => { stopScanner(); };
     }, [stopScanner]);
 
+    /* ─── Reset ──────────────────────────────────────────────────── */
+    const resetScan = useCallback(async () => {
+        await stopScanner();
+        processingRef.current = false;
+        setScanData(null);
+        setErrMsg('');
+        setTorchOn(false);
+        setPhase('idle');
+        setShowManual(false);
+        setCarteViergeDetectee(null);
+        setShowNouveauClientModal(false);
+    }, [stopScanner]);
+
     /* ─── Appel API scan ─────────────────────────────────────────── */
     const callScanAPI = useCallback(async (numeroCarte) => {
         setPhase('loading');
@@ -304,19 +317,6 @@ export default function ScanCartePage() {
         setManualLoading(false);
         setManualVal('');
     };
-
-    /* ─── Reset ──────────────────────────────────────────────────── */
-    const resetScan = useCallback(async () => {
-        await stopScanner();
-        processingRef.current = false;
-        setScanData(null);
-        setErrMsg('');
-        setTorchOn(false);
-        setPhase('idle');
-        setShowManual(false);
-        setCarteViergeDetectee(null);
-        setShowNouveauClientModal(false);
-    }, [stopScanner]);
 
     /* ─────────────────────────────────────────────────────────────── */
     /*  RENDER                                                         */
