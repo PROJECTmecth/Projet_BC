@@ -51,6 +51,7 @@ export default function LoginPage() {
   const token = data.token; // ← Le token vient maintenant de l'API
 
   if (user.statut === "inactif") {
+    localStorage.setItem("bc_was_frozen", "true");
     showToast("Compte désactivé. Contactez l'administrateur.", "error");
     return;
   }
@@ -71,7 +72,10 @@ export default function LoginPage() {
       const { status, data } = err.response;
       if      (status === 422) { setFieldErrors(data.errors ?? {}); showToast(data.message ?? "Identifiants incorrects.", "error"); }
       else if (status === 401) showToast("Nom d'utilisateur ou mot de passe incorrect.", "error");
-      else if (status === 403) showToast(data.message ?? "Compte désactivé.", "error");
+      else if (status === 403) {
+        localStorage.setItem("bc_was_frozen", "true");
+        showToast(data.message ?? "Compte désactivé.", "error");
+      }
       else if (status === 419) showToast("Session expirée. Rechargez la page (F5).", "error");
       else if (status === 429) showToast("Trop de tentatives. Patientez.", "error");
       else                     showToast(`Erreur serveur (${status}).`, "error");

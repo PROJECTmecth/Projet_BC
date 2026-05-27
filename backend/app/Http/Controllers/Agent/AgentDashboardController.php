@@ -31,9 +31,16 @@ class AgentDashboardController extends Controller
 
         $totalClients = Client::where('id_agent', $agent->id_agent)->count();
 
-        $totalKiosques = Kiosque::where('statut_service', 'actif')->count();
+        // N'affiche que le kiosque assigné à l'agent s'il est actif
+        $totalKiosques = $agent->id_kiosque
+            ? Kiosque::where('id_kiosque', $agent->id_kiosque)->where('statut_service', 'actif')->count()
+            : 0;
 
-        $soldeTotal = DB::table('comptes')->sum('solde_total') ?? 0;
+        // Somme des soldes uniquement pour les clients de cet agent
+        $soldeTotal = DB::table('comptes')
+            ->join('clients', 'comptes.id_client', '=', 'clients.id_client')
+            ->where('clients.id_agent', $agent->id_agent)
+            ->sum('comptes.solde_total') ?? 0;
 
         $revenusEncaisses = Transaction::where('id_agent', $agent->id_agent)
             ->whereDate('created_at', Carbon::today())
