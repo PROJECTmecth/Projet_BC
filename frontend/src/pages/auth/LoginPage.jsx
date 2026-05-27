@@ -43,10 +43,10 @@ export default function LoginPage() {
     try {
   // ✅ Pas besoin de getCsrfCookie() pour les tokens
   // await getCsrfCookie(); // ← Commentez ou supprimez cette ligne
-  
+
   // ✅ Login direct avec tokens
   const { data } = await loginRequest({ name: name.trim(), password });
-  
+
   const user = data.user;
   const token = data.token; // ← Le token vient maintenant de l'API
 
@@ -105,7 +105,7 @@ export default function LoginPage() {
         <div className="hidden md:flex absolute top-7 left-28 z-10 w-[100px] h-[100px] bg-white rounded-2xl shadow-lg border border-gray-200 items-center justify-center overflow-hidden">
           <img src={logoBomba} alt="BOMBA CASH Logo" className="w-full h-full object-contain p-2" />
         </div>
-            
+
         <div className="hidden md:flex absolute top-4 right-15 z-10 bg-white rounded-2xl shadow-lg border border-gray-100 items-center justify-center overflow-hidden">
           <img src={logoText} alt="BOMBA CASH Brand" className="w-35 h-27 object-contain p-1" />
         </div>
