@@ -26,7 +26,7 @@ export default function ProfilClientPage() {
     fetchClient();
   }, [id]);
 
-  const fmt = (v) => new Intl.NumberFormat("fr-FR").format(v) + " F";
+  const fmt = (v) => new Intl.NumberFormat("fr-FR").format(isNaN(Number(v)) ? 0 : Number(v)) + " F";
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
 
   // Cercle de progression SVG
@@ -172,7 +172,7 @@ export default function ProfilClientPage() {
           <div className="carte-detail-row">
             <span className="carte-detail-label">Commissions (Frais & Pénalités)</span>
             <span className="carte-detail-value font-bold" style={{ color: '#EF4444' }}>
-              {fmt((compte?.total_frais_garde || 0) + (compte?.total_penalites || 0))}
+              {fmt((Number(compte?.total_frais_garde) || 0) + (Number(compte?.total_penalites) || 0))}
             </span>
           </div>
           <div className="carte-detail-row">

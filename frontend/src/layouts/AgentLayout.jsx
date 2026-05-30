@@ -30,22 +30,22 @@ const [profil, setProfil] = useState(() => {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 24px",
-        height: "64px",
+        height: "72px",
         background: "#fff",
         borderBottom: "1px solid #F0F0F0",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <img
             src={logo2}
             alt="BOMBA CASH logo"
-            style={{ width: "48px", height: "48px", borderRadius: "10px", objectFit: "cover" }}
+            style={{ width: "60px", height: "60px", borderRadius: "12px", objectFit: "cover" }}
           />
           <img
             src={logo3}
             alt="BOMBA CASH"
-            style={{ height: "36px", objectFit: "contain", maxWidth: "140px" }}
+            style={{ height: "48px", objectFit: "contain", maxWidth: "180px" }}
           />
         </div>
 
