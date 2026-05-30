@@ -8,6 +8,13 @@ import * as XLSX from "xlsx";
 
 // Formatage des nombres
 const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#039;",
+}[char]));
 
 // ── Composant : Progression circulaire ─────────────────────────────────────
 function CircleProgress({ pct = 0 }) {
@@ -187,6 +194,10 @@ export default function GestionClients() {
   const endIdx     = startIdx + ITEMS_PER_PAGE;
   const paginated  = filtered.slice(startIdx, endIdx);
 
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
+
   // --- UTILITAIRES ---
   const hasData = (label) => {
     if (filtered.length === 0) {
@@ -203,9 +214,91 @@ export default function GestionClients() {
       "Imprimer la liste ?",
       "Voulez-vous imprimer la liste filtrée des clients ?",
       () => {
-        const table = document.getElementById("clients-table");
-        if (table) table.setAttribute("data-export-date", new Date().toLocaleDateString("fr-FR"));
-        setTimeout(() => window.print(), 200);
+        const rows = filtered.map((c, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${c.genre === "Homme" ? "M" : "F"}</td>
+            <td><strong>${escapeHtml(c.nom)} ${escapeHtml(c.prenom)}</strong></td>
+            <td>${escapeHtml(c.numero_carte)}</td>
+            <td>${escapeHtml(c.adresse)}</td>
+            <td>${escapeHtml(c.nationalite)}</td>
+            <td>${escapeHtml(c.type_piece)}</td>
+            <td>${escapeHtml(c.num_piece)}</td>
+            <td>${escapeHtml(c.activite)}</td>
+            <td>${escapeHtml(c.telephone)}</td>
+          </tr>
+        `).join("");
+
+        const printWindow = window.open("", "_blank", "width=1200,height=800");
+        if (!printWindow) {
+          showToast("Impossible d'ouvrir la fenêtre d'impression.", "error");
+          return;
+        }
+
+        printWindow.document.write(`<!doctype html>
+          <html lang="fr">
+            <head>
+              <meta charset="utf-8" />
+              <title>BOMBA CASH - Liste des Clients</title>
+              <style>
+                @page { size: landscape; margin: 8mm; }
+                * { box-sizing: border-box; }
+                body { margin: 0; color: #111827; font-family: Arial, Helvetica, sans-serif; font-size: 10px; background: #fff; }
+                .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #ff6600; padding-bottom: 8px; margin-bottom: 10px; }
+                .brand { font-size: 20px; font-weight: 800; color: #1e2a3a; }
+                .meta { text-align: right; color: #4b5563; font-size: 10px; line-height: 1.5; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                th, td { border: 1px solid #333; padding: 5px 6px; text-align: left; vertical-align: top; color: #111827; word-wrap: break-word; overflow-wrap: anywhere; }
+                th { background: #1e2a3a; color: #fff; font-size: 9px; text-transform: uppercase; }
+                tbody tr:nth-child(even) td { background: #f8fafc; }
+                th:nth-child(1), td:nth-child(1) { width: 5%; text-align: center; }
+                th:nth-child(2), td:nth-child(2) { width: 5%; text-align: center; }
+                th:nth-child(3), td:nth-child(3) { width: 18%; }
+                th:nth-child(4), td:nth-child(4) { width: 12%; }
+                th:nth-child(5), td:nth-child(5) { width: 19%; }
+                th:nth-child(6), td:nth-child(6) { width: 9%; }
+                th:nth-child(7), td:nth-child(7) { width: 9%; }
+                th:nth-child(8), td:nth-child(8) { width: 10%; }
+                th:nth-child(9), td:nth-child(9) { width: 8%; }
+                th:nth-child(10), td:nth-child(10) { width: 10%; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <div>
+                  <div class="brand">BOMBA CASH - Liste des Clients</div>
+                  <div>Total : ${filtered.length} client${filtered.length > 1 ? "s" : ""}</div>
+                </div>
+                <div class="meta">
+                  Généré le ${new Date().toLocaleDateString("fr-FR")}<br />
+                  Liste filtrée
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Genre</th>
+                    <th>Nom & Prénom</th>
+                    <th>No. Carte</th>
+                    <th>Adresse</th>
+                    <th>Nationalité</th>
+                    <th>Pièce</th>
+                    <th>No. Pièce</th>
+                    <th>Activité</th>
+                    <th>Tél.</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </body>
+          </html>`);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
       },
       "#1e2a3a"
     );
@@ -261,7 +354,6 @@ export default function GestionClients() {
           doc.setFont("helvetica", "normal");
           doc.text(`Total : ${filtered.length} client${filtered.length > 1 ? "s" : ""}`, 14, 29);
           doc.text("Tous statuts confondus", W / 2, 29, { align: "center" });
-          doc.text(`Export complet`, W - 14, 29, { align: "right" });
 
           // ── Tableau ────────────────────────────────────────────────────
           const head = [["No.", "Genre", "Nom & Prenom", "No. Carte", "Adresse", "Nationalite", "Tel.", "Activite"]];
@@ -275,13 +367,16 @@ export default function GestionClients() {
             c.telephone,
             c.activite,
           ]);
+          const tableWidth = 226;
+          const tableMarginLeft = (W - tableWidth) / 2;
 
           autoTable(doc, {
             head,
             body,
             startY: 34,
             theme: "grid",
-            margin: { left: 14, right: 14 },
+            tableWidth,
+            margin: { left: tableMarginLeft, right: tableMarginLeft },
             styles: { fontSize: 8, cellPadding: 2.5, overflow: "linebreak" },
             headStyles: {
               fillColor: [30, 42, 58],
@@ -448,7 +543,7 @@ export default function GestionClients() {
                 <tr><td colSpan={10} className="text-center py-10 text-gray-400">Aucun client trouvé</td></tr>
               ) : paginated.map((c, i) => (
                 <tr key={c.id_client} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="px-4 py-4 text-gray-500">{i + 1}</td>
+                  <td className="px-4 py-4 text-gray-500">{startIdx + i + 1}</td>
                   <td className="px-4 py-4">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${c.genre === "Homme" ? "bg-blue-400" : "bg-pink-400"}`}>
                       {c.genre === "Homme" ? "M" : "F"}

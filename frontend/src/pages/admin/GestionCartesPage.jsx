@@ -2,7 +2,7 @@
 // fichier : src/pages/admin/GestionCartesPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, QrCode, Trash2, AlertTriangle, Clock, X, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
@@ -80,6 +80,13 @@ export default function GestionCartesPage() {
   const [confirmDelete, setConfirmDelete]       = useState({ open: false, ids: [] });
   const [apercuOpen, setApercuOpen]             = useState(false);
   const [apercuLot, setApercuLot]               = useState(null);
+  
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 1,
+  });
 
   const tousLots         = lotsHistorique;
   const totalGeneres     = [...lotsHistorique, ...lotsEnAttente].reduce((sum, l) => sum + l.quantite, 0);
@@ -130,23 +137,30 @@ export default function GestionCartesPage() {
   }, [totalGeneres]);
 
   // ── Charger historique BDD ────────────────────────────────────────────────
-  useEffect(() => {
+  const chargerLots = useCallback(async (page = 1, limit = 10) => {
     if (MOCK_MODE) return;
-    async function chargerLots() {
-      try {
-        const response = await axios.get("/api/admin/qrcodes/lots");
-        if (response.data.success) {
-          setLotsHistorique(response.data.data.map(lot => ({ ...lot, cartes: [], imprime: true })));
+    setIsLoading(true);
+    try {
+      const response = await axios.get("/api/admin/qrcodes/lots", {
+        params: { page, limit }
+      });
+      if (response.data.success) {
+        setLotsHistorique(response.data.data.map(lot => ({ ...lot, cartes: [], imprime: true })));
+        if (response.data.pagination) {
+          setPagination(response.data.pagination);
         }
-      } catch (err) {
-        console.error("Erreur chargement lots :", err);
-        showToast("Erreur lors du chargement de l'historique.", "error");
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err) {
+      console.error("Erreur chargement lots :", err);
+      showToast("Erreur lors du chargement de l'historique.", "error");
+    } finally {
+      setIsLoading(false);
     }
-    chargerLots();
   }, []);
+
+  useEffect(() => {
+    chargerLots(1, pagination.limit);
+  }, [chargerLots]);
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -169,6 +183,10 @@ export default function GestionCartesPage() {
     const ids = confirmDelete.ids;
     setLotsHistorique(prev => prev.filter(l => !ids.includes(l.id)));
     setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+    setPagination(prev => ({
+      ...prev,
+      total: Math.max(0, prev.total - ids.length)
+    }));
     setConfirmDelete({ open: false, ids: [] });
     showToast(`${ids.length} lot${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""} avec succès.`);
   }
@@ -195,7 +213,7 @@ export default function GestionCartesPage() {
     const lot = lotsEnAttente.find(l => l.id === lotId);
     if (!lot) return;
     setLotsEnAttente(prev => prev.filter(l => l.id !== lotId));
-    setLotsHistorique(prev => [{ ...lot, imprime: true }, ...prev]);
+    chargerLots(1, pagination.limit);
     showToast(`${lot.numero} ajouté à l'historique.`);
   }
 
@@ -598,6 +616,88 @@ export default function GestionCartesPage() {
             </AnimatePresence>
           )}
         </div>
+
+        {/* Pagination */}
+        {tousLots.length > 0 && (
+          <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex items-center justify-between flex-wrap gap-4">
+            {/* Infos */}
+            <div className="text-sm text-gray-600">
+              Affichage de <span className="font-semibold">{(pagination.current_page - 1) * pagination.limit + 1}</span> à{" "}
+              <span className="font-semibold">
+                {Math.min(pagination.current_page * pagination.limit, pagination.total)}
+              </span> sur <span className="font-semibold">{pagination.total}</span> résultats
+            </div>
+
+            {/* Contrôles */}
+            <div className="flex items-center gap-3">
+              {/* Items par page */}
+              <select
+                value={pagination.limit}
+                onChange={(e) => {
+                  const newLimit = parseInt(e.target.value);
+                  setPagination(prev => ({ ...prev, limit: newLimit }));
+                  chargerLots(1, newLimit);
+                }}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value={5}>5 par page</option>
+                <option value={10}>10 par page</option>
+                <option value={15}>15 par page</option>
+                <option value={25}>25 par page</option>
+              </select>
+
+              {/* Navigation */}
+              <button
+                onClick={() => chargerLots(pagination.current_page - 1, pagination.limit)}
+                disabled={pagination.current_page <= 1}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Précédent
+              </button>
+
+              {/* Numéros */}
+              <div className="flex gap-1">
+                {Array.from(
+                  { length: Math.min(5, pagination.total_pages) },
+                  (_, i) => {
+                    let pageNum;
+                    if (pagination.total_pages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.current_page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.current_page >= pagination.total_pages - 2) {
+                      pageNum = pagination.total_pages - 4 + i;
+                    } else {
+                      pageNum = pagination.current_page - 2 + i;
+                    }
+                    return pageNum;
+                  }
+                ).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => chargerLots(pageNum, pagination.limit)}
+                    className={[
+                      "px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors",
+                      pageNum === pagination.current_page
+                        ? "bg-orange-600 text-white"
+                        : "border border-gray-300 hover:bg-orange-50",
+                    ].join(" ")}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => chargerLots(pagination.current_page + 1, pagination.limit)}
+                disabled={pagination.current_page >= pagination.total_pages}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Suivant →
+              </button>
+            </div>
+          </div>
+        )}
       </motion.div>
 
     </div>

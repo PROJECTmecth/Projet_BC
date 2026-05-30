@@ -16,27 +16,23 @@ import api from "../lib/axios";
 const DEFAULT_LIMIT = 15;
 const POLLING_INTERVAL = 30000; // 30 secondes
 
-const DEFAULT_PAGINATION = {
-  current_page: 1,
-  limit: DEFAULT_LIMIT,
-  total: 0,
-  total_pages: 1,
-};
-
-const DEFAULT_STATS = {
-  total_operations: 0,
-  total_depots: 0,
-  total_retraits_partiels: 0,
-  total_retraits_solde: 0,
-  montant_total_depots: 0,
-  montant_total_retraits: 0,
-};
-
 export function useTransactionJournal(enablePolling = true, pollingInterval = POLLING_INTERVAL) {
   // 📊 État des données
   const [transactions, setTransactions] = useState([]);
-  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
-  const [stats, setStats] = useState(DEFAULT_STATS);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    limit: DEFAULT_LIMIT,
+    total: 0,
+    total_pages: 1,
+  });
+  const [stats, setStats] = useState({
+    total_operations: 0,
+    total_depots: 0,
+    total_retraits_partiels: 0,
+    total_retraits_solde: 0,
+    montant_total_depots: 0,
+    montant_total_retraits: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -77,19 +73,20 @@ export function useTransactionJournal(enablePolling = true, pollingInterval = PO
       const response = await api.get("/api/admin/transactions", { params });
 
       if (response.data?.success) {
-        const rows = response.data.data ?? response.data.transactions ?? [];
-
-        setTransactions(Array.isArray(rows) ? rows : []);
-        setPagination(prev => ({
-          ...DEFAULT_PAGINATION,
-          ...prev,
-          ...(response.data.pagination ?? {}),
-        }));
-        setStats({
-          ...DEFAULT_STATS,
-          ...(response.data.stats ?? {}),
-        });
-        console.log("✅ Transactions loaded:", Array.isArray(rows) ? rows.length : 0);
+        setTransactions(response.data.data || []);
+        setPagination(response.data.pagination || {});
+        
+        const defaultStats = {
+          total_operations: 0,
+          total_depots: 0,
+          total_retraits_partiels: 0,
+          total_retraits_solde: 0,
+          montant_total_depots: 0,
+          montant_total_retraits: 0,
+        };
+        setStats(response.data.stats ? { ...defaultStats, ...response.data.stats } : defaultStats);
+        
+        console.log("✅ Transactions loaded:", response.data.data ? response.data.data.length : 0);
       } else {
         throw new Error("Invalid response format");
       }

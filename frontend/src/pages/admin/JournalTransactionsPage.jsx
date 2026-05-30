@@ -31,14 +31,8 @@ function BadgeOperation({ operation }) {
 }
 
 function formatMontant(montant) {
-  const value = Number(montant ?? 0);
-  return Number.isFinite(value)
-    ? value.toLocaleString("fr-FR").replace(/\s/g, "\u00A0")
-    : "0";
-}
-
-function isDepotOperation(operation) {
-  return String(operation ?? "").toLowerCase().includes("dépôt");
+  if (montant === undefined || montant === null) return "0";
+  return montant.toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
 }
 
 export default function JournalTransactionsPage() {
@@ -97,8 +91,8 @@ export default function JournalTransactionsPage() {
     const rows = transactions.map(tx => `
       <tr>
         <td>${tx.date}</td><td><strong>${tx.nom}</strong></td><td>${tx.operation}</td>
-        <td style="text-align:right;color:${isDepotOperation(tx.operation) ? "green" : "red"}">
-          ${isDepotOperation(tx.operation) ? "+" : "-"}${formatMontant(tx.montant)}
+        <td style="text-align:right;color:${tx.operation.toLowerCase().includes('dépôt') ? "green" : "red"}">
+          ${tx.operation.toLowerCase().includes('dépôt') ? "+" : "-"}${formatMontant(tx.montant)}
         </td>
         <td>${tx.heure}</td><td>${tx.telephone}</td><td>${tx.kiosque}</td><td>${tx.agent}</td>
       </tr>`).join("");
@@ -131,7 +125,7 @@ export default function JournalTransactionsPage() {
       head: [["DATE","NOM & PRÉNOM","OPÉRATION","MONTANT (XAF)","HEURE","TÉLÉPHONE","KIOSQUE","NOM AGENT"]],
       body: transactions.map(tx => [
         tx.date, tx.nom, tx.operation,
-        `${isDepotOperation(tx.operation) ? "+" : "-"}${formatMontant(tx.montant)}`,
+        `${tx.operation.toLowerCase().includes('dépôt') ? "+" : "-"}${formatMontant(tx.montant)}`,
         tx.heure, tx.telephone, tx.kiosque, tx.agent,
       ]),
       headStyles: { fillColor: [74,74,74], textColor: 255, fontSize: 9, fontStyle: "bold" },
@@ -152,7 +146,7 @@ export default function JournalTransactionsPage() {
     const headers = ["DATE","NOM & PRÉNOM","OPÉRATION","MONTANT (XAF)","HEURE","TÉLÉPHONE","KIOSQUE","NOM AGENT"];
     const rows = transactions.map(tx => [
       tx.date, tx.nom, tx.operation,
-      `${isDepotOperation(tx.operation) ? "+" : "-"}${tx.montant}`,
+      `${tx.operation.toLowerCase().includes('dépôt') ? "+" : "-"}${tx.montant}`,
       tx.heure, tx.telephone, tx.kiosque, tx.agent,
     ]);
     const csv  = [headers, ...rows].map(r => r.join(";")).join("\n");
@@ -358,8 +352,8 @@ export default function JournalTransactionsPage() {
                     <td className="px-6 py-4 text-sm font-bold text-gray-900 border-b border-gray-100 whitespace-nowrap">{tx.nom}</td>
                     <td className="px-6 py-4 text-center border-b border-gray-100"><BadgeOperation operation={tx.operation} /></td>
                     <td className="px-6 py-4 text-sm font-mono font-bold text-right border-b border-gray-100 whitespace-nowrap">
-                      <span className={isDepotOperation(tx.operation) ? "text-green-600" : "text-red-600"}>
-                        {isDepotOperation(tx.operation) ? "+" : "-"}{formatMontant(tx.montant)}
+                      <span className={tx.operation.toLowerCase().includes('dépôt') ? "text-green-600" : "text-red-600"}>
+                        {tx.operation.toLowerCase().includes('dépôt') ? "+" : "-"}{formatMontant(tx.montant)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700 font-mono text-center border-b border-gray-100">{tx.heure}</td>
