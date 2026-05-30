@@ -108,6 +108,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
 
         //Mouvements de caisse
         Route::get('/mouvements-caisse', [MouvementCaisseController::class, 'index']);
+        Route::get('/transactions', [MouvementCaisseController::class, 'journal']);
         // clients-Admin
         Route::get('/clients',     [ClientController::class, 'index'])->name('clients.index');
         Route::get('/clients/{id}',[ClientController::class, 'show'])->name('clients.show');

@@ -10,6 +10,7 @@ import {
 } from "recharts";
 
 import { useAdminStats } from "../../hooks/useAdminStats";
+import { useOperations } from "../../hooks/useOperations";
 import StatCard from "../../components/admin/StatCard";
 import OperationsTable from "../../components/admin/OperationsTable";
 
@@ -55,7 +56,22 @@ const IcoAlert = () => (
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { stats, demographics, monthly, operations, loading, error } = useAdminStats();
+  const { stats, demographics, monthly, loading, error } = useAdminStats();
+  
+  // 📊 Hook pour les opérations récentes - ENTIÈREMENT DYNAMIQUE
+  const {
+    operations,
+    pagination,
+    filters,
+    sortBy,
+    sortOrder,
+    loading: opsLoading,
+    handlePageChange,
+    handleLimitChange,
+    handleSort,
+    handleFilterChange,
+    handleRefresh,
+  } = useOperations(true, 30000); // true = enable polling, 30000ms = 30 secondes
 
   const [showClientsDetail, setShowClientsDetail] = useState(false);
   const [showKiosquesDetail, setShowKiosquesDetail] = useState(false);
@@ -384,7 +400,19 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ══ 5. TABLEAU OPÉRATIONS RÉCENTES ══════════════════════════════════ */}
-      <OperationsTable operations={operations} loading={loading} />
+      <OperationsTable 
+        operations={operations}
+        loading={opsLoading}
+        pagination={pagination}
+        filters={filters}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+        onSort={handleSort}
+        onFilterChange={handleFilterChange}
+        onRefresh={handleRefresh}
+      />
 
     </div>
   );

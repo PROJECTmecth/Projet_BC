@@ -87,9 +87,9 @@ export default function Sidebar({ collapsed = false, onToggle, isMobile = false 
 
       {/* ── Logo + bouton toggle ───────────────────────────────────────────── */}
       <div
-        className={`flex items-center px-4 pt-7 pb-3 select-none ${isMobile ? "" : "cursor-pointer"}`}
+        className="flex items-center px-4 pt-7 pb-3 select-none cursor-pointer"
         style={{ justifyContent: collapsed ? "center" : "space-between" }}
-        onClick={isMobile ? undefined : onToggle}
+        onClick={onToggle}
         title={isMobile ? "" : (collapsed ? "Agrandir la sidebar" : "Réduire la sidebar")}
       >
         {/* Icône poisson — toujours visible */}
@@ -133,6 +133,9 @@ export default function Sidebar({ collapsed = false, onToggle, isMobile = false 
               key={item.path}
               to={item.path}
               end={item.exact}
+              onClick={() => {
+                if (isMobile && !collapsed) onToggle?.();
+              }}
               title={collapsed ? item.label : ""}  // tooltip si collapsed
               className={[
                 "flex items-center rounded-xl",

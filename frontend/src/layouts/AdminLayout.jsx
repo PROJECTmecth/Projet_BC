@@ -30,16 +30,27 @@ export default function AdminLayout() {
 
   // Fonction pour basculer l'état (verrouillée sur mobile)
   const handleToggle = () => {
-    if (isMobile) return; // Ne fait rien si on est sur mobile
     setCollapsed(prev => !prev);
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F5F0E8]">
 
+      {isMobile && !collapsed && (
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          className="fixed inset-0 z-30 bg-black/35 lg:hidden"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
+
       {/* ── Sidebar — largeur animée ── */}
       <div
-        className="h-screen sticky top-0 shrink-0 transition-all duration-300"
+        className={[
+          "h-screen shrink-0 transition-all duration-300",
+          isMobile ? "fixed left-0 top-0 z-40" : "sticky top-0",
+        ].join(" ")}
         style={{ width: collapsed ? 70 : 280 }}
       >
         <Sidebar
@@ -50,9 +61,9 @@ export default function AdminLayout() {
       </div>
 
       {/* ── Zone principale ── */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className={`flex-1 flex flex-col h-screen overflow-hidden ${isMobile ? "ml-[70px]" : ""}`}>
         <Topbar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
