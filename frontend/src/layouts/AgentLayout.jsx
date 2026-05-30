@@ -45,7 +45,7 @@ const [profil, setProfil] = useState(() => {
           <img
             src={logo3}
             alt="BOMBA CASH"
-            style={{ height: "64px", objectFit: "contain", maxWidth: "240px" }}
+            style={{ height: "90px", objectFit: "contain" }}
           />
         </div>
 
