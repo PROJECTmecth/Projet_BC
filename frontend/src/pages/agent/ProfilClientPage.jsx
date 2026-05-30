@@ -26,26 +26,51 @@ export default function ProfilClientPage() {
     fetchClient();
   }, [id]);
 
-  const fmt = (v) => new Intl.NumberFormat("fr-FR").format(v) + " F";
+  const fmt = (v) => new Intl.NumberFormat("fr-FR").format(isNaN(Number(v)) ? 0 : Number(v)) + " F";
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
 
   // Cercle de progression SVG
   const CircleProgress = ({ pct = 0 }) => {
+    // Déterminer la couleur selon la progression
+    let color = "#EF4444"; // Rouge (< 30%)
+    if (pct >= 90) color = "#16A34A"; // Vert (>= 90%)
+    else if (pct >= 60) color = "#3B82F6"; // Bleu (>= 60%)
+    else if (pct >= 30) color = "#F59E0B"; // Jaune (>= 30%)
+
     const r = 54;
     const circ = 2 * Math.PI * r;
     const offset = circ - (pct / 100) * circ;
     return (
-      <div className="circle-wrapper">
+      <div className="circle-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <svg width="140" height="140" viewBox="0 0 140 140">
           <circle cx="70" cy="70" r={r} fill="none" stroke="#E5E7EB" strokeWidth="12" />
-          <circle cx="70" cy="70" r={r} fill="none" stroke="#16A34A" strokeWidth="12"
+          <circle cx="70" cy="70" r={r} fill="none" stroke={color} strokeWidth="12"
             strokeDasharray={circ} strokeDashoffset={offset}
             strokeLinecap="round"
-            transform="rotate(-90 70 70)" />
+            transform="rotate(-90 70 70)"
+            style={{ transition: 'stroke-dashoffset 0.8s ease-in-out, stroke 0.8s ease' }}
+          />
           <text x="70" y="76" textAnchor="middle" fontSize="22" fontWeight="800" fill="#111">
             {pct}%
           </text>
         </svg>
+
+        {/* Légende */}
+        <div style={{ marginTop: '16px', fontSize: '12px', color: '#6B7280', display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+           <div style={{fontWeight: '600', marginBottom: '2px', color: '#374151', textAlign: 'center'}}>Évolution de l'objectif :</div>
+           <div style={{display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center'}}>
+             <div style={{width:'10px', height:'10px', borderRadius:'50%', backgroundColor:'#EF4444'}}></div> <span>0% - 29%</span>
+           </div>
+           <div style={{display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center'}}>
+             <div style={{width:'10px', height:'10px', borderRadius:'50%', backgroundColor:'#F59E0B'}}></div> <span>30% - 59%</span>
+           </div>
+           <div style={{display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center'}}>
+             <div style={{width:'10px', height:'10px', borderRadius:'50%', backgroundColor:'#3B82F6'}}></div> <span>60% - 89%</span>
+           </div>
+           <div style={{display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center'}}>
+             <div style={{width:'10px', height:'10px', borderRadius:'50%', backgroundColor:'#16A34A'}}></div> <span>90% - 100%</span>
+           </div>
+        </div>
       </div>
     );
   };
@@ -115,15 +140,40 @@ export default function ProfilClientPage() {
           </div>
           <div className="carte-detail-row">
             <span className="carte-detail-label">Date d'expiration</span>
-            <span className="carte-detail-value">{fmtDate(carte?.date_expiration)}</span>
+            <div className="carte-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>{fmtDate(carte?.date_expiration)}</span>
+              {carte?.date_expiration && new Date(carte.date_expiration).setHours(0,0,0,0) < new Date().setHours(0,0,0,0) && (carte?.progression ?? 0) < 100 && carte?.statut === 'actif' && (
+                <span style={{ backgroundColor: '#EF4444', color: '#FFF', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  En retard
+                </span>
+              )}
+            </div>
           </div>
           <div className="carte-detail-row">
             <span className="carte-detail-label">Montant de versement</span>
             <span className="carte-detail-value">{fmt(carte?.montant_initial ?? 0)}</span>
           </div>
           <div className="carte-detail-row">
+            <span className="carte-detail-label">Objectif total</span>
+            <span className="carte-detail-value font-bold" style={{ color: '#1F2937' }}>
+              {fmt((carte?.montant_initial ?? 0) * (carte?.duree === '15 jours' ? 15 : 30))}
+            </span>
+          </div>
+          <div className="carte-detail-row">
             <span className="carte-detail-label">Montant total accumulé</span>
-            <span className="carte-detail-value">{fmt(compte?.solde_total ?? 0)}</span>
+            <span className="carte-detail-value font-bold text-green-600" style={{ color: '#16A34A' }}>{fmt(compte?.solde_total ?? 0)}</span>
+          </div>
+          <div className="carte-detail-row">
+            <span className="carte-detail-label">Montant restant à atteindre</span>
+            <span className="carte-detail-value font-bold" style={{ color: '#F59E0B' }}>
+              {fmt(Math.max(0, ((carte?.montant_initial ?? 0) * (carte?.duree === '15 jours' ? 15 : 30)) - (compte?.solde_total ?? 0)))}
+            </span>
+          </div>
+          <div className="carte-detail-row">
+            <span className="carte-detail-label">Commissions (Frais & Pénalités)</span>
+            <span className="carte-detail-value font-bold" style={{ color: '#EF4444' }}>
+              {fmt((Number(compte?.total_frais_garde) || 0) + (Number(compte?.total_penalites) || 0))}
+            </span>
           </div>
           <div className="carte-detail-row">
             <span className="carte-detail-label">Statut</span>

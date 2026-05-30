@@ -693,6 +693,197 @@
 }
 
 /* ============================================================
+   ERROR CARD SYSTEM (PREMIUM DESIGN)
+   ============================================================ */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 1.5rem;
+}
+
+.error-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.error-card--frozen {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: linear-gradient(180deg, var(--white) 0%, rgba(254, 242, 242, 0.4) 100%);
+}
+
+.error-card__icon-wrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #FEF2F2;
+  color: #EF4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08);
+}
+
+.error-card--frozen .error-card__icon-wrapper {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 2px solid rgba(220, 38, 38, 0.1);
+}
+
+.error-card__icon {
+  width: 32px;
+  height: 32px;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+.error-card__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.error-card__message {
+  font-size: 0.95rem;
+  color: #4B5563;
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 500;
+}
+
+.error-card__actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.btn-retry {
+  flex: 1;
+  padding: 0.8rem 1.5rem;
+  background: #111827;
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.15);
+}
+
+.btn-retry:hover {
+  background: #1F2937;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.2);
+}
+
+.btn-retry:active {
+  transform: translateY(0);
+}
+
+.btn-support {
+  flex: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.5rem;
+  background: #DC2626;
+  color: var(--white) !important;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+.btn-support:hover {
+  background: #B91C1C;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.25);
+}
+
+.btn-support:active {
+  transform: translateY(0);
+}
+
+.error-card__copy-section {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-top: 1px dashed rgba(229, 231, 235, 0.8);
+  padding-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.error-card__copy-tip {
+  font-size: 0.8rem;
+  color: #6B7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.btn-copy-fallback {
+  width: 100%;
+  padding: 0.7rem 1.25rem;
+  background: #F3F4F6;
+  color: #374151;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-copy-fallback:hover {
+  background: #E5E7EB;
+  color: #111827;
+  transform: translateY(-1px);
+}
+
+.btn-copy-fallback:active {
+  transform: translateY(0);
+}
+
+.btn-copy-fallback--success {
+  background: #ECFDF5 !important;
+  color: #065F46 !important;
+  border-color: #A7F3D0 !important;
+  box-shadow: 0 4px 12px rgba(6, 95, 70, 0.08);
+}
+
+/* ============================================================
    RESPONSIVE — Tablette (768px+)
    ============================================================ */
 @media (min-width: 768px) {

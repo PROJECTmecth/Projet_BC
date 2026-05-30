@@ -76,8 +76,9 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 Route::middleware(['auth:sanctum'])->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
 // Hors groupe admin — Gestion des QR Codes
-Route::post('/admin/qrcodes/generer', [CarteController::class, 'generer'])->name('qrcodes.generer');
-Route::get('/admin/qrcodes/lots',     [CarteController::class, 'index'])->name('qrcodes.lots');
+Route::post('/admin/qrcodes/generer', [CarteController::class, 'generer']) ->name('qrcodes.generer');
+Route::get ('/admin/qrcodes/lots',    [CarteController::class, 'index'])   ->name('qrcodes.lots');
+Route::post('/admin/qrcodes/annuler', [CarteController::class, 'annuler']) ->name('qrcodes.annuler');
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ROUTES ADMIN (Protégées par Sanctum et le middleware isAdmin)
@@ -106,12 +107,16 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::patch ('/kiosques/{kiosque}/statut', [KiosqueController::class, 'toggleStatut']) ->name('kiosques.toggle');
         Route::get   ('/kiosques/{kiosque}/agents', [KiosqueController::class, 'agents'])       ->name('kiosques.agents');
 
-        //Mouvements de caisse
-        Route::get('/mouvements-caisse', [MouvementCaisseController::class, 'index']);
-        Route::get('/transactions', [MouvementCaisseController::class, 'journal']);
-        // clients-Admin
-        Route::get('/clients',     [ClientController::class, 'index'])->name('clients.index');
-        Route::get('/clients/{id}',[ClientController::class, 'show'])->name('clients.show');
+        // Mouvements de caisse
+        Route::get('/mouvements-caisse',               [MouvementCaisseController::class, 'index']);
+        Route::get('/mouvements-caisse/revenus',       [MouvementCaisseController::class, 'revenus']);
+        Route::get('/mouvements-caisse/revenus/detail',[MouvementCaisseController::class, 'revenusDetail']);
+        Route::get('/transactions',                    [MouvementCaisseController::class, 'journal'])->name('transactions.index');
+
+        // clients-Admin — analytics AVANT {id} sinon "analytics" est capturé comme ID
+        Route::get('/clients',           [ClientController::class, 'index'])    ->name('clients.index');
+        Route::get('/clients/analytics', [ClientController::class, 'analytics'])->name('clients.analytics');
+        Route::get('/clients/{id}',      [ClientController::class, 'show'])     ->name('clients.show');
 
         // Agents
         Route::get   ('/agents',                [AgentController::class, 'index'])        ->name('agents.list');
@@ -121,8 +126,6 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::delete('/agents/{agent}',        [AgentController::class, 'destroy'])      ->name('agents.destroy');
         Route::patch ('/agents/{agent}/statut', [AgentController::class, 'toggleStatut']) ->name('agents.toggle');
 
-
-        Route::get('/transactions',  fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
 
         // Profil Admin
         Route::put('/profil',          [ProfilController::class, 'update'])        ->name('profil.update');

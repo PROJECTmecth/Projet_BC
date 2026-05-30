@@ -48,6 +48,14 @@ class AuthenticatedSessionController extends Controller
         // Supprimer les anciens tokens (sécurité)
         $user->tokens()->delete();
 
+        // Marquer l'agent comme "en ligne" s'il a un profil agent
+        if ($user->isAgent() && $user->agent) {
+            $user->agent->update([
+                'statut_ligne'  => 'en_ligne',
+                'derniere_sync' => now(),
+            ]);
+        }
+
         // Créer nouveau token Sanctum
         $token = $user->createToken('bc_token')->plainTextToken;
 
@@ -66,9 +74,16 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request)
     {
+        $user = $request->user();
+
+        // Marquer l'agent comme "hors ligne" avant de supprimer le token
+        if ($user && $user->isAgent() && $user->agent) {
+            $user->agent->update(['statut_ligne' => 'hors_ligne']);
+        }
+
         // Suppression du token actuel uniquement
-        if ($request->user() && $request->user()->currentAccessToken()) {
-            $request->user()->currentAccessToken()->delete();
+        if ($user && $user->currentAccessToken()) {
+            $user->currentAccessToken()->delete();
         }
 
         return response()->json(['message' => 'Déconnecté avec succès.']);

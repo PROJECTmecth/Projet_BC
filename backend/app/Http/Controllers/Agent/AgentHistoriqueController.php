@@ -143,11 +143,8 @@ $kpiRaw = DB::table('transactions as t')
         $dateDebut = $request->input('date_debut', '');
         $dateFin   = $request->input('date_fin',   '');
 
-        // Une fois dompdf installé, décommenter :
-        // $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('agent.historique_pdf', compact('rows','dateDebut','dateFin'));
-        // return $pdf->download("historique_{$dateDebut}_{$dateFin}.pdf");
-
-        return response()->json(['message' => 'PDF disponible après installation de dompdf.'], 501);
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('agent.historique_pdf', compact('rows','dateDebut','dateFin'));
+        return $pdf->download("historique_{$dateDebut}_{$dateFin}.pdf");
     }
 
     private function buildExportRows(Request $request)
