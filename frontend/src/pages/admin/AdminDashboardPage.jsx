@@ -55,7 +55,7 @@ const IcoAlert = () => (
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { stats, demographics, monthly, operations, loading, error } = useAdminStats();
+  const { stats, demographics, monthly, operations, loading, error, lastUpdated, refreshingOps, refreshOperations } = useAdminStats();
 
   const [showClientsDetail, setShowClientsDetail] = useState(false);
   const [showKiosquesDetail, setShowKiosquesDetail] = useState(false);
@@ -384,7 +384,13 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ══ 5. TABLEAU OPÉRATIONS RÉCENTES ══════════════════════════════════ */}
-      <OperationsTable operations={operations} loading={loading} />
+      <OperationsTable
+        operations={operations}
+        loading={loading}
+        onRefresh={refreshOperations}
+        refreshing={refreshingOps}
+        lastUpdated={lastUpdated}
+      />
 
     </div>
   );

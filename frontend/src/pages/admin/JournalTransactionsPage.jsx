@@ -34,6 +34,8 @@ function formatMontant(montant) {
   return montant.toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
 }
 
+const PAGE_SIZE = 15;
+
 export default function JournalTransactionsPage() {
   const [dateFrom,     setDateFrom]     = useState("");
   const [dateTo,       setDateTo]       = useState("");
@@ -41,6 +43,7 @@ export default function JournalTransactionsPage() {
   const [isLoading,    setIsLoading]    = useState(false);
   const [hasSearched,  setHasSearched]  = useState(false);
   const [toast,        setToast]        = useState({ msg: "", type: "success" });
+  const [page,         setPage]         = useState(1);
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -54,6 +57,7 @@ export default function JournalTransactionsPage() {
     }
     setIsLoading(true);
     setHasSearched(true);
+    setPage(1);
     try {
       // ✅ DÉCOMMENTER quand l'API est prête :
       // const response = await axios.get(`/api/admin/transactions?from=${dateFrom}&to=${dateTo}`);
@@ -140,6 +144,15 @@ export default function JournalTransactionsPage() {
     URL.revokeObjectURL(url);
     showToast("Export Excel lancé.");
   }
+
+  const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
+  const pagedTx    = transactions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageButtons = () => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (page <= 3)       return [1, 2, 3, 4, 5];
+    if (page >= totalPages - 2) return [totalPages-4, totalPages-3, totalPages-2, totalPages-1, totalPages];
+    return [page-2, page-1, page, page+1, page+2];
+  };
 
   const nbrDepot      = transactions.filter(tx => tx.operation === "Dépôt").length;
   const nbrRetraitP   = transactions.filter(tx => tx.operation === "Retrait partiel").length;
@@ -274,7 +287,7 @@ export default function JournalTransactionsPage() {
                   </td>
                 </tr>
               ) : (
-                transactions.map((tx) => (
+                pagedTx.map((tx) => (
                   <tr key={tx.id} className="hover:bg-orange-50 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-700 border-b border-gray-100 whitespace-nowrap">{tx.date}</td>
                     <td className="px-6 py-4 text-sm font-bold text-gray-900 border-b border-gray-100 whitespace-nowrap">{tx.nom}</td>
@@ -295,6 +308,33 @@ export default function JournalTransactionsPage() {
           </table>
         </div>
       </motion.div>
+
+      {/* ── Pagination ───────────────────────────────────────────────────── */}
+      {transactions.length > PAGE_SIZE && (
+        <div className="bg-white rounded-[20px] shadow-xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm text-gray-500">
+            Page <span className="font-semibold text-gray-800">{page}</span> / <span className="font-semibold text-gray-800">{totalPages}</span>
+            <span className="text-gray-400 ml-2">({transactions.length} transactions)</span>
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1}
+              className="px-3 py-1.5 text-sm border-2 border-gray-200 rounded-xl hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium">
+              ← Préc.
+            </button>
+            {pageButtons().map(n => (
+              <button key={n} onClick={() => setPage(n)}
+                className={["w-9 h-9 text-sm rounded-xl font-semibold transition-colors",
+                  n === page ? "bg-orange-500 text-white shadow-sm" : "border-2 border-gray-200 text-gray-700 hover:bg-orange-50"].join(" ")}>
+                {n}
+              </button>
+            ))}
+            <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page === totalPages}
+              className="px-3 py-1.5 text-sm border-2 border-gray-200 rounded-xl hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium">
+              Suiv. →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Résumé ────────────────────────────────────────────────────────── */}
       <motion.div

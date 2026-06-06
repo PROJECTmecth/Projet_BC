@@ -75,11 +75,6 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 // Logout
 Route::middleware(['auth:sanctum'])->post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
-// Hors groupe admin — Gestion des QR Codes
-Route::post('/admin/qrcodes/generer', [CarteController::class, 'generer']) ->name('qrcodes.generer');
-Route::get ('/admin/qrcodes/lots',    [CarteController::class, 'index'])   ->name('qrcodes.lots');
-Route::post('/admin/qrcodes/annuler', [CarteController::class, 'annuler']) ->name('qrcodes.annuler');
-
 // ══════════════════════════════════════════════════════════════════════════════
 // ROUTES ADMIN (Protégées par Sanctum et le middleware isAdmin)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -87,6 +82,11 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
+        // QR Codes (déplacés dans le groupe sécurisé)
+        Route::post('/qrcodes/generer', [CarteController::class, 'generer'])->name('qrcodes.generer');
+        Route::get ('/qrcodes/lots',    [CarteController::class, 'index'])  ->name('qrcodes.lots');
+        Route::post('/qrcodes/annuler', [CarteController::class, 'annuler'])->name('qrcodes.annuler');
 
         // Dashboard
     // ── Dashboard Stats ──────────────────────────────────────────────────
@@ -126,7 +126,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         Route::patch ('/agents/{agent}/statut', [AgentController::class, 'toggleStatut']) ->name('agents.toggle');
 
 
-        Route::get('/transactions',  fn() => response()->json(['success' => true, 'message' => '✅ Transactions']))->name('transactions.index');
+        Route::get('/transactions', [MouvementCaisseController::class, 'journal'])->name('transactions.index');
 
         // Profil Admin
         Route::put('/profil',          [ProfilController::class, 'update'])        ->name('profil.update');
