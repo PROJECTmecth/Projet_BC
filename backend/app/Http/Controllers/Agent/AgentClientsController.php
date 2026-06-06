@@ -178,7 +178,7 @@ class AgentClientsController extends Controller
                 'duree'           => $request->duree,
                 'montant_initial' => $request->montant,
                 'frais_garde'     => $fraisGarde,
-                'progression'     => 0,
+                'progression'     => min(100, round(($soldeFinal / ($request->montant * $nbJours)) * 100)),
                 'date_activation' => $dateActivation,
                 'date_expiration' => $dateExpiration,
                 'reset_date'      => $dateActivation,
@@ -228,9 +228,14 @@ class AgentClientsController extends Controller
         $soldeAvant = $compte->solde_total;
 
         // Vérification solde pour retraits
-        if (in_array($request->type_op, ['retrait_partiel', 'retrait_solde_compte'])) {
+        if ($request->type_op === 'retrait_solde_compte') {
             if ($request->montant > $soldeAvant) {
                 return response()->json(['success' => false, 'message' => 'Solde insuffisant.'], 422);
+            }
+        } elseif ($request->type_op === 'retrait_partiel') {
+            $penaliteCalculee = $carte->montant_initial * 0.10;
+            if (($request->montant + $penaliteCalculee) > $soldeAvant) {
+                return response()->json(['success' => false, 'message' => "Solde insuffisant pour ce retrait partiel (incluant la pénalité de {$penaliteCalculee} F)."], 422);
             }
         }
 
@@ -244,8 +249,8 @@ class AgentClientsController extends Controller
                 $compte->increment('total_depots', $request->montant);
                 $compte->update(['solde_total' => $soldeApres]);
             } elseif ($request->type_op === 'retrait_partiel') {
-                $penalite   = $request->montant * 0.10; // 10% pénalité
-                $soldeApres = $soldeAvant - $request->montant;
+                $penalite   = $carte->montant_initial * 0.10; // 10% de la somme initiale (mise)
+                $soldeApres = $soldeAvant - $request->montant - $penalite; // Diminution effective du solde
                 $compte->increment('total_retraits_partiels', $request->montant);
                 $compte->increment('total_penalites', $penalite);
                 $compte->update(['solde_total' => $soldeApres]);
@@ -253,12 +258,17 @@ class AgentClientsController extends Controller
                 $soldeApres = 0;
                 $compte->increment('total_retraits', $soldeAvant);
                 $compte->update(['solde_total' => 0, 'date_cloture' => now()]);
-                $carte->update(['statut' => 'clôturé']);
+                // La carte expire automatiquement lors du retrait total
+                $carte->update(['statut' => 'clôturé', 'date_expiration' => now()]);
             }
 
-            // Calculer progression carte
+            // Calculer progression carte par rapport à l'objectif total (15 ou 30 jours)
             if ($carte && $carte->montant_initial > 0) {
-                $progression = min(100, round(($compte->fresh()->solde_total / $carte->montant_initial) * 100));
+                $nbJours = $carte->duree === '15 jours' ? 15 : 30;
+                $objectifFinal = $carte->montant_initial * $nbJours;
+                // S'assurer qu'on ne tombe pas sous 0
+                $prog = round(($compte->fresh()->solde_total / $objectifFinal) * 100);
+                $progression = max(0, min(100, $prog));
                 $carte->update(['progression' => $progression]);
             }
 

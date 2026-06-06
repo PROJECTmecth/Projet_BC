@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ProfileModal from "../components/agent/ProfileModal";
+import AgentHelpPanel from "../components/agent/AgentHelpPanel";
 import logo2 from "../assets/logos/logo2.jpeg";
 import logo3 from "../assets/logos/logo3.jpeg";
 
@@ -9,6 +10,7 @@ export default function AgentLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 const [profil, setProfil] = useState(() => {
   try {
     const stored = localStorage.getItem("bc_profil");
@@ -27,38 +29,44 @@ const [profil, setProfil] = useState(() => {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 24px",
-        height: "64px",
+        padding: "16px 24px",
+        minHeight: "80px",
         background: "#fff",
         borderBottom: "1px solid #F0F0F0",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img
             src={logo2}
             alt="BOMBA CASH logo"
-            style={{ width: "48px", height: "48px", borderRadius: "10px", objectFit: "cover" }}
+            style={{ width: "68px", height: "68px", borderRadius: "14px", objectFit: "cover" }}
           />
           <img
             src={logo3}
             alt="BOMBA CASH"
-            style={{ height: "36px", objectFit: "contain", maxWidth: "140px" }}
+            style={{ height: "90px", objectFit: "contain" }}
           />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <button style={{
-            display: "flex", alignItems: "center", gap: "6px",
-            background: "transparent",
-            border: "2px solid #16A34A",
-            borderRadius: "999px",
-            color: "#16A34A",
-            fontWeight: 700,
-            padding: "6px 16px",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}>
+          <button
+            onClick={() => setShowHelp(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              background: "transparent",
+              border: "2px solid #16A34A",
+              borderRadius: "999px",
+              color: "#16A34A",
+              fontWeight: 700,
+              padding: "6px 16px",
+              cursor: "pointer",
+              fontSize: "14px",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#16A34A"; e.currentTarget.style.color = "#fff"; e.currentTarget.querySelector("span").style.background = "#fff"; e.currentTarget.querySelector("span").style.color = "#16A34A"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#16A34A"; e.currentTarget.querySelector("span").style.background = "#16A34A"; e.currentTarget.querySelector("span").style.color = "#fff"; }}
+          >
             <span style={{
               width: 18, height: 18,
               background: "#16A34A",
@@ -66,6 +74,7 @@ const [profil, setProfil] = useState(() => {
               color: "#fff",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "11px", fontWeight: 900,
+              transition: "all 0.2s",
             }}>?</span>
             Aide
           </button>
@@ -115,6 +124,8 @@ const [profil, setProfil] = useState(() => {
           onLogout={handleLogout}
         />
       )}
+
+      {showHelp && <AgentHelpPanel onClose={() => setShowHelp(false)} />}
     </div>
   );
 }

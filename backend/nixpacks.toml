@@ -3,8 +3,7 @@
 # ═══════════════════════════════════════════════════════════════
 
 [phases.setup]
-nixPkgs = ["php83", "nginx", "libmysqlclient", "php83Extensions.pdo_mysql", "php83Extensions.mbstring", "php83Extensions.tokenizer", "php83Extensions.xml", "php83Extensions.ctype", "php83Extensions.bcmath", "php83Extensions.openssl", "php83Extensions.fileinfo", "php83Extensions.curl"]
-nixOverlays = ["https://github.com/cachix/nixpkgs-php/archive/master.tar.gz"]
+nixPkgs = ["php83", "php83Packages.composer", "nginx", "libmysqlclient", "php83Extensions.pdo_mysql", "php83Extensions.mbstring", "php83Extensions.tokenizer", "php83Extensions.xml", "php83Extensions.ctype", "php83Extensions.bcmath", "php83Extensions.openssl", "php83Extensions.fileinfo", "php83Extensions.curl"]
 
 [phases.install]
 cmds = [
