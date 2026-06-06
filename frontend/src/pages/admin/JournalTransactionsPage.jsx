@@ -59,12 +59,10 @@ export default function JournalTransactionsPage() {
     setHasSearched(true);
     setPage(1);
     try {
-      // ✅ DÉCOMMENTER quand l'API est prête :
-      // const response = await axios.get(`/api/admin/transactions?from=${dateFrom}&to=${dateTo}`);
-      // setTransactions(response.data.data);
-      await new Promise(r => setTimeout(r, 800));
-      setTransactions([]);
-      showToast("Aucune donnée disponible — API en attente.", "error");
+      const response = await axios.get(`/api/admin/transactions?from=${dateFrom}&to=${dateTo}`);
+      const data = response.data?.data ?? [];
+      setTransactions(Array.isArray(data) ? data : []);
+      if (data.length === 0) showToast("Aucune transaction pour cette période.", "error");
     } catch (err) {
       showToast("Erreur lors de la recherche.", "error");
     } finally {
@@ -282,7 +280,7 @@ export default function JournalTransactionsPage() {
                       {hasSearched ? "Aucune transaction trouvée pour cette période" : "Sélectionnez une plage de dates et cliquez sur Rechercher"}
                     </p>
                     <p className="text-gray-300 text-sm mt-1">
-                      {hasSearched ? "Les données seront disponibles quand l'API sera branchée" : "Les données s'afficheront ici"}
+                      {hasSearched ? "Essayez une autre plage de dates" : "Les données s'afficheront ici"}
                     </p>
                   </td>
                 </tr>
