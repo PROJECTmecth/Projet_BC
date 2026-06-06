@@ -26,7 +26,7 @@ class MouvementCaisseController extends Controller
      *   - date_to: string (YYYY-MM-DD) — filtrer jusqu'à cette date
      *   - search: string — rechercher par nom client ou numéro carte
      */
-    public function index(Request $request)
+    public function index()
     {
         // 📋 Paramètres avec valeurs par défaut
         $limit = $request->query('limit', 10);
@@ -114,17 +114,9 @@ class MouvementCaisseController extends Controller
     // ──────────────────────────────────────────────────────────────────────
     public function revenus(): JsonResponse
     {
-        $startDate = now()->startOfMonth();
-        $endDate = now()->endOfMonth();
+        $fraisGarde = Carte::where('statut', 'actif')->sum('frais_garde');
 
-        // 💰 Frais de garde : une fois par carte activée ce mois-ci
-        $fraisGarde = Carte::whereBetween('date_activation', [$startDate, $endDate])
-            ->where('statut', 'actif')
-            ->sum('frais_garde');
-
-        // ⚠️ Pénalités : sur les transactions de retrait ce mois-ci
-        $penalites = Transaction::whereBetween('date_heure', [$startDate, $endDate])
-            ->whereIn('type_op', ['retrait_partiel', 'retrait_solde_compte'])
+        $penalites = Transaction::whereIn('type_op', ['retrait_partiel', 'retrait_solde_compte'])
             ->sum('penalite');
 
         $total = $fraisGarde + $penalites;
@@ -132,17 +124,53 @@ class MouvementCaisseController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'total' => round($total, 2),
+                'total'     => round($total, 2),
                 'breakdown' => [
                     'frais_garde' => round($fraisGarde, 2),
-                    'penalites' => round($penalites, 2),
-                ],
-                'period' => [
-                    'start' => $startDate->format('Y-m-d'),
-                    'end' => $endDate->format('Y-m-d'),
+                    'penalites'   => round($penalites, 2),
                 ],
             ],
         ]);
+    }
+
+    public function journal(Request $request): JsonResponse
+    {
+        $from = $request->query('from');
+        $to   = $request->query('to');
+
+        $query = Transaction::with(['carte', 'client', 'agent', 'kiosque'])
+            ->orderBy('date_heure', 'desc');
+
+        if ($from && $to) {
+            $query->whereBetween('date_heure', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay(),
+            ]);
+        }
+
+        $transactions = $query->get();
+
+        $TYPE_LABELS = [
+            'dépôt_cash'           => 'Dépôt',
+            'retrait_partiel'      => 'Retrait partiel',
+            'retrait_solde_compte' => 'Retrait total',
+        ];
+
+        $data = $transactions->map(function ($t) use ($TYPE_LABELS) {
+            return [
+                'id'        => $t->id_trans,
+                'date'      => $t->date_heure ? Carbon::parse($t->date_heure)->format('d/m/Y') : '-',
+                'heure'     => $t->date_heure ? Carbon::parse($t->date_heure)->format('H:i') : '-',
+                'nom'       => trim(($t->client?->nom ?? '') . ' ' . ($t->client?->prenom ?? '')),
+                'operation' => $TYPE_LABELS[$t->type_op] ?? $t->type_op,
+                'montant'   => (float) $t->montant,
+                'telephone' => $t->client?->telephone ?? '-',
+                'kiosque'   => $t->kiosque?->nom ?? '-',
+                'agent'     => trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? '')),
+            ];
+        });
+
+        return response()->json(['success' => true, 'data' => $data]);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -157,7 +185,7 @@ class MouvementCaisseController extends Controller
         try {
             $startDate = Carbon::createFromFormat('Y-m', $monthParam)->startOfMonth();
             $endDate = Carbon::createFromFormat('Y-m', $monthParam)->endOfMonth();
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             // Fallback sur le mois courant si format invalide
             $startDate = now()->startOfMonth();
             $endDate = now()->endOfMonth();
