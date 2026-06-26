@@ -140,14 +140,43 @@ class CarteController extends Controller
                     ->groupBy('date_creation', 'statut')
                     ->orderByDesc('date_creation');
 
-            if (!$request->boolean('include_annule')) {
-                $query->where('statut', '!=', 'annulé');
+            if ($request->boolean('include_annule')) {
+                $lots = $query->get()->map(function ($lot, $index) {
+                    return [
+                        'id'             => $lot->premier_id,
+                        'numero'         => 'Lot #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                        'quantite'       => $lot->quantite,
+                        'dateGeneration' => \Carbon\Carbon::parse($lot->date_creation)->format('d/m/Y'),
+                        'statut'         => ucfirst($lot->statut),
+                        'annule'         => $lot->statut === 'annulé',
+                    ];
+                });
+
+                return response()->json([
+                    'success' => true,
+                    'data'    => $lots,
+                ]);
             }
 
-            $lots = $query->get()->map(function ($lot, $index) {
+            // Normal paginated request
+            $limit = (int) $request->query('limit', 10);
+            $page = (int) $request->query('page', 1);
+
+            // Get total count of groups safely
+            $countQuery = Carte::select('date_creation', 'statut')->groupBy('date_creation', 'statut');
+            if (!$request->boolean('include_annule')) {
+                $countQuery->where('statut', '!=', 'annulé');
+            }
+            $total = $countQuery->get()->count();
+
+            $paginatedLots = $query->skip(($page - 1) * $limit)
+                                  ->take($limit)
+                                  ->get();
+
+            $lots = $paginatedLots->map(function ($lot, $index) use ($page, $limit) {
                 return [
                     'id'             => $lot->premier_id,
-                    'numero'         => 'Lot #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                    'numero'         => 'Lot #' . str_pad($index + 1 + ($page - 1) * $limit, 3, '0', STR_PAD_LEFT),
                     'quantite'       => $lot->quantite,
                     'dateGeneration' => \Carbon\Carbon::parse($lot->date_creation)->format('d/m/Y'),
                     'statut'         => ucfirst($lot->statut),
@@ -158,6 +187,12 @@ class CarteController extends Controller
             return response()->json([
                 'success' => true,
                 'data'    => $lots,
+                'pagination' => [
+                    'current_page' => $page,
+                    'limit'        => $limit,
+                    'total'        => $total,
+                    'total_pages'  => (int) ceil($total / $limit),
+                ],
             ]);
 
         } catch (\Exception $e) {

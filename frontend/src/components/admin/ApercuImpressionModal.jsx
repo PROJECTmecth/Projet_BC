@@ -195,7 +195,7 @@ export default function ApercuImpressionModal({
         document.body.removeChild(container);
       }
 
-      pdf.save(`${numeroLot.replace(/\s/g, "_")}_QR_codes.pdf`);
+      pdf.save(`${numeroLot.replace(/#/g, "").replace(/\s+/g, "_")}_QR_codes.pdf`);
       if (onImprime) onImprime();
 
     } catch (err) {

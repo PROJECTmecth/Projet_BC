@@ -7,6 +7,19 @@ import "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#039;",
+}[char]));
+
+const opLabel = (type) => ({
+  "dépôt_cash": "Dépôt cash",
+  "retrait_partiel": "Retrait partiel",
+  "retrait_solde_compte": "Retrait total",
+}[type] || type || "");
 
 function BadgeOp({ type }) {
   const map = {
