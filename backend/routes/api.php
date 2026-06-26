@@ -67,6 +67,15 @@ Route::post('/test-cors', function () {
       ->header('Access-Control-Allow-Credentials', 'true');
 });
 
+// -------------------------
+// Route de debug (temporaire)
+// -------------------------
+// Retourne les 5 dernières transactions avec relations (public pour debug local)
+Route::get('/debug/transactions', function () {
+    return \App\Models\Transaction::with(['client','agent','carte','kiosque'])->orderBy('id_trans', 'desc')->take(5)->get();
+});
+
+
 // Utilisateur connecté
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
