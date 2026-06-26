@@ -2,7 +2,7 @@
 // fichier : src/pages/admin/JournalTransactionsPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Printer, Download, FileText, Calendar, Inbox } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -37,13 +37,49 @@ function formatMontant(montant) {
 const PAGE_SIZE = 15;
 
 export default function JournalTransactionsPage() {
-  const [dateFrom,     setDateFrom]     = useState("");
-  const [dateTo,       setDateTo]       = useState("");
+  const [dateFromText, setDateFromText] = useState("01/01/26");
+  const [dateToText,   setDateToText]   = useState("31/12/26");
   const [transactions, setTransactions] = useState([]);
-  const [isLoading,    setIsLoading]    = useState(false);
+  const [isLoading,    setIsLoading]    = useState(true);
   const [hasSearched,  setHasSearched]  = useState(false);
   const [toast,        setToast]        = useState({ msg: "", type: "success" });
   const [page,         setPage]         = useState(1);
+
+  // Convertir format français (jj/mm/yyyy) en format ISO (yyyy-mm-dd)
+  function parseDate(dateStr) {
+    const parts = dateStr.trim().split(/[\/-]/);
+    if (parts.length !== 3) return null;
+    const [day, month, year] = parts;
+    const fullYear = year.length === 2 ? `20${year}` : year;
+    return `${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
+  // Charger les transactions au montage de la page
+  useEffect(() => {
+    loadTransactions(dateFromText, dateToText);
+  }, []);
+
+  async function loadTransactions(fromText, toText) {
+    const dateFrom = parseDate(fromText);
+    const dateTo = parseDate(toText);
+    
+    if (!dateFrom || !dateTo) {
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`/api/admin/transactions?from=${dateFrom}&to=${dateTo}`);
+      const data = response.data?.data ?? [];
+      setTransactions(Array.isArray(data) ? data : []);
+      setHasSearched(true);
+    } catch (err) {
+      console.error("Erreur lors du chargement des transactions:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -51,23 +87,14 @@ export default function JournalTransactionsPage() {
   }
 
   async function handleSearch() {
-    if (!dateFrom || !dateTo) {
+    if (!dateFromText || !dateToText) {
       showToast("Veuillez sélectionner une plage de dates.", "error");
       return;
     }
-    setIsLoading(true);
-    setHasSearched(true);
+    
     setPage(1);
-    try {
-      const response = await axios.get(`/api/admin/transactions?from=${dateFrom}&to=${dateTo}`);
-      const data = response.data?.data ?? [];
-      setTransactions(Array.isArray(data) ? data : []);
-      if (data.length === 0) showToast("Aucune transaction pour cette période.", "error");
-    } catch (err) {
-      showToast("Erreur lors de la recherche.", "error");
-    } finally {
-      setIsLoading(false);
-    }
+    await loadTransactions(dateFromText, dateToText);
+    showToast("Recherche effectuée.");
   }
 
   function handlePrint() {
@@ -88,7 +115,7 @@ export default function JournalTransactionsPage() {
       td{padding:8px;border-bottom:1px solid #E5E7EB;font-size:11px}
       @media print{body{margin:0}}</style></head><body>
       <h1>BOMBA CASH — Journal de Transaction</h1>
-      <p>Période : du ${dateFrom} au ${dateTo} | Généré le ${new Date().toLocaleDateString("fr-FR")}</p>
+      <p>Période : du ${dateFromText} au ${dateToText} | Généré le ${new Date().toLocaleDateString("fr-FR")}</p>
       <table><thead><tr>
         <th>DATE</th><th>NOM & PRÉNOM</th><th>OPÉRATION</th><th>MONTANT (XAF)</th>
         <th>HEURE</th><th>TÉLÉPHONE</th><th>KIOSQUE</th><th>NOM AGENT</th>
@@ -104,7 +131,7 @@ export default function JournalTransactionsPage() {
     doc.setFontSize(18); doc.setTextColor(249, 115, 22);
     doc.text("BOMBA CASH — Journal de Transaction", 14, 15);
     doc.setFontSize(10); doc.setTextColor(100);
-    doc.text(`Période : du ${dateFrom} au ${dateTo}   |   Généré le ${new Date().toLocaleDateString("fr-FR")}`, 14, 23);
+    doc.text(`Période : du ${dateFromText} au ${dateToText}   |   Généré le ${new Date().toLocaleDateString("fr-FR")}`, 14, 23);
     doc.autoTable({
       startY: 30,
       head: [["DATE","NOM & PRÉNOM","OPÉRATION","MONTANT (XAF)","HEURE","TÉLÉPHONE","KIOSQUE","NOM AGENT"]],
@@ -122,7 +149,7 @@ export default function JournalTransactionsPage() {
       doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150);
       doc.text(`Page ${i} / ${pageCount}   —   BOMBA CASH © 2026`, 14, doc.internal.pageSize.height - 8);
     }
-    doc.save(`journal_transactions_${dateFrom}_${dateTo}.pdf`);
+    doc.save(`journal_transactions_${dateFromText}_${dateToText}.pdf`);
     showToast("PDF exporté avec succès.");
   }
 
@@ -138,7 +165,7 @@ export default function JournalTransactionsPage() {
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href = url; a.download = `journal_transactions_${dateFrom}_${dateTo}.csv`; a.click();
+    a.href = url; a.download = `journal_transactions_${dateFromText}_${dateToText}.csv`; a.click();
     URL.revokeObjectURL(url);
     showToast("Export Excel lancé.");
   }
@@ -189,8 +216,8 @@ export default function JournalTransactionsPage() {
                 <Calendar size={15} /> Du
               </label>
               <input
-                type="date" value={dateFrom}
-                onChange={e => setDateFrom(e.target.value)}
+                type="text" placeholder="jj/mm/aa" value={dateFromText}
+                onChange={e => setDateFromText(e.target.value)}
                 className="w-full h-11 px-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-400 transition-colors"
               />
             </div>
@@ -201,8 +228,8 @@ export default function JournalTransactionsPage() {
                 <Calendar size={15} /> Au
               </label>
               <input
-                type="date" value={dateTo}
-                onChange={e => setDateTo(e.target.value)}
+                type="text" placeholder="jj/mm/aa" value={dateToText}
+                onChange={e => setDateToText(e.target.value)}
                 className="w-full h-11 px-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-orange-400 transition-colors"
               />
             </div>

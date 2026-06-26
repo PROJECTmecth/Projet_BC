@@ -18,19 +18,24 @@ class MouvementCaisseController extends Controller
      */
     public function index()
     {
-        $transactions = Transaction::with(['carte', 'client', 'agent', 'kiosque'])
+        $transactions = Transaction::with(['carte', 'client', 'agent.user', 'kiosque'])
             ->orderBy('date_heure', 'desc')
             ->get();
 
         $data = $transactions->map(function ($t) {
             $fraisGarde = $t->carte?->frais_garde ?? 0;
 
+            // Récupération du nom de l'agent : certains agents sont liés via user->name
+            $agentName = $t->agent?->user?->name
+                ?? trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? ''))
+                ?? '-';
+
             return [
                 'id_trans'    => $t->id_trans,
                 'id_carte'    => $t->carte?->numero_carte ?? $t->id_carte,
                 'id_client'   => $t->client?->code_client ?? $t->id_client,
                 'nom_client'  => trim(($t->client?->nom ?? '') . ' ' . ($t->client?->prenom ?? '')),
-                'nom_agent'   => trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? '')),
+                'nom_agent'   => $agentName,
                 'type_op'     => $t->type_op,
                 'montant'     => $t->montant,
                 'frais_garde' => $fraisGarde,
@@ -91,7 +96,7 @@ class MouvementCaisseController extends Controller
         $from = $request->query('from');
         $to   = $request->query('to');
 
-        $query = Transaction::with(['carte', 'client', 'agent', 'kiosque'])
+        $query = Transaction::with(['carte', 'client', 'agent.user', 'kiosque'])
             ->orderBy('date_heure', 'desc');
 
         if ($from && $to) {
@@ -110,6 +115,10 @@ class MouvementCaisseController extends Controller
         ];
 
         $data = $transactions->map(function ($t) use ($TYPE_LABELS) {
+            $agentName = $t->agent?->user?->name
+                ?? trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? ''))
+                ?? '-';
+
             return [
                 'id'        => $t->id_trans,
                 'date'      => $t->date_heure ? Carbon::parse($t->date_heure)->format('d/m/Y') : '-',
@@ -118,8 +127,8 @@ class MouvementCaisseController extends Controller
                 'operation' => $TYPE_LABELS[$t->type_op] ?? $t->type_op,
                 'montant'   => (float) $t->montant,
                 'telephone' => $t->client?->telephone ?? '-',
-                'kiosque'   => $t->kiosque?->nom ?? '-',
-                'agent'     => trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? '')),
+                'kiosque'   => $t->kiosque?->nom_kiosque ?? '-',
+                'agent'     => $agentName,
             ];
         });
 
@@ -134,7 +143,7 @@ class MouvementCaisseController extends Controller
     {
         // Récupérer le mois depuis les query params (format: YYYY-MM)
         $monthParam = $request->query('month', now()->format('Y-m'));
-        
+
         try {
             $startDate = Carbon::createFromFormat('Y-m', $monthParam)->startOfMonth();
             $endDate = Carbon::createFromFormat('Y-m', $monthParam)->endOfMonth();
@@ -160,15 +169,15 @@ class MouvementCaisseController extends Controller
             $date = Carbon::createFromFormat('Y-m', $monthParam)->copy()->subMonths($i);
             $start = $date->copy()->startOfMonth();
             $end = $date->copy()->endOfMonth();
-            
+
             $fg = Carte::whereBetween('date_activation', [$start, $end])
                 ->where('statut', 'actif')
                 ->sum('frais_garde');
-                
+
             $pen = Transaction::whereBetween('date_heure', [$start, $end])
                 ->whereIn('type_op', ['retrait_partiel', 'retrait_solde_compte'])
                 ->sum('penalite');
-            
+
             return [
                 'month' => $date->format('M Y'),  // Ex: "Nov 2025"
                 'frais_garde' => round($fg, 2),
