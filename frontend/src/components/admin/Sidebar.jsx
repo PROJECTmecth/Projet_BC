@@ -115,15 +115,8 @@ export default function Sidebar({ collapsed = false, onToggle, isMobile = false,
               key={item.path}
               to={item.path}
               end={item.exact}
-<<<<<<< HEAD
-              onClick={() => {
-                if (isMobile && !collapsed) onToggle?.();
-              }}
-              title={collapsed ? item.label : ""}  // tooltip si collapsed
-=======
               onClick={handleNavClick}
               title={collapsed ? item.label : ""}
->>>>>>> fe7a54cdcdccded68cfc64a5e5d9de206358027e
               className={[
                 "flex items-center rounded-xl text-[13.5px] font-semibold transition-all duration-150 select-none",
                 collapsed ? "justify-center px-0 py-[11px]" : "gap-3 px-4 py-[11px]",
