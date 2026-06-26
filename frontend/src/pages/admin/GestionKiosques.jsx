@@ -95,6 +95,16 @@ useEffect(() => {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`${BASE}/${id}`);
+      setKiosques(prev => prev.filter(k => k.id !== id));
+      load();
+    } catch (err) {
+      alert("Erreur : " + (err.response?.data?.message ?? err.message));
+    }
+  };
+
   return (
     <div>
       {/* ── Bannière orange ─────────────────────────────────────────── */}
@@ -152,6 +162,7 @@ useEffect(() => {
               kiosque={k}
               onToggle={handleToggle}
               onEdit={k => setModal({ open: true, kiosque: k })}
+              onDelete={handleDelete}
             />
           ))}
           <AjouterKiosqueCard onClick={() => setModal({ open: true, kiosque: null })} />

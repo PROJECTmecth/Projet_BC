@@ -51,8 +51,11 @@ export default function AgentDashboardPage() {
         setLoading(false);
       }
     };
+
     fetchDashboard();
-  }, []);
+    const interval = setInterval(fetchDashboard, 60_000);
+    return () => clearInterval(interval);
+  }, [setProfil]);
 
   const formatMontant = (val) =>
     new Intl.NumberFormat("fr-FR").format(val) + " F";

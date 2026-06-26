@@ -201,7 +201,7 @@ export default function KiosqueDetail() {
           <h3 className="text-white font-black text-[15px] sm:text-[16px]">
             Cartes Clients
           </h3>
-          <div className="flex gap-2">
+          <div className="flex gap-2 no-print">
             <button
               onClick={() => window.print()}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-white text-white rounded-xl text-[12px] sm:text-[13px] font-bold hover:bg-white/20 transition-colors"
