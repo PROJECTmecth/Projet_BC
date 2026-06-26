@@ -400,8 +400,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ══ 5. TABLEAU OPÉRATIONS RÉCENTES ══════════════════════════════════ */}
-<<<<<<< HEAD
-      <OperationsTable 
+      <OperationsTable
         operations={operations}
         loading={opsLoading}
         pagination={pagination}
@@ -413,14 +412,6 @@ export default function AdminDashboardPage() {
         onSort={handleSort}
         onFilterChange={handleFilterChange}
         onRefresh={handleRefresh}
-=======
-      <OperationsTable
-        operations={operations}
-        loading={loading}
-        onRefresh={refreshOperations}
-        refreshing={refreshingOps}
-        lastUpdated={lastUpdated}
->>>>>>> fe7a54cdcdccded68cfc64a5e5d9de206358027e
       />
 
     </div>
