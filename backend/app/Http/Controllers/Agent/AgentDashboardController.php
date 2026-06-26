@@ -48,16 +48,16 @@ class AgentDashboardController extends Controller
 
         $rapportJour = Transaction::with(['carte', 'client', 'agent.user'])
             ->where('id_agent', $agent->id_agent)
-            ->whereDate('created_at', Carbon::today())
-            ->orderBy('created_at', 'desc')
+            ->whereDate('date_heure', Carbon::today())
+            ->orderBy('date_heure', 'desc')
             ->get()
             ->map(function ($transaction) {
                 return [
-                    'id_carte'   => $transaction->carte->qr_code_uid ?? 'N/A',
-                    'nom_prenom' => ($transaction->client->nom ?? '') . ' ' . ($transaction->client->prenom ?? ''),
+                    'id_carte'   => $transaction->carte->numero_carte ?? 'N/A',
+                    'nom_prenom' => ($transaction->client->prenom ?? '') . ' ' . ($transaction->client->nom ?? ''),
                     'operation'  => $transaction->type_op,
                     'montant'    => number_format($transaction->montant, 0, ',', ' ') . ' F',
-                    'heure'      => $transaction->created_at->format('H:i'),
+                    'heure'      => $transaction->date_heure->format('H:i'),
                     'agent'      => $transaction->agent->user->name ?? 'N/A',
                 ];
             });
