@@ -67,9 +67,53 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
       const response = await api.get("/api/admin/mouvements-caisse", { params });
 
       if (response.data?.success) {
-        setOperations(response.data.transactions || []);
+        const raw = response.data.transactions || [];
+
+        // Normaliser la forme des données pour OperationsTable
+        const mapped = raw.map((t) => {
+          // Carte: backend peut renvoyer id_carte (numero) ou objet carte
+          const carte = t.id_carte || t.numero_carte || t.carte?.numero_carte || '';
+
+          // Client: priorité au champ nom_client puis objet client
+          const client = t.nom_client || (t.client ? `${t.client.nom || ''} ${t.client.prenom || ''}`.trim() : '');
+
+          // Type lisible
+          const rawType = t.type_op || t.operation || t.type || '';
+          const type = rawType ? String(rawType).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+
+          // Montant
+          const montant = (t.montant !== undefined && t.montant !== null) ? Number(t.montant) : '';
+
+          // Date: essayer date_heure ISO ou champ date formaté
+          let date = '';
+          if (t.date) date = t.date;
+          else if (t.date_heure) {
+            try {
+              const d = new Date(t.date_heure);
+              date = d.toLocaleDateString('fr-FR');
+            } catch (e) { date = t.date_heure; }
+          }
+
+          // Agent: plusieurs fallback possibles
+          const agent = t.nom_agent || (t.agent ? (t.agent.user?.name || `${t.agent.nom || ''} ${t.agent.prenom || ''}`.trim()) : '');
+
+          return {
+            // champs attendus par OperationsTable
+            carte,
+            client,
+            type,
+            montant,
+            date,
+            agent,
+
+            // champs bruts pour debug/usage ultérieur
+            _raw: t,
+          };
+        });
+
+        setOperations(mapped);
         setPagination(response.data.pagination || {});
-        console.log("✅ Operations loaded:", response.data.transactions?.length);
+        console.log("✅ Operations loaded:", mapped.length);
       } else {
         throw new Error("Invalid response format");
       }
