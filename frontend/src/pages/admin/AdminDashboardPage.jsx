@@ -400,7 +400,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ══ 5. TABLEAU OPÉRATIONS RÉCENTES ══════════════════════════════════ */}
-      <OperationsTable 
+      <OperationsTable
         operations={operations}
         loading={opsLoading}
         pagination={pagination}
