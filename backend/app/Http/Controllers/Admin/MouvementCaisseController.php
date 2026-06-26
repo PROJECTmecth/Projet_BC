@@ -26,11 +26,11 @@ class MouvementCaisseController extends Controller
      *   - date_to: string (YYYY-MM-DD) — filtrer jusqu'à cette date
      *   - search: string — rechercher par nom client ou numéro carte
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
         // 📋 Paramètres avec valeurs par défaut
-        $limit = $request->query('limit', 10);
-        $page = $request->query('page', 1);
+        $limit = (int) $request->query('limit', 10);
+        $page = (int) $request->query('page', 1);
         $sortBy = $request->query('sort_by', 'date_heure');
         $sortOrder = $request->query('sort_order', 'desc');
         $typeFilter = $request->query('type');
@@ -81,11 +81,17 @@ class MouvementCaisseController extends Controller
         $data = $transactions->map(function ($t) {
             $fraisGarde = $t->carte?->frais_garde ?? 0;
 
+            // Récupération du nom de l'agent : certains agents sont liés via user->name
+            $agentName = $t->agent?->user?->name
+                ?? trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? ''))
+                ?? '-';
+
             return [
                 'id_trans'    => $t->id_trans,
                 'id_carte'    => $t->carte?->numero_carte ?? $t->id_carte,
                 'id_client'   => $t->client?->code_client ?? $t->id_client,
-                'nom_client'  => $t->client?->nom . ' ' . $t->client?->prenom ?? '',
+                'nom_client'  => trim(($t->client?->nom ?? '') . ' ' . ($t->client?->prenom ?? '')),
+                'nom_agent'   => $agentName,
                 'type_op'     => $t->type_op,
                 'montant'     => $t->montant,
                 'frais_garde' => $fraisGarde,
@@ -133,45 +139,6 @@ class MouvementCaisseController extends Controller
         ]);
     }
 
-    public function journal(Request $request): JsonResponse
-    {
-        $from = $request->query('from');
-        $to   = $request->query('to');
-
-        $query = Transaction::with(['carte', 'client', 'agent', 'kiosque'])
-            ->orderBy('date_heure', 'desc');
-
-        if ($from && $to) {
-            $query->whereBetween('date_heure', [
-                Carbon::parse($from)->startOfDay(),
-                Carbon::parse($to)->endOfDay(),
-            ]);
-        }
-
-        $transactions = $query->get();
-
-        $TYPE_LABELS = [
-            'dépôt_cash'           => 'Dépôt',
-            'retrait_partiel'      => 'Retrait partiel',
-            'retrait_solde_compte' => 'Retrait total',
-        ];
-
-        $data = $transactions->map(function ($t) use ($TYPE_LABELS) {
-            return [
-                'id'        => $t->id_trans,
-                'date'      => $t->date_heure ? Carbon::parse($t->date_heure)->format('d/m/Y') : '-',
-                'heure'     => $t->date_heure ? Carbon::parse($t->date_heure)->format('H:i') : '-',
-                'nom'       => trim(($t->client?->nom ?? '') . ' ' . ($t->client?->prenom ?? '')),
-                'operation' => $TYPE_LABELS[$t->type_op] ?? $t->type_op,
-                'montant'   => (float) $t->montant,
-                'telephone' => $t->client?->telephone ?? '-',
-                'kiosque'   => $t->kiosque?->nom ?? '-',
-                'agent'     => trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? '')),
-            ];
-        });
-
-        return response()->json(['success' => true, 'data' => $data]);
-    }
 
     // ──────────────────────────────────────────────────────────────────────
     // GET /api/admin/mouvements-caisse/revenus/detail
@@ -181,7 +148,7 @@ class MouvementCaisseController extends Controller
     {
         // Récupérer le mois depuis les query params (format: YYYY-MM)
         $monthParam = $request->query('month', now()->format('Y-m'));
-        
+
         try {
             $startDate = Carbon::createFromFormat('Y-m', $monthParam)->startOfMonth();
             $endDate = Carbon::createFromFormat('Y-m', $monthParam)->endOfMonth();
@@ -207,15 +174,15 @@ class MouvementCaisseController extends Controller
             $date = Carbon::createFromFormat('Y-m', $monthParam)->copy()->subMonths($i);
             $start = $date->copy()->startOfMonth();
             $end = $date->copy()->endOfMonth();
-            
+
             $fg = Carte::whereBetween('date_activation', [$start, $end])
                 ->where('statut', 'actif')
                 ->sum('frais_garde');
-                
+
             $pen = Transaction::whereBetween('date_heure', [$start, $end])
                 ->whereIn('type_op', ['retrait_partiel', 'retrait_solde_compte'])
                 ->sum('penalite');
-            
+
             return [
                 'month' => $date->format('M Y'),  // Ex: "Nov 2025"
                 'frais_garde' => round($fg, 2),
@@ -241,6 +208,7 @@ class MouvementCaisseController extends Controller
             ],
         ]);
     }
+
 
     // ──────────────────────────────────────────────────────────────────────
     // GET /api/admin/transactions

@@ -2,7 +2,7 @@
 // fichier : src/pages/admin/JournalTransactionsPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Printer, Download, FileText, Calendar, Inbox, RotateCw, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -38,6 +38,7 @@ function formatMontant(montant) {
 const PAGE_SIZE = 15;
 
 export default function JournalTransactionsPage() {
+
   // 📊 Hook pour le journal - ENTIÈREMENT DYNAMIQUE
   const {
     transactions,
@@ -64,6 +65,11 @@ export default function JournalTransactionsPage() {
     date_to: null,
     type: null,
   });
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: "" }), 3500);
+  };
 
   const handleApplyFilters = () => {
     handleFilterChange({

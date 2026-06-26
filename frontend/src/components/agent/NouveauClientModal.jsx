@@ -16,7 +16,7 @@ const initialForm = {
 export default function NouveauClientModal({ onClose, onSuccess, initialCarte = null }) {
   const [etape, setEtape]           = useState(initialCarte ? ETAPES.FORMULAIRE : ETAPES.SCAN);
   const [form, setForm]             = useState({ ...initialForm, qrCodeUid: initialCarte?.qr_code_uid || initialCarte?.numero_carte || "" });
-  const [carteInfo, setCarteInfo]   = useState(initialCarte ? { carte: initialCarte } : null);
+  const [carteInfo, setCarteInfo]   = useState(initialCarte || null);
   const [scanning, setScanning]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors]         = useState({});
@@ -26,7 +26,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
   // ─── Initialisation avec carte pré-scannée (depuis ScanCartePage) ────────
   useEffect(() => {
     if (initialCarte && etape === ETAPES.SCAN) {
-      setCarteInfo({ carte: initialCarte });
+      setCarteInfo(initialCarte);
       setForm(prev => ({ ...prev, qrCodeUid: initialCarte.qr_code_uid || initialCarte.numero_carte }));
       setEtape(ETAPES.FORMULAIRE);
     }
@@ -108,28 +108,40 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
 
   const handleScanResult = async (qrCodeUid) => {
     try {
-      const res = await axiosClient.post("/api/agent/scan", { qr_code_uid: qrCodeUid });
-      if (res.data.success) {
-        const result = await Swal.fire({
-          title: "Carte détectée",
-          html: `<p>Numéro : <b>${res.data.data.numero_carte}</b></p>
-                 <p>Voulez-vous enregistrer un client sur cette carte ?</p>`,
-          icon: "question",
-          showCancelButton: true,
-          confirmButtonText: "Oui, continuer",
-          cancelButtonText: "Non",
+      const res = await axiosClient.post("/api/agent/scan", { numero_carte: qrCodeUid });
+      const data = res.data;
+
+      if (!data.is_vierge) {
+        await Swal.fire({
+          icon: "error",
+          title: "Carte déjà utilisée",
+          text: "Cette carte est déjà assignée à un client.",
           confirmButtonColor: "#F97316",
-          cancelButtonColor: "#6B7280",
         });
-        if (result.isConfirmed) {
-          setCarteInfo(res.data.data);
-          setEtape(ETAPES.FORMULAIRE);
-        } else {
-          setEtape(ETAPES.SCAN);
-        }
+        setEtape(ETAPES.SCAN);
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: "Carte détectée",
+        html: `<p>Numéro : <b>${data.carte.numero_carte}</b></p>
+               <p>Voulez-vous enregistrer un client sur cette carte ?</p>`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Oui, continuer",
+        cancelButtonText: "Non",
+        confirmButtonColor: "#F97316",
+        cancelButtonColor: "#6B7280",
+      });
+
+      if (result.isConfirmed) {
+        setCarteInfo(data.carte);
+        setEtape(ETAPES.FORMULAIRE);
+      } else {
+        setEtape(ETAPES.SCAN);
       }
     } catch (err) {
-      const msg = err.response?.data?.message || "Carte invalide ou déjà utilisée.";
+      const msg = err.response?.data?.message || "Carte invalide ou introuvable.";
       await Swal.fire({ icon: "error", title: "Erreur", text: msg, confirmButtonColor: "#F97316" });
       setEtape(ETAPES.SCAN);
     }
