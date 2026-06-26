@@ -49,7 +49,7 @@ export function useTransactionJournal(enablePolling = true, pollingInterval = PO
   const [sortOrder, setSortOrder] = useState('desc');
 
   // 🔄 Fonction de fetch avec tous les paramètres
-  const fetchTransactions = useCallback(async (page = 1) => {
+  const fetchTransactions = useCallback(async (page = 1, overrideLimit = null) => {
     setLoading(true);
     setError(null);
 
@@ -57,7 +57,7 @@ export function useTransactionJournal(enablePolling = true, pollingInterval = PO
       // 🔨 Construire les params
       const params = {
         page,
-        limit: pagination.limit,
+        limit: overrideLimit || pagination.limit,
         sort_by: sortBy,
         sort_order: sortOrder,
       };
@@ -73,7 +73,34 @@ export function useTransactionJournal(enablePolling = true, pollingInterval = PO
       const response = await api.get("/api/admin/transactions", { params });
 
       if (response.data?.success) {
-        setTransactions(response.data.data || []);
+        // Normaliser les transactions pour garantir les champs utilisés par l'UI
+        const rawTx = response.data.data || [];
+        const mapped = rawTx.map(t => {
+          // Si l'API renvoie déjà des champs formatés, utilise-les sinon fallback sur relations brutes
+          const date = t.date || (t.date_heure ? (() => { try { return new Date(t.date_heure).toLocaleDateString('fr-FR'); } catch(e) { return t.date_heure; } })() : '');
+          const heure = t.heure || (t.date_heure ? (() => { try { return new Date(t.date_heure).toLocaleTimeString('fr-FR'); } catch(e) { return ''; } })() : '');
+          const nom = t.nom || (t.client ? `${t.client.nom || ''} ${t.client.prenom || ''}`.trim() : '');
+          const operation = t.operation || (t.type_op ? String(t.type_op).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '');
+          const montant = (t.montant !== undefined && t.montant !== null) ? Number(t.montant) : (t.montant_formatted ? Number(t.montant_formatted) : 0);
+          const telephone = t.telephone || (t.client ? t.client.telephone || '' : '');
+          const kiosque = (typeof t.kiosque === 'string') ? t.kiosque : (t.kiosque ? (t.kiosque.nom_kiosque || t.kiosque.nom || '') : (t.kiosque?._attributes?.nom_kiosque || ''));
+          const agent = t.agent || (t.agent ? (t.agent.user?.name || `${t.agent.nom || ''} ${t.agent.prenom || ''}`.trim()) : '');
+
+          return {
+            id_trans: t.id_trans || t.id || null,
+            date,
+            heure,
+            nom,
+            operation,
+            montant,
+            telephone,
+            kiosque,
+            agent,
+            _raw: t,
+          };
+        });
+
+        setTransactions(mapped);
         setPagination(response.data.pagination || {});
         
         const defaultStats = {
@@ -86,7 +113,7 @@ export function useTransactionJournal(enablePolling = true, pollingInterval = PO
         };
         setStats(response.data.stats ? { ...defaultStats, ...response.data.stats } : defaultStats);
         
-        console.log("✅ Transactions loaded:", response.data.data ? response.data.data.length : 0);
+        console.log("✅ Transactions loaded:", mapped.length);
       } else {
         throw new Error("Invalid response format");
       }
@@ -125,7 +152,7 @@ export function useTransactionJournal(enablePolling = true, pollingInterval = PO
 
   const handleLimitChange = (newLimit) => {
     setPagination(prev => ({ ...prev, limit: newLimit }));
-    fetchTransactions(1);
+    fetchTransactions(1, newLimit);
   };
 
   const handleSort = (column) => {

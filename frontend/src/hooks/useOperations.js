@@ -97,6 +97,9 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
           // Agent: plusieurs fallback possibles
           const agent = t.nom_agent || (t.agent ? (t.agent.user?.name || `${t.agent.nom || ''} ${t.agent.prenom || ''}`.trim()) : '');
 
+          // Kiosque
+          const kiosque = t.kiosque?._attributes?.nom_kiosque || t.kiosque?.nom_kiosque || t.kiosque?.nom || t.kiosque || '';
+
           return {
             // champs attendus par OperationsTable
             carte,
@@ -104,6 +107,7 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
             type,
             montant,
             date,
+            kiosque,
             agent,
 
             // champs bruts pour debug/usage ultérieur

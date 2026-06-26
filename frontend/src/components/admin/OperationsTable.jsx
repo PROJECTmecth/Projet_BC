@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 
 const PAGE_SIZE = 10;
-const HEADERS   = ["ID CARTE", "NOM ET PRENOM", "OPERATION", "MONTANT", "DATE", "AGENT"];
+const HEADERS   = ["ID CARTE", "NOM ET PRENOM", "OPERATION", "MONTANT", "DATE", "KIOSQUE", "AGENT"];
 
 const IcoRefresh = ({ spinning }) => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -83,7 +83,7 @@ export default function OperationsTable({ operations = [], loading = false, onRe
           </thead>
           <tbody className="divide-y divide-gray-100">
             {paged.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-400">Aucune opération récente</td></tr>
+              <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">Aucune opération récente</td></tr>
             ) : paged.map((op) => (
               <tr key={op.id} className="hover:bg-orange-50/50 transition-colors">
                 <td className="px-6 py-4 text-sm font-bold text-gray-800">{op.carte}</td>
@@ -98,6 +98,7 @@ export default function OperationsTable({ operations = [], loading = false, onRe
                 </td>
                 <td className="px-6 py-4 text-sm font-bold text-gray-900">{op.montant} F</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{op.date}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{op.kiosque}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{op.agent}</td>
               </tr>
             ))}
