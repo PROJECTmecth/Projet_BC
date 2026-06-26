@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
 
 class AgentController extends Controller
 {
@@ -33,11 +34,14 @@ class AgentController extends Controller
 
         $agents = $query->orderBy('id_agent')->get();
 
-        // Synchroniser statut_ligne avec les tokens Sanctum réels (1 seule requête)
+        // Synchroniser statut_ligne avec les tokens Sanctum récents
         $userIds = $agents->pluck('id_user')->filter()->values();
+        $threshold = Carbon::now()->subMinutes(5);
         $onlineUserIds = DB::table('personal_access_tokens')
             ->where('tokenable_type', 'App\\Models\\User')
             ->whereIn('tokenable_id', $userIds)
+            ->whereNotNull('last_used_at')
+            ->where('last_used_at', '>=', $threshold)
             ->pluck('tokenable_id')
             ->unique()
             ->toArray();

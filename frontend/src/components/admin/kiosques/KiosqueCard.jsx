@@ -1,9 +1,9 @@
 // src/components/admin/kiosques/KiosqueCard.jsx
 
-import { useState }        from "react";
-import { useNavigate }     from "react-router-dom";
-import { MapPin, Phone, Tag, Store } from "lucide-react";
-import ToggleSwitch        from "./ToggleSwitch";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MapPin, Phone, Tag, Store, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import ToggleSwitch from "./ToggleSwitch";
 
 // ── Modal de confirmation ─────────────────────────────────────────────────────
 function ConfirmModal({ kiosque, action, onConfirm, onCancel }) {
@@ -44,11 +44,39 @@ function ConfirmModal({ kiosque, action, onConfirm, onCancel }) {
   );
 }
 
+function DeleteConfirmModal({ kiosque, onConfirm, onCancel }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+      onClick={e => e.target === e.currentTarget && onCancel()}
+    >
+      <div className="bg-white rounded-3xl w-full max-w-[380px] p-8 flex flex-col items-center gap-4 shadow-2xl">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+          <AlertTriangle size={30} className="text-red-500" />
+        </div>
+        <h2 className="text-[20px] font-black text-gray-900 text-center">Supprimer ce kiosque ?</h2>
+        <p className="text-[14px] text-gray-500 text-center leading-relaxed">
+          Êtes-vous sûr de vouloir supprimer <strong className="text-gray-800">{kiosque.nom_kiosque}</strong> ? Cette action est irréversible.
+        </p>
+        <div className="flex gap-3 w-full mt-2">
+          <button onClick={onCancel} className="flex-1 py-3 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold text-[14px] hover:bg-gray-50 transition-colors">
+            Annuler
+          </button>
+          <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] transition-colors">
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── KiosqueCard ───────────────────────────────────────────────────────────────
-export default function KiosqueCard({ kiosque, onToggle, onEdit }) {
-  const navigate                = useNavigate();
+export default function KiosqueCard({ kiosque, onToggle, onEdit, onDelete }) {
+  const navigate = useNavigate();
   const [toggling, setToggling] = useState(false);
-  const [confirm,  setConfirm]  = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const isActif = kiosque.est_actif ?? kiosque.statut_service === "actif";
 
@@ -63,9 +91,23 @@ export default function KiosqueCard({ kiosque, onToggle, onEdit }) {
   };
 
   const handleCardClick = (e) => {
-    // Empêcher la navigation si on clique sur un bouton ou le toggle
     if (e.target.closest('button') || e.target.closest('.toggle-switch-container')) return;
     navigate(`/admin/kiosques/${kiosque.id}`);
+  };
+
+  const handleEditClick = (e) => {
+    e.stopPropagation();
+    onEdit?.(kiosque);
+  };
+
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    setDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteConfirm(false);
+    await onDelete?.(kiosque.id);
   };
 
   return (
@@ -107,13 +149,29 @@ export default function KiosqueCard({ kiosque, onToggle, onEdit }) {
         </div>
 
         {/* CTA */}
-        <div className="mt-1">
+        <div className="mt-1 flex items-center justify-between gap-2">
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/admin/kiosques/${kiosque.id}`); }}
             className={["text-left text-[13px] font-semibold transition-colors", isActif ? "text-[#FF6600] hover:text-orange-700" : "text-gray-400"].join(" ")}
           >
             Voir les détails →
           </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleEditClick}
+              className="w-9 h-9 flex items-center justify-center rounded-full border border-orange-200 text-orange-600 hover:bg-orange-50 transition-colors"
+              title="Modifier"
+            >
+              <Pencil size={15} />
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+              title="Supprimer"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -123,6 +181,14 @@ export default function KiosqueCard({ kiosque, onToggle, onEdit }) {
           action={confirm}
           onConfirm={handleConfirm}
           onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {deleteConfirm && (
+        <DeleteConfirmModal
+          kiosque={kiosque}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteConfirm(false)}
         />
       )}
     </>
