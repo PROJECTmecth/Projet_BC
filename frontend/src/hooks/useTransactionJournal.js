@@ -151,7 +151,7 @@ export function useTransactionJournal(enablePolling = true, pollingInterval = PO
   };
 
   const handleLimitChange = (newLimit) => {
-    setPagination(prev => ({ ...prev, limit: newLimit }));
+    setPagination(prev => ({ ...prev, limit: newLimit, current_page: 1 }));
     fetchTransactions(1, newLimit);
   };
 

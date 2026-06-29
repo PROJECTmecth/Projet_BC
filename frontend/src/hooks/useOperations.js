@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../lib/axios";
 
-const DEFAULT_LIMIT = 10;
+const DEFAULT_LIMIT = 5;
 const POLLING_INTERVAL = 30000; // 30 secondes (faire la mise à jour automatique)
 
 export function useOperations(enablePolling = true, pollingInterval = POLLING_INTERVAL) {
@@ -43,7 +43,7 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
   const [pollingId, setPollingId] = useState(null);
 
   // 🔄 Fonction de fetch avec tous les paramètres
-  const fetchOperations = useCallback(async (page = 1) => {
+  const fetchOperations = useCallback(async (page = 1, overrideLimit = null) => {
     setLoading(true);
     setError(null);
 
@@ -51,9 +51,10 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
       // 🔨 Construire les params
       const params = {
         page,
-        limit: pagination.limit,
+        limit: overrideLimit ?? pagination.limit,
         sort_by: sortBy,
         sort_order: sortOrder,
+        recent_only: 1,
       };
 
       // Ajouter les filtres s'ils sont définis
@@ -158,8 +159,8 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
   };
 
   const handleLimitChange = (newLimit) => {
-    setPagination(prev => ({ ...prev, limit: newLimit }));
-    fetchOperations(1);
+    setPagination(prev => ({ ...prev, limit: newLimit, current_page: 1 }));
+    fetchOperations(1, newLimit);
   };
 
   const handleSort = (column) => {

@@ -449,32 +449,7 @@ export default function JournalTransactionsPage() {
         )}
       </motion.div>
 
-      {/* ── Pagination ───────────────────────────────────────────────────── */}
-      {transactions.length > PAGE_SIZE && (
-        <div className="bg-white rounded-[20px] shadow-xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-sm text-gray-500">
-            Page <span className="font-semibold text-gray-800">{page}</span> / <span className="font-semibold text-gray-800">{totalPages}</span>
-            <span className="text-gray-400 ml-2">({transactions.length} transactions)</span>
-          </p>
-          <div className="flex items-center gap-1.5">
-            <button onClick={() => setPage(p => Math.max(1, p-1))} disabled={page === 1}
-              className="px-3 py-1.5 text-sm border-2 border-gray-200 rounded-xl hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium">
-              ← Préc.
-            </button>
-            {pageButtons().map(n => (
-              <button key={n} onClick={() => setPage(n)}
-                className={["w-9 h-9 text-sm rounded-xl font-semibold transition-colors",
-                  n === page ? "bg-orange-500 text-white shadow-sm" : "border-2 border-gray-200 text-gray-700 hover:bg-orange-50"].join(" ")}>
-                {n}
-              </button>
-            ))}
-            <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page === totalPages}
-              className="px-3 py-1.5 text-sm border-2 border-gray-200 rounded-xl hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium">
-              Suiv. →
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* ── Résumé ────────────────────────────────────────────────────────── */}
       <motion.div

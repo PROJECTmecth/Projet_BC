@@ -39,7 +39,7 @@ class MouvementCaisseController extends Controller
         $search = $request->query('search');
 
         // 🔍 Query builder
-        $query = Transaction::with(['carte', 'client', 'agent', 'kiosque']);
+        $query = Transaction::with(['carte', 'client', 'agent.user', 'kiosque']);
 
         // 🏷️ Filtrer par type d'opération
         if ($typeFilter) {
@@ -52,6 +52,11 @@ class MouvementCaisseController extends Controller
         }
         if ($dateTo) {
             $query->whereDate('date_heure', '<=', $dateTo);
+        }
+
+        // ⏱️ Filtrer les opérations récentes (dernières 24h)
+        if ($request->query('recent_only') == 1) {
+            $query->where('date_heure', '>=', now()->subHours(24));
         }
 
         // 🔎 Recherche par nom client ou numéro carte
@@ -92,6 +97,7 @@ class MouvementCaisseController extends Controller
                 'id_client'   => $t->client?->code_client ?? $t->id_client,
                 'nom_client'  => trim(($t->client?->nom ?? '') . ' ' . ($t->client?->prenom ?? '')),
                 'nom_agent'   => $agentName,
+                'nom_kiosque' => $t->kiosque?->nom_kiosque ?? '',
                 'type_op'     => $t->type_op,
                 'montant'     => $t->montant,
                 'frais_garde' => $fraisGarde,
@@ -237,7 +243,7 @@ class MouvementCaisseController extends Controller
         $search = $request->query('search');
 
         // 🔍 Query builder
-        $query = Transaction::with(['carte', 'client', 'agent', 'kiosque'])
+        $query = Transaction::with(['carte', 'client', 'agent.user', 'kiosque'])
             ->select([
                 'id_trans', 'id_carte', 'id_client', 'id_agent', 'id_kiosque',
                 'type_op', 'montant', 'penalite', 'date_heure'
@@ -281,6 +287,9 @@ class MouvementCaisseController extends Controller
 
         // 🔄 Format des données pour le journal
         $data = $transactions->map(function ($t) {
+            $agentName = $t->agent?->user?->name
+                ?? trim(($t->agent?->nom ?? '') . ' ' . ($t->agent?->prenom ?? ''))
+                ?? '';
             return [
                 'id_trans'    => $t->id_trans,
                 'date'        => $t->date_heure ? Carbon::parse($t->date_heure)->format('d/m/Y') : '',
@@ -290,8 +299,8 @@ class MouvementCaisseController extends Controller
                 'montant'     => (float) $t->montant,
                 'telephone'   => $t->client?->telephone ?? '',
                 'numero_carte'=> $t->carte?->numero_carte ?? '',
-                'kiosque'     => $t->kiosque?->nom ?? '',
-                'agent'       => $t->agent?->nom ?? '',
+                'kiosque'     => $t->kiosque?->nom_kiosque ?? '',
+                'agent'       => $agentName,
             ];
         });
 
