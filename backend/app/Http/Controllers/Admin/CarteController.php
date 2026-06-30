@@ -158,14 +158,22 @@ class CarteController extends Controller
                 ]);
             }
 
-            // Normal paginated request
+            // Normal paginated request — exclure les lots annulés
             $limit = (int) $request->query('limit', 10);
             $page = (int) $request->query('page', 1);
+            $statutFilter = $request->query('statut');
 
-            // Get total count of groups safely
-            $countQuery = Carte::select('date_creation', 'statut')->groupBy('date_creation', 'statut');
-            if (!$request->boolean('include_annule')) {
-                $countQuery->where('statut', '!=', 'annulé');
+            // Filtrer les annulés de la requête principale ET du comptage
+            $query->where('statut', '!=', 'annulé');
+
+            $countQuery = Carte::select('date_creation', 'statut')
+                ->where('statut', '!=', 'annulé')
+                ->groupBy('date_creation', 'statut');
+
+            // Filtre optionnel par statut spécifique (vierge, actif, expiré, terminé)
+            if ($statutFilter && in_array($statutFilter, ['vierge', 'actif', 'expiré', 'terminé'])) {
+                $query->where('statut', $statutFilter);
+                $countQuery->where('statut', $statutFilter);
             }
             $total = $countQuery->get()->count();
 
@@ -232,6 +240,63 @@ class CarteController extends Controller
             'success' => true,
             'message' => "{$count} carte(s) annulée(s).",
             'annulees' => $count,
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/admin/qrcodes/supprimer
+    //
+    // Body JSON : { "lot_ids": [premier_id_1, premier_id_2, ...] }
+    // Supprime des lots de l'historique en marquant leurs cartes comme annulées.
+    // Seuls les lots de cartes vierges peuvent être supprimés.
+    // Les cartes actives/terminées/expirées liées à des clients sont protégées.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function destroy(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'lot_ids'   => 'required|array|min:1',
+            'lot_ids.*' => 'integer',
+        ], [
+            'lot_ids.required' => 'La liste des lots est obligatoire.',
+            'lot_ids.array'    => 'Le format est invalide.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $totalAnnulees = 0;
+        $lotsProteges  = 0;
+
+        foreach ($request->lot_ids as $premierId) {
+            $carte = Carte::find($premierId);
+            if (!$carte) continue;
+
+            // Protéger les cartes liées à des clients (actif, terminé, expiré)
+            if (in_array($carte->statut, ['actif', 'terminé', 'expiré'])) {
+                $lotsProteges++;
+                continue;
+            }
+
+            // Marquer toutes les cartes de ce lot (même date + même statut) comme annulées
+            $count = Carte::where('date_creation', $carte->date_creation)
+                ->where('statut', $carte->statut)
+                ->where('statut', '!=', 'annulé')
+                ->update(['statut' => 'annulé']);
+
+            $totalAnnulees += $count;
+        }
+
+        $message = "{$totalAnnulees} carte(s) supprimée(s) de l'historique.";
+        if ($lotsProteges > 0) {
+            $message .= " {$lotsProteges} lot(s) protégé(s) (cartes actives/utilisées).";
+        }
+
+        return response()->json([
+            'success'  => true,
+            'message'  => $message,
+            'annulees' => $totalAnnulees,
+            'proteges' => $lotsProteges,
         ]);
     }
 }

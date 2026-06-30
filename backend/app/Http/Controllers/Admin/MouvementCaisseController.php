@@ -108,6 +108,12 @@ class MouvementCaisseController extends Controller
             ];
         });
 
+        // 📊 Calcul des totaux globaux de la caisse
+        $totalDepot = Transaction::where('type_op', 'dépôt_cash')->sum('montant');
+        $totalRetrait = Transaction::whereIn('type_op', ['retrait_partiel', 'retrait_solde_compte'])->sum('montant');
+        $totalPenalite = Transaction::sum('penalite');
+        $totalSolde = Compte::whereNull('date_cloture')->sum('solde_total');
+
         return response()->json([
             'success'      => true,
             'transactions' => $data,
@@ -116,6 +122,12 @@ class MouvementCaisseController extends Controller
                 'limit'        => $limit,
                 'total'        => $total,
                 'total_pages'  => ceil($total / $limit),
+            ],
+            'totaux'       => [
+                'total_depot'    => (float) $totalDepot,
+                'total_retrait'  => (float) $totalRetrait,
+                'total_penalite' => (float) $totalPenalite,
+                'total_solde'    => (float) $totalSolde,
             ],
         ]);
     }

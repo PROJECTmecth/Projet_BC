@@ -80,6 +80,8 @@ export default function GestionCartesPage() {
   const [confirmDelete, setConfirmDelete]       = useState({ open: false, ids: [] });
   const [apercuOpen, setApercuOpen]             = useState(false);
   const [apercuLot, setApercuLot]               = useState(null);
+  const [statusFilter, setStatusFilter]         = useState(""); // filtre par statut
+  const [isDeleting, setIsDeleting]             = useState(false);
   
   const [pagination, setPagination] = useState({
     current_page: 1,
@@ -137,13 +139,13 @@ export default function GestionCartesPage() {
   }, [totalGeneres]);
 
   // ── Charger historique BDD ────────────────────────────────────────────────
-  const chargerLots = useCallback(async (page = 1, limit = 10) => {
+  const chargerLots = useCallback(async (page = 1, limit = 10, statut = "") => {
     if (MOCK_MODE) return;
     setIsLoading(true);
     try {
-      const response = await axios.get("/api/admin/qrcodes/lots", {
-        params: { page, limit }
-      });
+      const params = { page, limit };
+      if (statut) params.statut = statut;
+      const response = await axios.get("/api/admin/qrcodes/lots", { params });
       if (response.data.success) {
         setLotsHistorique(response.data.data.map(lot => ({ ...lot, cartes: [], imprime: true })));
         if (response.data.pagination) {
@@ -159,8 +161,8 @@ export default function GestionCartesPage() {
   }, []);
 
   useEffect(() => {
-    chargerLots(1, pagination.limit);
-  }, [chargerLots]);
+    chargerLots(1, pagination.limit, statusFilter);
+  }, [chargerLots, statusFilter]);
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -179,16 +181,27 @@ export default function GestionCartesPage() {
     setConfirmDelete({ open: true, ids });
   }
 
-  function handleConfirmDelete() {
+  async function handleConfirmDelete() {
     const ids = confirmDelete.ids;
-    setLotsHistorique(prev => prev.filter(l => !ids.includes(l.id)));
-    setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
-    setPagination(prev => ({
-      ...prev,
-      total: Math.max(0, prev.total - ids.length)
-    }));
-    setConfirmDelete({ open: false, ids: [] });
-    showToast(`${ids.length} lot${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""} avec succès.`);
+    setIsDeleting(true);
+    try {
+      const response = await axios.post("/api/admin/qrcodes/supprimer", { lot_ids: ids });
+      if (response.data.success) {
+        setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+        setConfirmDelete({ open: false, ids: [] });
+        // Recharger les lots depuis le serveur
+        await chargerLots(1, pagination.limit, statusFilter);
+        showToast(response.data.message);
+      } else {
+        showToast(response.data.message || "Erreur lors de la suppression.", "error");
+      }
+    } catch (err) {
+      console.error("Erreur suppression lots:", err);
+      showToast("Erreur lors de la suppression.", "error");
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete({ open: false, ids: [] });
+    }
   }
 
   async function handleAnnulerAttente(lotId) {
@@ -213,7 +226,7 @@ export default function GestionCartesPage() {
     const lot = lotsEnAttente.find(l => l.id === lotId);
     if (!lot) return;
     setLotsEnAttente(prev => prev.filter(l => l.id !== lotId));
-    chargerLots(1, pagination.limit);
+    chargerLots(1, pagination.limit, statusFilter);
     showToast(`${lot.numero} ajouté à l'historique.`);
   }
 
@@ -539,9 +552,24 @@ export default function GestionCartesPage() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h3 className="text-xl font-bold text-gray-800">Historique des lots générés</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Lots actifs uniquement — les lots annulés sont exclus</p>
+              <p className="text-sm text-gray-500 mt-0.5">Les lots annulés sont automatiquement exclus</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
+              {/* Filtre par statut */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setSelectedIds([]);
+                }}
+                className="px-3 py-2 border-2 border-gray-300 rounded-xl text-sm font-semibold text-gray-600 focus:outline-none focus:border-orange-400 transition-colors"
+              >
+                <option value="">Tous les statuts</option>
+                <option value="vierge">Vierge</option>
+                <option value="actif">Actif</option>
+                <option value="expiré">Expiré</option>
+                <option value="terminé">Terminé</option>
+              </select>
               {/* Rapport PDF complet (inclut les lots annulés) */}
               <button
                 onClick={exportRapportCompletPDF}
@@ -566,10 +594,11 @@ export default function GestionCartesPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         onClick={() => handleDeleteRequest(selectedIds)}
-                        className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all shadow-md"
+                        disabled={isDeleting}
+                        className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all shadow-md disabled:opacity-50"
                       >
                         <Trash2 size={14} />
-                        Supprimer ({selectedIds.length})
+                        {isDeleting ? "Suppression…" : `Supprimer (${selectedIds.length})`}
                       </motion.button>
                     )}
                   </AnimatePresence>
@@ -636,7 +665,7 @@ export default function GestionCartesPage() {
                 onChange={(e) => {
                   const newLimit = parseInt(e.target.value);
                   setPagination(prev => ({ ...prev, limit: newLimit }));
-                  chargerLots(1, newLimit);
+                  chargerLots(1, newLimit, statusFilter);
                 }}
                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
@@ -648,7 +677,7 @@ export default function GestionCartesPage() {
 
               {/* Navigation */}
               <button
-                onClick={() => chargerLots(pagination.current_page - 1, pagination.limit)}
+                onClick={() => chargerLots(pagination.current_page - 1, pagination.limit, statusFilter)}
                 disabled={pagination.current_page <= 1}
                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -675,7 +704,7 @@ export default function GestionCartesPage() {
                 ).map(pageNum => (
                   <button
                     key={pageNum}
-                    onClick={() => chargerLots(pageNum, pagination.limit)}
+                    onClick={() => chargerLots(pageNum, pagination.limit, statusFilter)}
                     className={[
                       "px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors",
                       pageNum === pagination.current_page
@@ -689,7 +718,7 @@ export default function GestionCartesPage() {
               </div>
 
               <button
-                onClick={() => chargerLots(pagination.current_page + 1, pagination.limit)}
+                onClick={() => chargerLots(pagination.current_page + 1, pagination.limit, statusFilter)}
                 disabled={pagination.current_page >= pagination.total_pages}
                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >

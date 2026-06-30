@@ -95,7 +95,8 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
         // QR Codes (déplacés dans le groupe sécurisé)
         Route::post('/qrcodes/generer', [CarteController::class, 'generer'])->name('qrcodes.generer');
         Route::get ('/qrcodes/lots',    [CarteController::class, 'index'])  ->name('qrcodes.lots');
-        Route::post('/qrcodes/annuler', [CarteController::class, 'annuler'])->name('qrcodes.annuler');
+        Route::post('/qrcodes/annuler',   [CarteController::class, 'annuler'])  ->name('qrcodes.annuler');
+        Route::post('/qrcodes/supprimer', [CarteController::class, 'destroy'])  ->name('qrcodes.supprimer');
 
         // Dashboard
     // ── Dashboard Stats ──────────────────────────────────────────────────
