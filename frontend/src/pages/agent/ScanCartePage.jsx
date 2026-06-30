@@ -556,15 +556,27 @@ export default function ScanCartePage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => navigate(`/agent/clients/${client.id_client}/operation`)}
-                            disabled={!isActif}
-                            className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${isActif ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                        >
-                            {Icon.ops}
-                            Ajouter opération
-                            {!isActif && <span className="text-xs font-normal opacity-70">Carte {statut}</span>}
-                        </button>
+                        {(() => {
+                            const isObjectifAtteint = (carte.progression ?? 0) >= 100;
+                            const isDisabled = !isActif || isObjectifAtteint;
+                            const raison = !isActif
+                                ? `Carte ${statut}`
+                                : isObjectifAtteint
+                                    ? 'Objectif atteint (100%)'
+                                    : '';
+                            return (
+                                <button
+                                    onClick={() => navigate(`/agent/clients/${client.id_client}/operation`)}
+                                    disabled={isDisabled}
+                                    title={raison}
+                                    className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-70' : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300'}`}
+                                >
+                                    {Icon.ops}
+                                    Ajouter opération
+                                    {isDisabled && <span className="text-xs font-normal opacity-70">{raison}</span>}
+                                </button>
+                            );
+                        })()}
 
                         <button onClick={() => navigate(`/agent/clients/${client.id_client}`)} className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-white border-2 border-orange-200 text-orange-600 font-bold text-sm hover:bg-orange-50 transition-all active:scale-95">
                             {Icon.user}
@@ -613,8 +625,14 @@ export default function ScanCartePage() {
                             title: 'Client enregistré !',
                             text: 'Le nouveau client a bien été associé à cette carte.',
                             confirmButtonColor: '#F97316',
-                                }).then(() => {
-                                    resetScan();
-                                    navigate('/agent/dashboard');
-                                });
+                        }).then(() => {
+                            resetScan();
+                            navigate('/agent/dashboard');
+                        });
+                    }}
+                />
+            )}
+
+        </div>
+    );
 }

@@ -124,19 +124,19 @@ class ClientController extends Controller
             ->map(fn($c) => [
                 'label' => $c->activite ?? 'Autre',
                 'count' => $c->count,
-                'color' => match($c->activite) {
-                    'Commerçant'    => 'text-blue-600',
-                    'Ménagère'      => 'text-purple-600',
-                    'Travailleurs'  => 'text-yellow-600',
-                    'Étudiants'     => 'text-green-600',
-                    default         => 'text-gray-600',
+                'color' => match(strtolower($c->activite ?? '')) {
+                    'commerçant', 'commerçante', 'commercant', 'commercante' => 'text-blue-600',
+                    'ménagère', 'menagere'                                   => 'text-purple-600',
+                    'travailleur', 'travailleurs'                           => 'text-yellow-600',
+                    'étudiant', 'étudiants', 'étudiante', 'etudiant', 'etudiants', 'etudiante' => 'text-green-600',
+                    default                                                 => 'text-gray-600',
                 },
-                'bg' => match($c->activite) {
-                    'Commerçant'    => 'bg-blue-50',
-                    'Ménagère'      => 'bg-purple-50',
-                    'Travailleurs'  => 'bg-yellow-50',
-                    'Étudiants'     => 'bg-green-50',
-                    default         => 'bg-gray-50',
+                'bg' => match(strtolower($c->activite ?? '')) {
+                    'commerçant', 'commerçante', 'commercant', 'commercante' => 'bg-blue-50',
+                    'ménagère', 'menagere'                                   => 'bg-purple-50',
+                    'travailleur', 'travailleurs'                           => 'bg-yellow-50',
+                    'étudiant', 'étudiants', 'étudiante', 'etudiant', 'etudiants', 'etudiante' => 'bg-green-50',
+                    default                                                 => 'bg-gray-50',
                 },
             ]);
         

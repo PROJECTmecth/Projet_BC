@@ -9,7 +9,7 @@ const ETAPES = { SCAN: "scan", FORMULAIRE: "formulaire" };
 const initialForm = {
   genre: "Homme", prenom: "", nom: "", adresse: "", ville: "",
   activite: "", nationalite: "Résident", type_piece: "CNI",
-  num_piece: "", photo_piece: null, telephone: "+242 06 ", montant: "", duree: "15 jours",
+  num_piece: "", photo_pieces: [], telephone: "+242 06 ", montant: "", duree: "15 jours",
   qrCodeUid: "",
 };
 
@@ -20,7 +20,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
   const [scanning, setScanning]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors]         = useState({});
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState([]);
   const scannerRef                  = useRef(null);
   const html5QrRef                  = useRef(null);
 
@@ -154,14 +154,10 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setForm(f => ({ ...f, photo_piece: file }));
-    setErrors(er => ({ ...er, photo_piece: "" }));
-    if (file) {
-      setPhotoPreview(URL.createObjectURL(file));
-    } else {
-      setPhotoPreview(null);
-    }
+    const files = Array.from(e.target.files || []);
+    setForm(f => ({ ...f, photo_pieces: files }));
+    setErrors(er => ({ ...er, photo_pieces: "" }));
+    setPhotoPreview(files.map(file => URL.createObjectURL(file)));
   };
 
   const validate = () => {
@@ -172,15 +168,32 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     if (!form.ville.trim())     e.ville     = "Requis";
     if (!form.activite.trim())  e.activite  = "Requis";
     if (!form.num_piece.trim()) e.num_piece = "Requis";
-    if (!form.photo_piece) e.photo_piece = "Photo de la pièce requise";
+    if (!form.photo_pieces.length) e.photo_pieces = "Au moins une photo de pièce est requise";
     if (!form.telephone.trim()) e.telephone = "Requis";
     if (!form.montant || Number(form.montant) < 1000) e.montant = "Montant minimum : 1 000 F";
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return { isValid: Object.keys(e).length === 0, errors: e };
+  };
+
+  const focusFirstError = (errors) => {
+    const firstField = Object.keys(errors)[0];
+    if (!firstField) return;
+    let control = document.querySelector(`[name="${firstField}"]`);
+    if (!control) {
+      control = document.querySelector(`[name="${firstField}[]"]`);
+    }
+    if (control) {
+      control.scrollIntoView({ behavior: "smooth", block: "center" });
+      control.focus?.();
+    }
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+    const { isValid, errors: validationErrors } = validate();
+    if (!isValid) {
+      focusFirstError(validationErrors);
+      return;
+    }
 
     const result = await Swal.fire({
       title: "Confirmer l'enregistrement ?",
@@ -202,11 +215,13 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       setSubmitting(true);
       const payload = new FormData();
       Object.entries(form).forEach(([key, value]) => {
-        if (value !== null) payload.append(key, value);
+        if (key === 'photo_pieces') return;
+        if (value !== null && value !== undefined) payload.append(key, value);
       });
       payload.append('qr_code_uid', carteInfo.qr_code_uid);
       payload.set('montant', Number(form.montant));
 
+      form.photo_pieces.forEach(file => payload.append('photo_pieces[]', file));
       await axiosClient.post("/api/agent/clients/register", payload, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -216,10 +231,12 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       const data = err.response?.data;
       if (status === 422 && data?.errors) {
         const fieldErrors = Object.keys(data.errors).reduce((acc, key) => {
-          acc[key] = Array.isArray(data.errors[key]) ? data.errors[key][0] : data.errors[key];
+          const normalizedKey = key.replace(/\.\d+$/, '');
+          acc[normalizedKey] = Array.isArray(data.errors[key]) ? data.errors[key][0] : data.errors[key];
           return acc;
         }, {});
         setErrors(fieldErrors);
+        focusFirstError(fieldErrors);
       } else {
         const msg = data?.message || "Erreur lors de l'enregistrement.";
         Swal.fire({ icon: "error", title: "Erreur", text: msg, confirmButtonColor: "#F97316" });
@@ -390,31 +407,18 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Photo de la pièce</label>
-                    <input type="file" accept="image/*" capture="environment"
-                      className={`form-input ${errors.photo_piece ? "form-input--error" : ""}`}
-                      name="photo_piece" onChange={handleFileChange} />
-                    {errors.photo_piece && <span className="form-error">{errors.photo_piece}</span>}
-                    {photoPreview && (
-                      <img src={photoPreview} alt="Prévisualisation pièce" className="form-image-preview" />
+                    <label className="form-label">Photos de la pièce</label>
+                    <input type="file" accept="image/*" capture="environment" multiple
+                      className={`form-input ${errors.photo_pieces ? "form-input--error" : ""}`}
+                      name="photo_pieces[]" onChange={handleFileChange} />
+                    {errors.photo_pieces && <span className="form-error">{errors.photo_pieces}</span>}
+                    {photoPreview.length > 0 && (
+                      <div className="form-image-preview-grid">
+                        {photoPreview.map((src, index) => (
+                          <img key={index} src={src} alt={`Prévisualisation pièce ${index + 1}`} className="form-image-preview" />
+                        ))}
+                      </div>
                     )}
-                  </div>
-
-                </div>
-              </div>
-
-              {/* COLONNE DROITE : Activation carte */}
-              <div className="form-col">
-                <div className="form-col-header form-col-header--green">
-                  Activation carte
-                </div>
-                <div className="form-col-body">
-
-                  <div className="form-group">
-                    <label className="form-label">Numéro de carte *</label>
-                    <input className="form-input form-input--readonly"
-                      value={carteInfo?.numero_carte || ""} readOnly />
-                  </div>
 
                   <div className="form-group">
                     <label className="form-label">Durée de carte</label>
