@@ -23,10 +23,15 @@ class Client extends Model
         'type_piece',
         'num_piece',
         'photo_piece',
+        'photo_pieces',
         'telephone',
         'id_agent',
         'id_user',
         'created_at',
+    ];
+
+    protected $casts = [
+        'photo_pieces' => 'array',
     ];
 
     /**
