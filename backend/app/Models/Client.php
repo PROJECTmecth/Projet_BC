@@ -22,6 +22,7 @@ class Client extends Model
         'nationalite',
         'type_piece',
         'num_piece',
+        'photo_piece',
         'telephone',
         'id_agent',
         'id_user',
