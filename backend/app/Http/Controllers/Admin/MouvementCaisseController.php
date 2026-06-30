@@ -76,6 +76,13 @@ class MouvementCaisseController extends Controller
             $query->orderBy('date_heure', 'desc');
         }
 
+        // � Totaux calculés sur l'ensemble des résultats filtrés
+        $summaryQuery = (clone $query);
+        $totalDepot = (float) $summaryQuery->where('type_op', 'dépôt_cash')->sum('montant');
+        $totalRetrait = (float) $summaryQuery->whereIn('type_op', ['retrait_partiel', 'retrait_solde_compte'])->sum('montant');
+        $totalPenalite = (float) $summaryQuery->sum('penalite');
+        $totalSolde = $totalDepot - $totalRetrait - $totalPenalite;
+
         // 📄 Pagination
         $total = $query->count();
         $transactions = $query->skip(($page - 1) * $limit)
@@ -117,6 +124,12 @@ class MouvementCaisseController extends Controller
         return response()->json([
             'success'      => true,
             'transactions' => $data,
+            'totaux'       => [
+                'total_depot'    => round($totalDepot, 2),
+                'total_retrait'  => round($totalRetrait, 2),
+                'total_penalite' => round($totalPenalite, 2),
+                'total_solde'    => round($totalSolde, 2),
+            ],
             'pagination'   => [
                 'current_page' => $page,
                 'limit'        => $limit,

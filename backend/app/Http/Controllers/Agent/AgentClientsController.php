@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class AgentClientsController extends Controller
@@ -28,15 +29,16 @@ class AgentClientsController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(fn($c) => [
-                'id_client'       => $c->id_client,
-                'nom_prenom'      => $c->prenom . ' ' . $c->nom,
-                'telephone'       => $c->telephone,
-                'adresse'         => $c->adresse,
-                'ville'           => $c->ville,
-                'numero_carte'    => $c->carte->numero_carte ?? 'N/A',
-                'statut_carte'    => $c->carte->statut ?? 'N/A',
-                'date_activation' => $c->carte->date_activation ?? null,
-                'date_expiration' => $c->carte->date_expiration ?? null,
+                'id_client'        => $c->id_client,
+                'nom_prenom'       => $c->prenom . ' ' . $c->nom,
+                'telephone'        => $c->telephone,
+                'adresse'          => $c->adresse,
+                'ville'            => $c->ville,
+                'numero_carte'     => $c->carte->numero_carte ?? 'N/A',
+                'statut_carte'     => $c->carte->statut ?? 'N/A',
+                'date_activation'  => $c->carte->date_activation ?? null,
+                'date_expiration'  => $c->carte->date_expiration ?? null,
+                'photo_piece_url'  => $c->photo_piece ? Storage::url($c->photo_piece) : null,
             ]);
 
         return response()->json(['success' => true, 'data' => ['total' => $clients->count(), 'clients' => $clients]]);
@@ -90,6 +92,7 @@ class AgentClientsController extends Controller
                     'telephone'   => $client->telephone,
                     'type_piece'  => $client->type_piece,
                     'num_piece'   => $client->num_piece,
+                    'photo_piece_url' => $client->photo_piece ? Storage::url($client->photo_piece) : null,
                 ],
                 'carte'        => $client->carte,
                 'compte'       => $client->compte,
@@ -134,6 +137,7 @@ class AgentClientsController extends Controller
             'nationalite' => 'required|in:Résident,Étranger',
             'type_piece'  => 'required|in:CNI,NIU,Passeport,Permis',
             'num_piece'   => 'required|string|max:50|unique:clients',
+            'photo_piece' => 'required|image|max:2048',
             'telephone'   => 'required|string|max:20',
             'qr_code_uid' => 'required|string',
             'montant'     => 'required|numeric|min:1000',
@@ -149,6 +153,11 @@ class AgentClientsController extends Controller
 
         DB::beginTransaction();
         try {
+            $photoPath = null;
+            if ($request->hasFile('photo_piece')) {
+                $photoPath = $request->file('photo_piece')->store('client_photos', 'public');
+            }
+
             $client = Client::create([
                 'genre'       => $request->genre,
                 'prenom'      => $request->prenom,
@@ -159,6 +168,7 @@ class AgentClientsController extends Controller
                 'nationalite' => $request->nationalite,
                 'type_piece'  => $request->type_piece,
                 'num_piece'   => $request->num_piece,
+                'photo_piece' => $photoPath,
                 'telephone'   => $request->telephone,
                 'id_agent'    => $agent->id_agent,
                 'id_user'     => $user->id,
