@@ -38,7 +38,7 @@ class AgentClientsController extends Controller
                 'statut_carte'     => $c->carte->statut ?? 'N/A',
                 'date_activation'  => $c->carte->date_activation ?? null,
                 'date_expiration'  => $c->carte->date_expiration ?? null,
-                'photo_piece_url'  => $c->photo_piece ? Storage::url($c->photo_piece) : null,
+                'photo_piece_url'  => $c->photo_pieces ? Storage::url($c->photo_pieces[0]) : ($c->photo_piece ? Storage::url($c->photo_piece) : null),
             ]);
 
         return response()->json(['success' => true, 'data' => ['total' => $clients->count(), 'clients' => $clients]]);
@@ -92,7 +92,7 @@ class AgentClientsController extends Controller
                     'telephone'   => $client->telephone,
                     'type_piece'  => $client->type_piece,
                     'num_piece'   => $client->num_piece,
-                    'photo_piece_url' => $client->photo_piece ? Storage::url($client->photo_piece) : null,
+                    'photo_piece_url' => $client->photo_pieces ? Storage::url($client->photo_pieces[0]) : ($client->photo_piece ? Storage::url($client->photo_piece) : null),
                 ],
                 'carte'        => $client->carte,
                 'compte'       => $client->compte,
@@ -128,20 +128,22 @@ class AgentClientsController extends Controller
     public function register(Request $request): JsonResponse
     {
         $request->validate([
-            'genre'       => 'required|in:Homme,Femme',
-            'prenom'      => 'required|string|max:100',
-            'nom'         => 'required|string|max:100',
-            'adresse'     => 'required|string|max:255',
-            'ville'       => 'required|string|max:100',
-            'activite'    => 'required|string|max:150',
-            'nationalite' => 'required|in:Résident,Étranger',
-            'type_piece'  => 'required|in:CNI,NIU,Passeport,Permis',
-            'num_piece'   => 'required|string|max:50|unique:clients',
-            'photo_piece' => 'required|image|max:2048',
-            'telephone'   => 'required|string|max:20',
-            'qr_code_uid' => 'required|string',
-            'montant'     => 'required|numeric|min:1000',
-            'duree'       => 'required|in:15 jours,30 jours',
+            'genre'           => 'required|in:Homme,Femme',
+            'prenom'          => 'required|string|max:100',
+            'nom'             => 'required|string|max:100',
+            'adresse'         => 'required|string|max:255',
+            'ville'           => 'required|string|max:100',
+            'activite'        => 'required|string|max:150',
+            'nationalite'     => 'required|in:Résident,Étranger',
+            'type_piece'      => 'required|in:CNI,NIU,Passeport,Permis',
+            'num_piece'       => 'required|string|max:50|unique:clients',
+            'photo_pieces'    => 'required_without:photo_piece|array|min:1',
+            'photo_pieces.*'  => 'image|max:2048',
+            'photo_piece'     => 'sometimes|image|max:2048',
+            'telephone'       => 'required|string|max:20',
+            'qr_code_uid'     => 'required|string',
+            'montant'         => 'required|numeric|min:1000',
+            'duree'           => 'required|in:15 jours,30 jours',
         ]);
 
         $user  = $request->user();
@@ -153,25 +155,36 @@ class AgentClientsController extends Controller
 
         DB::beginTransaction();
         try {
-            $photoPath = null;
-            if ($request->hasFile('photo_piece')) {
-                $photoPath = $request->file('photo_piece')->store('client_photos', 'public');
+            $photoPath  = null;
+            $photoPaths = [];
+
+            if ($request->hasFile('photo_pieces')) {
+                foreach ($request->file('photo_pieces') as $file) {
+                    $photoPaths[] = $file->store('client_photos', 'public');
+                }
+            } elseif ($request->hasFile('photo_piece')) {
+                $photoPaths[] = $request->file('photo_piece')->store('client_photos', 'public');
+            }
+
+            if (count($photoPaths) > 0) {
+                $photoPath = $photoPaths[0];
             }
 
             $client = Client::create([
-                'genre'       => $request->genre,
-                'prenom'      => $request->prenom,
-                'nom'         => $request->nom,
-                'adresse'     => $request->adresse,
-                'ville'       => $request->ville,
-                'activite'    => $request->activite,
-                'nationalite' => $request->nationalite,
-                'type_piece'  => $request->type_piece,
-                'num_piece'   => $request->num_piece,
-                'photo_piece' => $photoPath,
-                'telephone'   => $request->telephone,
-                'id_agent'    => $agent->id_agent,
-                'id_user'     => $user->id,
+                'genre'         => $request->genre,
+                'prenom'        => $request->prenom,
+                'nom'           => $request->nom,
+                'adresse'       => $request->adresse,
+                'ville'         => $request->ville,
+                'activite'      => $request->activite,
+                'nationalite'   => $request->nationalite,
+                'type_piece'    => $request->type_piece,
+                'num_piece'     => $request->num_piece,
+                'photo_piece'   => $photoPath,
+                'photo_pieces'  => $photoPaths,
+                'telephone'     => $request->telephone,
+                'id_agent'      => $agent->id_agent,
+                'id_user'       => $user->id,
             ]);
 
             $fraisGarde     = $request->montant * 0.5;
