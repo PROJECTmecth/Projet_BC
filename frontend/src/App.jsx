@@ -17,6 +17,7 @@ import ProfilAdminPage from "./pages/admin/ProfilAdminPage.jsx";
 import JournalTransactionsPage from "./pages/admin/JournalTransactionsPage.jsx";
 import MouvementCaisse from "./pages/admin/Mouvementcaisse.jsx";
 import GestionClients from "./pages/admin/GestionClients.jsx";
+import AideAdminPage  from "./pages/admin/AideAdminPage.jsx";
 
 // =============================================
 // IMPORTS ADMIN PART 2 — Dev 3 Djenna — NE PAS TOUCHER
@@ -79,11 +80,10 @@ export default function App() {
         <Route path="kiosques" element={<GestionKiosques />} />
         <Route path="kiosques/:id" element={<KiosqueDetail />} />
 
-        <Route path="agents" element={<GestionAgents />} />
-        <Route path="caisse" element={<MouvementCaisse />} />
-        <Route path="clients" element={<GestionClients />} />
-
-
+        <Route path="agents"      element={<GestionAgents />} />
+        <Route path="caisse"      element={<MouvementCaisse />} />
+        <Route path="clients"     element={<GestionClients />} />
+        <Route path="aide"        element={<AideAdminPage />} />
 
       </Route>
 

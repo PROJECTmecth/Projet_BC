@@ -14,34 +14,47 @@ export default function GestionKiosques() {
   const [kiosques, setKiosques] = useState([]);
   const [stats, setStats] = useState({ total: 0, actifs: 0, geles: 0 });
   const [animatedTotal, setAnimatedTotal] = useState(0);  // ✅ Garder l'animation
+  const [animatedActifs, setAnimatedActifs] = useState(0);   //  animation total pour actifs
+  const [animatedGeles, setAnimatedGeles] = useState(0);// animation total pour geles
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modal, setModal] = useState({ open: false, kiosque: null });
 
   // ── Animation du total ──────────────────────────────────────────────────────
-  useEffect(() => {
-    if (stats.total === 0) {
-      setAnimatedTotal(0);
-      return;
-    }
+  // ── Animation des 3 compteurs (cascade) ──────────────────────────────────────
+useEffect(() => {
+  if (stats.total === 0 && stats.actifs === 0 && stats.geles === 0) {
+    setAnimatedTotal(0);
+    setAnimatedActifs(0);
+    setAnimatedGeles(0);
+    return;
+  }
 
+  // 🎯 Fonction d'animation réutilisable
+  const animateCounter = (setValue, target, delay = 0) => {
     let start = 0;
-    const target = stats.total;
     const duration = 1500; // 1.5s
-    const increment = target / (duration / 16);
+    const increment = target / (duration / 16); // ~60fps
 
     const animate = () => {
       start += increment;
       if (start < target) {
-        setAnimatedTotal(Math.ceil(start));
+        setValue(Math.ceil(start));
         requestAnimationFrame(animate);
       } else {
-        setAnimatedTotal(target);
+        setValue(target);
       }
     };
-    requestAnimationFrame(animate);
-  }, [stats.total]);
+    // Délai pour effet cascade
+    setTimeout(() => requestAnimationFrame(animate), delay);
+  };
 
+  // 🚀 Lancer les 3 animations avec décalage
+  animateCounter(setAnimatedTotal, stats.total ?? 0, 0);      // immédiat
+  animateCounter(setAnimatedActifs, stats.actifs ?? 0, 200);  // +200ms
+  animateCounter(setAnimatedGeles, stats.geles ?? 0, 400);    // +400ms
+
+}, [stats.total, stats.actifs, stats.geles]); // ← Dépendances mises à jour
   // ── GET ─────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -82,6 +95,16 @@ export default function GestionKiosques() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`${BASE}/${id}`);
+      setKiosques(prev => prev.filter(k => k.id !== id));
+      load();
+    } catch (err) {
+      alert("Erreur : " + (err.response?.data?.message ?? err.message));
+    }
+  };
+
   return (
     <div>
       {/* ── Bannière orange ─────────────────────────────────────────── */}
@@ -114,7 +137,11 @@ export default function GestionKiosques() {
       </div>
 
       {/* ── Stats bar ───────────────────────────────────────────────── */}
-      <KiosqueStatsBar actifs={stats.actifs} geles={stats.geles} total={stats.total} />
+      <KiosqueStatsBar 
+        actifs={animatedActifs}   // ← Valeur animée, pas stats.actifs
+        geles={animatedGeles}     // ← Valeur animée, pas stats.geles
+        total={animatedTotal} 
+      />
 
       {/* ── Erreur ──────────────────────────────────────────────────── */}
       {error && (
@@ -135,6 +162,7 @@ export default function GestionKiosques() {
               kiosque={k}
               onToggle={handleToggle}
               onEdit={k => setModal({ open: true, kiosque: k })}
+              onDelete={handleDelete}
             />
           ))}
           <AjouterKiosqueCard onClick={() => setModal({ open: true, kiosque: null })} />

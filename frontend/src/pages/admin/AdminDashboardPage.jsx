@@ -2,53 +2,80 @@
 // fichier : src/pages/admin/AdminDashboardPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect }          from "react";
-import { useNavigate }       from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from "recharts";
 
-import { useAdminStats }  from "../../hooks/useAdminStats";
-import StatCard           from "../../components/admin/StatCard";
-import OperationsTable    from "../../components/admin/OperationsTable";
+import { useAdminStats } from "../../hooks/useAdminStats";
+import { useOperations } from "../../hooks/useOperations";
+import StatCard from "../../components/admin/StatCard";
+import OperationsTable from "../../components/admin/OperationsTable";
 
 // ── Icônes SVG ────────────────────────────────────────────────────────────────
 const IcoUsers = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
   </svg>
 );
 const IcoStore = () => (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
+    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 const IcoTrendUp = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
   </svg>
 );
 const IcoTrendDown = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
+    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" />
   </svg>
 );
 const IcoChevronRight = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6"/>
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+const IcoShield = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+);
+const IcoAlert = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
   </svg>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
-  const { stats, demographics, monthly, operations, loading, error } = useAdminStats();
+  const { stats, demographics, monthly, loading, error } = useAdminStats();
+  
+  // 📊 Hook pour les opérations récentes - ENTIÈREMENT DYNAMIQUE
+  const {
+    operations,
+    pagination,
+    filters,
+    sortBy,
+    sortOrder,
+    loading: opsLoading,
+    handlePageChange,
+    handleLimitChange,
+    handleSort,
+    handleFilterChange,
+    handleRefresh,
+  } = useOperations(true, 30000); // true = enable polling, 30000ms = 30 secondes
 
-  const [showClientsDetail,  setShowClientsDetail]  = useState(false);
+  const [showClientsDetail, setShowClientsDetail] = useState(false);
   const [showKiosquesDetail, setShowKiosquesDetail] = useState(false);
+  const [showRevenusDetail,  setShowRevenusDetail]  = useState(false);  // ← AJOUT
   const [animatedTotalKiosques, setAnimatedTotalKiosques] = useState(0);
 
   // ── Animation du total kiosques ──────────────────────────────────────────────
@@ -60,7 +87,7 @@ export default function AdminDashboardPage() {
 
     let start = 0;
     const target = stats.totalKiosques;
-    const duration = 1500; // 1.5s
+    const duration = 1500;
     const increment = target / (duration / 16);
 
     const animate = () => {
@@ -127,9 +154,9 @@ export default function AdminDashboardPage() {
             <div
               className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl p-5 shadow-xl"
               style={{
-                background    : "rgba(255,255,255,0.90)",
+                background: "rgba(255,255,255,0.90)",
                 backdropFilter: "blur(20px)",
-                border        : "1px solid rgba(255,255,255,0.3)",
+                border: "1px solid rgba(255,255,255,0.3)",
               }}
             >
               <div className="space-y-3">
@@ -137,7 +164,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <div className="bg-indigo-100 p-1.5 rounded-lg">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
                     <span className="text-sm font-semibold text-gray-700">Hommes</span>
@@ -149,7 +176,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <div className="bg-pink-100 p-1.5 rounded-lg">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#DB2777" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
                       </svg>
                     </div>
                     <span className="text-sm font-semibold text-gray-700">Femmes</span>
@@ -182,9 +209,9 @@ export default function AdminDashboardPage() {
             <div
               className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl p-5 shadow-xl"
               style={{
-                background    : "rgba(255,255,255,0.90)",
+                background: "rgba(255,255,255,0.90)",
                 backdropFilter: "blur(20px)",
-                border        : "1px solid rgba(255,255,255,0.3)",
+                border: "1px solid rgba(255,255,255,0.3)",
               }}
             >
               <div className="space-y-3">
@@ -226,20 +253,70 @@ export default function AdminDashboardPage() {
           textColor="text-green-100"
         />
 
-        {/* ── Carte Revenus ── */}
-        <StatCard
-          title="Revenus encaissés"
-          value={loading ? "..." : `${stats?.revenus} F`}
-          subtitle={<span className="flex items-center gap-1"><IcoTrendUp /> Ce mois</span>}
-          gradient="from-yellow-500 to-yellow-600"
-          textColor="text-yellow-100"
-          onClick={() => navigate("/admin/revenus")}
+        {/* ── Carte Revenus ── AVEC DROPDOWN AU HOVER */}
+        <div
+          className="relative"
+          onMouseEnter={() => setShowRevenusDetail(true)}
+          onMouseLeave={() => setShowRevenusDetail(false)}
         >
-          <p className="text-yellow-100 text-xs mt-3 flex items-center gap-1">
-            <span>Cliquez pour voir les détails</span>
-            <IcoChevronRight />
-          </p>
-        </StatCard>
+          <StatCard
+            title="Revenus encaissés"
+            value={loading ? "..." : `${stats?.revenus} F`}
+            subtitle={<span className="flex items-center gap-1"><IcoTrendUp /> Ce mois</span>}
+            gradient="from-yellow-500 to-yellow-600"
+            textColor="text-yellow-100"
+          >
+            <p className="text-yellow-100 text-xs mt-3 flex items-center gap-1 opacity-80">
+              <span>Survolez pour voir le détail</span>
+            </p>
+          </StatCard>
+
+          {/* Dropdown glassmorphic au hover */}
+          {showRevenusDetail && !loading && (
+            <div
+              className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl p-5 shadow-xl"
+              style={{
+                background    : "rgba(255,255,255,0.90)",
+                backdropFilter: "blur(20px)",
+                border        : "1px solid rgba(255,255,255,0.3)",
+              }}
+            >
+              <div className="space-y-3">
+                
+                {/* Frais de garde */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-blue-100 p-1.5 rounded-lg">
+                      <IcoShield />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">Frais de garde</span>
+                  </div>
+                  <span className="text-2xl font-bold text-blue-600">
+                    {(stats?.revenusBreakdown?.frais_garde ?? 0).toLocaleString('fr-FR')} F
+                  </span>
+                </div>
+                
+                <div className="border-t border-gray-100" />
+                
+                {/* Pénalités */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-orange-100 p-1.5 rounded-lg">
+                      <IcoAlert />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">Pénalités</span>
+                  </div>
+                  <span className="text-2xl font-bold text-orange-600">
+                    {(stats?.revenusBreakdown?.penalites ?? 0).toLocaleString('fr-FR')} F
+                  </span>
+                </div>
+
+                
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ══ 4. GRAPHIQUES ════════════════════════════════════════════════════ */}
@@ -288,7 +365,7 @@ export default function AdminDashboardPage() {
                 {/* Barres Hommes / Femmes */}
                 {[
                   { label: "Hommes", pct: demographics?.hommes, color: "bg-indigo-500" },
-                  { label: "Femmes", pct: demographics?.femmes, color: "bg-pink-500"   },
+                  { label: "Femmes", pct: demographics?.femmes, color: "bg-pink-500" },
                 ].map(({ label, pct, color }) => (
                   <div key={label}>
                     <div className="flex items-center justify-between mb-1.5">
@@ -323,7 +400,19 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ══ 5. TABLEAU OPÉRATIONS RÉCENTES ══════════════════════════════════ */}
-      <OperationsTable operations={operations} loading={loading} />
+      <OperationsTable
+        operations={operations}
+        loading={opsLoading}
+        pagination={pagination}
+        filters={filters}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+        onSort={handleSort}
+        onFilterChange={handleFilterChange}
+        onRefresh={handleRefresh}
+      />
 
     </div>
   );

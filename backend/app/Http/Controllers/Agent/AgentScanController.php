@@ -30,10 +30,10 @@ class AgentScanController extends Controller
      * géré par l'agent authentifié, puis retourne les détails.
      *
      * Body JSON attendu :
-     *   { "numero_carte": "BC-2024-0001" }
+     *   { "numero_carte": "BC-2024-0001" } ou UUID
      *
      * Réponse 200 :
-     *   { carte, client, compte }
+     *   { carte, client, compte, is_vierge }
      *
      * Erreurs possibles :
      *   400 — champ manquant
@@ -54,7 +54,10 @@ class AgentScanController extends Controller
         $numeroCarte = trim($validated['numero_carte']);
 
         // ── 2. Récupération de la carte ────────────────────────
-        $carte = Carte::where('numero_carte', $numeroCarte)->first();
+        // ✅ Cherche par UUID (qr_code_uid) OU par numero_carte
+        $carte = Carte::where('qr_code_uid', $numeroCarte)
+            ->orWhere('numero_carte', $numeroCarte)
+            ->first();
 
         if (! $carte) {
             return response()->json([
@@ -65,10 +68,13 @@ class AgentScanController extends Controller
         // ── 3. Récupération du client ──────────────────────────
         $client = Client::find($carte->id_client);
 
+        // ✅ NOUVELLE LOGIQUE : Carte vierge détectée
         if (! $client) {
             return response()->json([
-                'message' => 'Client associé à cette carte introuvable.',
-            ], 404);
+                'carte'     => $this->formatCarte($carte),
+                'is_vierge' => true,
+                'message'   => 'Carte vierge, prête à être assignée.',
+            ], 200);
         }
 
         // ── 4. Vérification du périmètre agent ─────────────────
@@ -86,9 +92,10 @@ class AgentScanController extends Controller
 
         // ── 6. Retour ──────────────────────────────────────────
         return response()->json([
-            'carte'  => $this->formatCarte($carte),
-            'client' => $this->formatClient($client),
-            'compte' => $this->formatCompte($compte),
+            'carte'     => $this->formatCarte($carte),
+            'client'    => $this->formatClient($client),
+            'compte'    => $this->formatCompte($compte),
+            'is_vierge' => false,
         ], 200);
     }
 
@@ -98,6 +105,7 @@ class AgentScanController extends Controller
     {
         return [
             'id_carte'         => $c->id_carte,
+            'qr_code_uid'      => $c->qr_code_uid,
             'numero_carte'     => $c->numero_carte,
             'statut'           => $c->statut,
             'progression'      => (float) ($c->progression ?? 0),

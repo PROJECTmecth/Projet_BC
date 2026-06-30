@@ -91,8 +91,8 @@ class CheckIsAdmin
         if ($authenticatedUser->role !== 'admin') {
             // Log de sécurité : tentative d'accès avec mauvais rôle
             Log::warning('[BOMBA_CASH][CheckIsAdmin] Accès refusé — rôle insuffisant', [
-                'userId'    => $authenticatedUser->id_user,
-                'username'  => $authenticatedUser->username,
+                'userId'    => $authenticatedUser->id,
+                'username'  => $authenticatedUser->name,
                 'role'      => $authenticatedUser->role,
                 'ip'        => $request->ip(),
                 'url'       => $request->fullUrl(),
@@ -117,8 +117,8 @@ class CheckIsAdmin
         if ($authenticatedUser->statut !== 'actif') {
             // Log de sécurité : compte désactivé tente de se connecter
             Log::warning('[BOMBA_CASH][CheckIsAdmin] Accès refusé — compte inactif', [
-                'userId'    => $authenticatedUser->id_user,
-                'username'  => $authenticatedUser->username,
+                'userId'    => $authenticatedUser->id,
+                'username'  => $authenticatedUser->name,
                 'statut'    => $authenticatedUser->statut,
                 'ip'        => $request->ip(),
                 'timestamp' => now()->toDateTimeString(),

@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import Swal from 'sweetalert2';
 import axios from '../../lib/axios';
-// ❌ SUPPRIMER : import AgentLayout from '../../layouts/AgentLayout';
+import NouveauClientModal from '../../components/agent/NouveauClientModal';
 
 /* ─── Constantes ──────────────────────────────────────────────── */
 const SCANNER_ELEMENT_ID = 'bc-qrcode-region';
@@ -110,6 +110,7 @@ const fmt = (n) =>
 
 const statutConfig = {
     active: { label: 'Active', bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    actif: { label: 'Actif', bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
     inactive: { label: 'Inactive', bg: 'bg-gray-100', text: 'text-gray-500', dot: 'bg-gray-400' },
     bloquée: { label: 'Bloquée', bg: 'bg-red-100', text: 'text-red-600', dot: 'bg-red-500' },
     expirée: { label: 'Expirée', bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
@@ -147,6 +148,10 @@ export default function ScanCartePage() {
     const [manualVal, setManualVal] = useState('');
     const [manualLoading, setManualLoading] = useState(false);
 
+    /* ✅ Bridge vers NouveauClientModal */
+    const [showNouveauClientModal, setShowNouveauClientModal] = useState(false);
+    const [carteViergeDetectee, setCarteViergeDetectee] = useState(null);
+
     /* refs */
     const html5QrRef = useRef(null);
     const processingRef = useRef(false);
@@ -168,12 +173,48 @@ export default function ScanCartePage() {
         return () => { stopScanner(); };
     }, [stopScanner]);
 
+    /* ─── Reset ──────────────────────────────────────────────────── */
+    const resetScan = useCallback(async () => {
+        await stopScanner();
+        processingRef.current = false;
+        setScanData(null);
+        setErrMsg('');
+        setTorchOn(false);
+        setPhase('idle');
+        setShowManual(false);
+        setCarteViergeDetectee(null);
+        setShowNouveauClientModal(false);
+    }, [stopScanner]);
+
     /* ─── Appel API scan ─────────────────────────────────────────── */
     const callScanAPI = useCallback(async (numeroCarte) => {
         setPhase('loading');
         try {
             const { data } = await axios.post('/api/agent/scan', { numero_carte: numeroCarte });
             await stopScanner();
+
+            // ✅ Carte vierge : proposer d'enregistrer un nouveau client
+            if (data.is_vierge) {
+                const result = await Swal.fire({
+                    title: 'Carte Vierge',
+                    html: `<p>Numéro : <b>${data.carte.numero_carte}</b></p>
+                           <p>Cette carte n'appartient à aucun client. Voulez-vous enregistrer un nouveau client ?</p>`,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Oui, inscrire',
+                    cancelButtonText: 'Non',
+                    confirmButtonColor: '#F97316',
+                    cancelButtonColor: '#6B7280',
+                });
+                if (result.isConfirmed) {
+                    setCarteViergeDetectee(data.carte);
+                    setShowNouveauClientModal(true);
+                } else {
+                    resetScan();
+                }
+                return;
+            }
+
             setScanData(data);
             setPhase('result');
         } catch (err) {
@@ -185,7 +226,7 @@ export default function ScanCartePage() {
             setErrMsg(msg);
             setPhase('error');
         }
-    }, [stopScanner]);
+    }, [stopScanner, resetScan]);
 
     /* ─── Callback QR détecté ───────────────────────────────────── */
     const onQrSuccess = useCallback((decodedText) => {
@@ -278,17 +319,6 @@ export default function ScanCartePage() {
         setManualVal('');
     };
 
-    /* ─── Reset ──────────────────────────────────────────────────── */
-    const resetScan = useCallback(async () => {
-        await stopScanner();
-        processingRef.current = false;
-        setScanData(null);
-        setErrMsg('');
-        setTorchOn(false);
-        setPhase('idle');
-        setShowManual(false);
-    }, [stopScanner]);
-
     /* ─────────────────────────────────────────────────────────────── */
     /*  RENDER                                                         */
     /* ─────────────────────────────────────────────────────────────── */
@@ -296,6 +326,8 @@ export default function ScanCartePage() {
     const { carte, client, compte } = scanData ?? {};
     const statut = carte?.statut?.toLowerCase() ?? 'inactive';
     const statutCfg = statutConfig[statut] ?? statutConfig.inactive;
+    const isActif = statut === 'actif' || statut === 'active';
+    const isEnRetard = carte?.date_expiration && new Date(carte.date_expiration) < new Date() && (carte?.progression ?? 0) < 100;
 
     return (
         // ❌ SUPPRIMER : <AgentLayout>
@@ -454,9 +486,16 @@ export default function ScanCartePage() {
                                     <p className="text-orange-100 text-sm">{client.telephone}</p>
                                     <p className="text-orange-200 text-xs mt-0.5 truncate">{client.ville}</p>
                                 </div>
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${statutCfg.bg} ${statutCfg.text}`}>
-                                    <span className={`w-2 h-2 rounded-full ${statutCfg.dot}`} />
-                                    {statutCfg.label}
+                                <div className="flex flex-col items-end gap-2">
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${statutCfg.bg} ${statutCfg.text}`}>
+                                        <span className={`w-2 h-2 rounded-full ${statutCfg.dot}`} />
+                                        {statutCfg.label}
+                                    </div>
+                                    {isEnRetard && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
+                                            ⚠️ En retard
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -519,12 +558,12 @@ export default function ScanCartePage() {
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={() => navigate(`/agent/clients/${client.id_client}/operation`)}
-                            disabled={statut !== 'active'}
-                            className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${statut === 'active' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                            disabled={!isActif}
+                            className={`flex flex-col items-center gap-2 py-4 rounded-2xl font-bold text-sm transition-all active:scale-95 ${isActif ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                         >
                             {Icon.ops}
                             Ajouter opération
-                            {statut !== 'active' && <span className="text-xs font-normal opacity-70">Carte {statut}</span>}
+                            {!isActif && <span className="text-xs font-normal opacity-70">Carte {statut}</span>}
                         </button>
 
                         <button onClick={() => navigate(`/agent/clients/${client.id_client}`)} className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-white border-2 border-orange-200 text-orange-600 font-bold text-sm hover:bg-orange-50 transition-all active:scale-95">
@@ -562,7 +601,23 @@ export default function ScanCartePage() {
                 </div>
             )}
 
+            {/* ✅ Bridge : Modal Nouveau Client (carte vierge) */}
+            {showNouveauClientModal && (
+                <NouveauClientModal
+                    initialCarte={carteViergeDetectee}
+                    onClose={() => { setShowNouveauClientModal(false); resetScan(); }}
+                    onSuccess={() => {
+                        setShowNouveauClientModal(false);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Client enregistré !',
+                            text: 'Le nouveau client a bien été associé à cette carte.',
+                            confirmButtonColor: '#F97316',
+                        }).then(() => resetScan());
+                    }}
+                />
+            )}
+
         </div>
-        // ❌ SUPPRIMER : </AgentLayout>
     );
 }

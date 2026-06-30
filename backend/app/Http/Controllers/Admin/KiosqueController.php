@@ -54,7 +54,16 @@ class KiosqueController extends Controller
     // ──────────────────────────────────────────────────────────────────────
     public function store(KiosqueRequest $request): JsonResponse
     {
-        $kiosque = Kiosque::create($request->validated());
+        $validated = $request->validated();
+        
+        // ✅ Générer code auto-incrémenté si vide
+        if (empty($validated['code_kiosque'])) {
+            $lastKiosque = Kiosque::orderBy('id_kiosque', 'desc')->first();
+            $nextNum = ($lastKiosque?->id_kiosque ?? 0) + 1;
+            $validated['code_kiosque'] = 'KSQ-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        }
+        
+        $kiosque = Kiosque::create($validated);
         $kiosque->load('admin');
         $kiosque->loadCount('agents');
 

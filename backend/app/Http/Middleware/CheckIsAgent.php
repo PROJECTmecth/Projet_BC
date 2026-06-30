@@ -93,8 +93,8 @@ class CheckIsAgent
         if ($authenticatedUser->role !== 'agent') {
             // Log de sécurité : mauvais rôle
             Log::warning('[BOMBA_CASH][CheckIsAgent] Accès refusé — rôle insuffisant', [
-                'userId'    => $authenticatedUser->id_user,
-                'username'  => $authenticatedUser->username,
+                'userId'    => $authenticatedUser->id,
+                'username'  => $authenticatedUser->name,
                 'role'      => $authenticatedUser->role,
                 'ip'        => $request->ip(),
                 'url'       => $request->fullUrl(),
@@ -118,8 +118,8 @@ class CheckIsAgent
         if ($authenticatedUser->statut !== 'actif') {
             // Log de sécurité : compte désactivé
             Log::warning('[BOMBA_CASH][CheckIsAgent] Accès refusé — compte inactif', [
-                'userId'    => $authenticatedUser->id_user,
-                'username'  => $authenticatedUser->username,
+                'userId'    => $authenticatedUser->id,
+                'username'  => $authenticatedUser->name,
                 'statut'    => $authenticatedUser->statut,
                 'ip'        => $request->ip(),
                 'timestamp' => now()->toDateTimeString(),
@@ -147,8 +147,8 @@ class CheckIsAgent
         if (!$agentProfile) {
             // Log d'erreur critique : incohérence de données
             Log::error('[BOMBA_CASH][CheckIsAgent] Profil agent introuvable pour un user role=agent', [
-                'userId'    => $authenticatedUser->id_user,
-                'username'  => $authenticatedUser->username,
+                'userId'    => $authenticatedUser->id,
+                'username'  => $authenticatedUser->name,
                 'ip'        => $request->ip(),
                 'timestamp' => now()->toDateTimeString(),
             ]);
@@ -174,8 +174,8 @@ class CheckIsAgent
 
             // Log de sécurité : kiosque inactif ou absent
             Log::warning('[BOMBA_CASH][CheckIsAgent] Accès refusé — kiosque inactif ou absent', [
-                'userId'       => $authenticatedUser->id_user,
-                'username'     => $authenticatedUser->username,
+                'userId'       => $authenticatedUser->id,
+                'username'     => $authenticatedUser->name,
                 'idAgent'      => $agentProfile->id_agent,
                 'codeKiosque'  => $codeKiosque,
                 'ip'           => $request->ip(),
@@ -184,7 +184,7 @@ class CheckIsAgent
 
             return response()->json([
                 'success' => false,
-                'message' => 'Votre kiosque est actuellement désactivé. Aucune opération possible.',
+                'message' => 'Ce compte ou votre kiosque a été gelé. Merci de contacter votre administrateur ou la Direction Bomba Cash pour obtenir plus de détails sur la cause afin de pouvoir continuer vos différentes opérations.',
                 'code'    => 'KIOSQUE_INACTIVE',
                 'kiosque' => $codeKiosque,
             ], Response::HTTP_FORBIDDEN); // 403

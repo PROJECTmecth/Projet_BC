@@ -5,7 +5,7 @@ import { User, Tag, MapPin, Phone, Lock, Store, X } from "lucide-react";
 
 export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
   const VIDE = {
-    code_kiosque: "", nom_kiosque: "", adresse: "",
+    nom_kiosque: "", adresse: "",
     ville: "", statut_service: "actif",
   };
   const [form,   setForm]   = useState(VIDE);
@@ -15,7 +15,6 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
   useEffect(() => {
     if (!open) return;
     setForm(kiosque ? {
-      code_kiosque:   kiosque.code_kiosque,
       nom_kiosque:    kiosque.nom_kiosque,
       adresse:        kiosque.adresse,
       ville:          kiosque.ville,
@@ -31,7 +30,6 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
 
   const validate = () => {
     const e = {};
-    if (!form.code_kiosque.trim()) e.code_kiosque = "Requis";
     if (!form.nom_kiosque.trim())  e.nom_kiosque  = "Requis";
     if (!form.adresse.trim())      e.adresse      = "Requis";
     if (!form.ville.trim())        e.ville        = "Requis";
@@ -87,10 +85,6 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
             <input value={form.nom_kiosque}  onChange={e => set("nom_kiosque", e.target.value)}  placeholder="Ex: KMC 01 MGL"                    className={inputCls(errors.nom_kiosque)} />
           </FormField>
 
-          <FormField icon={<Tag size={18} />}   label="Code kiosque"    error={errors.code_kiosque}>
-            <input value={form.code_kiosque} onChange={e => set("code_kiosque", e.target.value)} placeholder="Ex: KMC01MGL"                      className={inputCls(errors.code_kiosque)} />
-          </FormField>
-
           <FormField icon={<MapPin size={18} />} label="Adresse kiosque" error={errors.adresse}>
             <input value={form.adresse}      onChange={e => set("adresse", e.target.value)}      placeholder="Ex: Marché Central, Brazzaville"   className={inputCls(errors.adresse)} />
           </FormField>
@@ -99,12 +93,7 @@ export default function KiosqueModal({ open, kiosque, onClose, onSave }) {
             <input value={form.ville}        onChange={e => set("ville", e.target.value)}        placeholder="Ex: Pointe-Noire"                  className={inputCls(errors.ville)} />
           </FormField>
 
-          {/* Téléphone — lecture seule */}
-          <FormField icon={<Phone size={18} />} label="Téléphone agent">
-            <div className="w-full px-4 py-[13px] rounded-xl text-[14px] bg-gray-100 border-2 border-dashed border-gray-300 text-gray-400 italic">
-              {kiosque?.telephone ?? "Sera renseigné à la création de l'agent"}
-            </div>
-          </FormField>
+          
 
           {/* Statut service */}
           <FormField icon={<Lock size={18} />} label="Statut service">

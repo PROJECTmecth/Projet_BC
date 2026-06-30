@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
 
 class AgentController extends Controller
 {
@@ -32,6 +33,26 @@ class AgentController extends Controller
         }
 
         $agents = $query->orderBy('id_agent')->get();
+
+        // Synchroniser statut_ligne avec les tokens Sanctum récents
+        $userIds = $agents->pluck('id_user')->filter()->values();
+        $threshold = Carbon::now()->subMinutes(5);
+        $onlineUserIds = DB::table('personal_access_tokens')
+            ->where('tokenable_type', 'App\\Models\\User')
+            ->whereIn('tokenable_id', $userIds)
+            ->whereNotNull('last_used_at')
+            ->where('last_used_at', '>=', $threshold)
+            ->pluck('tokenable_id')
+            ->unique()
+            ->toArray();
+
+        foreach ($agents as $agent) {
+            $realStatus = in_array($agent->id_user, $onlineUserIds) ? 'en_ligne' : 'hors_ligne';
+            if ($agent->statut_ligne !== $realStatus) {
+                $agent->update(['statut_ligne' => $realStatus]);
+                $agent->statut_ligne = $realStatus;
+            }
+        }
 
         return response()->json([
             'data'  => $agents->map(fn($a) => $this->format($a)),
@@ -112,10 +133,13 @@ class AgentController extends Controller
         $request->validate([
             'nom'        => ['sometimes', 'string', 'max:100'],
             'email'      => ['sometimes', 'email', 'unique:users,email,' . $agent->id_user . ',id'],
+            'password'   => ['sometimes', 'string', 'min:6'],
             'telephone'  => ['sometimes', 'string', 'max:20', 'regex:/^\+242\s?\d{2}\s?\d{3}\s?\d{4}$/'],
             'adresse'    => ['sometimes', 'string', 'max:255'],
             'id_kiosque' => ['sometimes', 'exists:kiosques,id_kiosque'],
             'statut'     => ['sometimes', 'in:actif,inactif'],
+        ], [
+            'password.min' => 'Le mot de passe doit faire au moins 6 caractères.',
         ]);
 
         // ✅ Vérifier si le nouveau kiosque est déjà pris (sauf par cet agent lui-même)
@@ -129,11 +153,18 @@ class AgentController extends Controller
         }
 
         DB::transaction(function () use ($request, $agent) {
-            $agent->user->update(array_filter([
+            $userUpdate = array_filter([
                 'name'   => $request->nom,
                 'email'  => $request->email,
                 'statut' => $request->statut,
-            ]));
+            ]);
+
+            // ✅ Ajouter le mot de passe hashé s'il est fourni
+            if ($request->filled('password')) {
+                $userUpdate['password'] = Hash::make($request->password);
+            }
+
+            $agent->user->update($userUpdate);
 
             $agent->update(array_filter([
                 'telephone'  => $request->telephone,

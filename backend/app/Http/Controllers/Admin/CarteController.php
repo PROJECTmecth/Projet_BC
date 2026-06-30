@@ -124,12 +124,13 @@ class CarteController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     // GET /api/admin/qrcodes/lots
     //
-    // Retourne la liste des lots groupés par date_creation
+    // Par défaut : exclut les lots annulés.
+    // Avec ?include_annule=1 : retourne tous les lots (pour rapport complet PDF).
     // ─────────────────────────────────────────────────────────────────────────
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $lots = Carte::select(
+            $query = Carte::select(
                         'date_creation',
                         'statut',
                         DB::raw('COUNT(*) as quantite'),
@@ -137,21 +138,69 @@ class CarteController extends Controller
                         DB::raw('MAX(id_carte) as dernier_id')
                     )
                     ->groupBy('date_creation', 'statut')
-                    ->orderByDesc('date_creation')
-                    ->get()
-                    ->map(function ($lot, $index) {
-                        return [
-                            'id'             => $lot->premier_id,
-                            'numero'         => 'Lot #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
-                            'quantite'       => $lot->quantite,
-                            'dateGeneration' => \Carbon\Carbon::parse($lot->date_creation)->format('d/m/Y'),
-                            'statut'         => ucfirst($lot->statut),
-                        ];
-                    });
+                    ->orderByDesc('date_creation');
+
+            if ($request->boolean('include_annule')) {
+                $lots = $query->get()->map(function ($lot, $index) {
+                    return [
+                        'id'             => $lot->premier_id,
+                        'numero'         => 'Lot #' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
+                        'quantite'       => $lot->quantite,
+                        'dateGeneration' => \Carbon\Carbon::parse($lot->date_creation)->format('d/m/Y'),
+                        'statut'         => ucfirst($lot->statut),
+                        'annule'         => $lot->statut === 'annulé',
+                    ];
+                });
+
+                return response()->json([
+                    'success' => true,
+                    'data'    => $lots,
+                ]);
+            }
+
+            // Normal paginated request — exclure les lots annulés
+            $limit = (int) $request->query('limit', 10);
+            $page = (int) $request->query('page', 1);
+            $statutFilter = $request->query('statut');
+
+            // Filtrer les annulés de la requête principale ET du comptage
+            $query->where('statut', '!=', 'annulé');
+
+            $countQuery = Carte::select('date_creation', 'statut')
+                ->where('statut', '!=', 'annulé')
+                ->groupBy('date_creation', 'statut');
+
+            // Filtre optionnel par statut spécifique (vierge, actif, expiré, terminé)
+            if ($statutFilter && in_array($statutFilter, ['vierge', 'actif', 'expiré', 'terminé'])) {
+                $query->where('statut', $statutFilter);
+                $countQuery->where('statut', $statutFilter);
+            }
+            $total = $countQuery->get()->count();
+
+            $paginatedLots = $query->skip(($page - 1) * $limit)
+                                  ->take($limit)
+                                  ->get();
+
+            $lots = $paginatedLots->map(function ($lot, $index) use ($page, $limit) {
+                return [
+                    'id'             => $lot->premier_id,
+                    'numero'         => 'Lot #' . str_pad($index + 1 + ($page - 1) * $limit, 3, '0', STR_PAD_LEFT),
+                    'quantite'       => $lot->quantite,
+                    'dateGeneration' => \Carbon\Carbon::parse($lot->date_creation)->format('d/m/Y'),
+                    'statut'         => ucfirst($lot->statut),
+                    'annule'         => $lot->statut === 'annulé',
+                ];
+            });
 
             return response()->json([
                 'success' => true,
                 'data'    => $lots,
+                'pagination' => [
+                    'current_page' => $page,
+                    'limit'        => $limit,
+                    'total'        => $total,
+                    'total_pages'  => (int) ceil($total / $limit),
+                ],
             ]);
 
         } catch (\Exception $e) {
@@ -161,5 +210,93 @@ class CarteController extends Controller
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/admin/qrcodes/annuler
+    //
+    // Body JSON : { "carte_ids": [1, 2, 3, ...] }
+    // Marque les cartes vierges comme annulées.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function annuler(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'carte_ids'   => 'required|array|min:1',
+            'carte_ids.*' => 'integer',
+        ], [
+            'carte_ids.required' => 'La liste des cartes est obligatoire.',
+            'carte_ids.array'    => 'Le format est invalide.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $count = Carte::whereIn('id_carte', $request->carte_ids)
+            ->where('statut', 'vierge')
+            ->update(['statut' => 'annulé']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} carte(s) annulée(s).",
+            'annulees' => $count,
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /api/admin/qrcodes/supprimer
+    //
+    // Body JSON : { "lot_ids": [premier_id_1, premier_id_2, ...] }
+    // Supprime des lots de l'historique en marquant leurs cartes comme annulées.
+    // Seuls les lots de cartes vierges peuvent être supprimés.
+    // Les cartes actives/terminées/expirées liées à des clients sont protégées.
+    // ─────────────────────────────────────────────────────────────────────────
+    public function destroy(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'lot_ids'   => 'required|array|min:1',
+            'lot_ids.*' => 'integer',
+        ], [
+            'lot_ids.required' => 'La liste des lots est obligatoire.',
+            'lot_ids.array'    => 'Le format est invalide.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $totalAnnulees = 0;
+        $lotsProteges  = 0;
+
+        foreach ($request->lot_ids as $premierId) {
+            $carte = Carte::find($premierId);
+            if (!$carte) continue;
+
+            // Protéger les cartes liées à des clients (actif, terminé, expiré)
+            if (in_array($carte->statut, ['actif', 'terminé', 'expiré'])) {
+                $lotsProteges++;
+                continue;
+            }
+
+            // Marquer toutes les cartes de ce lot (même date + même statut) comme annulées
+            $count = Carte::where('date_creation', $carte->date_creation)
+                ->where('statut', $carte->statut)
+                ->where('statut', '!=', 'annulé')
+                ->update(['statut' => 'annulé']);
+
+            $totalAnnulees += $count;
+        }
+
+        $message = "{$totalAnnulees} carte(s) supprimée(s) de l'historique.";
+        if ($lotsProteges > 0) {
+            $message .= " {$lotsProteges} lot(s) protégé(s) (cartes actives/utilisées).";
+        }
+
+        return response()->json([
+            'success'  => true,
+            'message'  => $message,
+            'annulees' => $totalAnnulees,
+            'proteges' => $lotsProteges,
+        ]);
     }
 }

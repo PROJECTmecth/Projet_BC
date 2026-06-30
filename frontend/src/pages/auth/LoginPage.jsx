@@ -4,7 +4,7 @@ import PasswordField   from "../../components/ui/PasswordField";
 import Toast           from "../../components/ui/Toast";
 import SanctumFlow     from "../../components/ui/SanctumFlow";
 import { IconUser }    from "../../components/ui/icons";
-import { getCsrfCookie, loginRequest } from "../../services/auth";
+import { loginRequest } from "../../services/auth";
 import { useAuth } from "../../context/AuthContext";
 import logoBomba from '../../assets/logos/logo2.jpeg';
 import logoText from '../../assets/logos/logo3.jpeg';
@@ -43,14 +43,15 @@ export default function LoginPage() {
     try {
   // ✅ Pas besoin de getCsrfCookie() pour les tokens
   // await getCsrfCookie(); // ← Commentez ou supprimez cette ligne
-  
+
   // ✅ Login direct avec tokens
   const { data } = await loginRequest({ name: name.trim(), password });
-  
+
   const user = data.user;
   const token = data.token; // ← Le token vient maintenant de l'API
 
   if (user.statut === "inactif") {
+    localStorage.setItem("bc_was_frozen", "true");
     showToast("Compte désactivé. Contactez l'administrateur.", "error");
     return;
   }
@@ -71,7 +72,10 @@ export default function LoginPage() {
       const { status, data } = err.response;
       if      (status === 422) { setFieldErrors(data.errors ?? {}); showToast(data.message ?? "Identifiants incorrects.", "error"); }
       else if (status === 401) showToast("Nom d'utilisateur ou mot de passe incorrect.", "error");
-      else if (status === 403) showToast(data.message ?? "Compte désactivé.", "error");
+      else if (status === 403) {
+        localStorage.setItem("bc_was_frozen", "true");
+        showToast(data.message ?? "Compte désactivé.", "error");
+      }
       else if (status === 419) showToast("Session expirée. Rechargez la page (F5).", "error");
       else if (status === 429) showToast("Trop de tentatives. Patientez.", "error");
       else                     showToast(`Erreur serveur (${status}).`, "error");
@@ -105,7 +109,7 @@ export default function LoginPage() {
         <div className="hidden md:flex absolute top-7 left-28 z-10 w-[100px] h-[100px] bg-white rounded-2xl shadow-lg border border-gray-200 items-center justify-center overflow-hidden">
           <img src={logoBomba} alt="BOMBA CASH Logo" className="w-full h-full object-contain p-2" />
         </div>
-            
+
         <div className="hidden md:flex absolute top-4 right-15 z-10 bg-white rounded-2xl shadow-lg border border-gray-100 items-center justify-center overflow-hidden">
           <img src={logoText} alt="BOMBA CASH Brand" className="w-35 h-27 object-contain p-1" />
         </div>
@@ -145,7 +149,7 @@ export default function LoginPage() {
           <div className="bg-gray-200 px-6 py-8 md:px-9 md:py-10 flex flex-col justify-center">
 
             <div className="flex items-center justify-between mb-6 md:mb-8">
-              <h2 className="text-xl md:text-[22px] font-bold text-gray-900 m-0">Compte Agent</h2>
+              <h2 className="text-xl md:text-[22px] font-bold text-gray-900 m-0">Connexion</h2>
               <div className="w-[45px] h-[45px] md:w-[50px] md:h-[50px] bg-gray-900 rounded-full shadow-md flex items-center justify-center text-white shrink-0">
                 <IconUser />
               </div>

@@ -25,6 +25,10 @@ class Transaction extends Model
         //'sms_envoye', // à activer si on implémente les notifications SMS
     ];
 
+    protected $casts = [
+        'date_heure' => 'datetime',
+    ];
+
     /**
      * Relation vers la carte concernée
      */

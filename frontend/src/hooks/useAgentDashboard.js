@@ -42,7 +42,9 @@ export function useAgentDashboard() {
       setRapportJour(data.rapport_jour);
     } catch (err) {
       // Gestion des erreurs HTTP
-      if (err.response?.status === 401) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
         setError("Session expirée. Veuillez vous reconnecter.");
       } else if (err.response?.status === 403) {
         setError("Accès refusé. Votre compte n'est pas autorisé.");

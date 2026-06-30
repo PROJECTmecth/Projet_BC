@@ -2,9 +2,11 @@
 // fichier : src/pages/admin/GestionCartesPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, QrCode, Trash2, AlertTriangle, Clock, X } from "lucide-react";
+import { TrendingUp, QrCode, Trash2, AlertTriangle, Clock, X, FileText } from "lucide-react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Button } from "../../components/ui/button";
 import Toast from "../../components/ui/Toast";
 import LotCarteItem from "../../components/admin/LotCarteItem";
@@ -78,55 +80,89 @@ export default function GestionCartesPage() {
   const [confirmDelete, setConfirmDelete]       = useState({ open: false, ids: [] });
   const [apercuOpen, setApercuOpen]             = useState(false);
   const [apercuLot, setApercuLot]               = useState(null);
+  const [statusFilter, setStatusFilter]         = useState(""); // filtre par statut
+  const [isDeleting, setIsDeleting]             = useState(false);
+  
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 1,
+  });
 
   const tousLots         = lotsHistorique;
   const totalGeneres     = [...lotsHistorique, ...lotsEnAttente].reduce((sum, l) => sum + l.quantite, 0);
   const tousSelectionnes = tousLots.length > 0 && selectedIds.length === tousLots.length;
 
   const [animatedTotal, setAnimatedTotal] = useState(0);
+  const animatedTotalRef = useRef(0);
+  const rafRef           = useRef(null);
 
   // ── Animation du total ──────────────────────────────────────────────────────
+  // Augmentation : animation fluide depuis la valeur actuelle.
+  // Diminution (annulation) : mise à jour immédiate — pas de faux incrément.
   useEffect(() => {
-    if (totalGeneres === 0) {
-      setAnimatedTotal(0);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    const from   = animatedTotalRef.current;
+    const target = totalGeneres;
+
+    if (target === from) return;
+
+    // Annulation / diminution → update direct, pas d'animation
+    if (target < from) {
+      animatedTotalRef.current = target;
+      setAnimatedTotal(target);
       return;
     }
 
-    let start = 0;
-    const target = totalGeneres;
-    const duration = 1500; // 1.5s
-    const increment = target / (duration / 16);
+    // Augmentation → animation fluide depuis la valeur courante
+    const duration  = 1200;
+    const increment = (target - from) / (duration / 16);
+    let current = from;
 
     const animate = () => {
-      start += increment;
-      if (start < target) {
-        setAnimatedTotal(Math.ceil(start));
-        requestAnimationFrame(animate);
+      current += increment;
+      if (current < target) {
+        const val = Math.ceil(current);
+        animatedTotalRef.current = val;
+        setAnimatedTotal(val);
+        rafRef.current = requestAnimationFrame(animate);
       } else {
+        animatedTotalRef.current = target;
         setAnimatedTotal(target);
       }
     };
-    requestAnimationFrame(animate);
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [totalGeneres]);
 
   // ── Charger historique BDD ────────────────────────────────────────────────
-  useEffect(() => {
+  const chargerLots = useCallback(async (page = 1, limit = 10, statut = "") => {
     if (MOCK_MODE) return;
-    async function chargerLots() {
-      try {
-        const response = await axios.get("/api/admin/qrcodes/lots");
-        if (response.data.success) {
-          setLotsHistorique(response.data.data.map(lot => ({ ...lot, cartes: [], imprime: true })));
+    setIsLoading(true);
+    try {
+      const params = { page, limit };
+      if (statut) params.statut = statut;
+      const response = await axios.get("/api/admin/qrcodes/lots", { params });
+      if (response.data.success) {
+        setLotsHistorique(response.data.data.map(lot => ({ ...lot, cartes: [], imprime: true })));
+        if (response.data.pagination) {
+          setPagination(response.data.pagination);
         }
-      } catch (err) {
-        console.error("Erreur chargement lots :", err);
-        showToast("Erreur lors du chargement de l'historique.", "error");
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err) {
+      console.error("Erreur chargement lots :", err);
+      showToast("Erreur lors du chargement de l'historique.", "error");
+    } finally {
+      setIsLoading(false);
     }
-    chargerLots();
   }, []);
+
+  useEffect(() => {
+    chargerLots(1, pagination.limit, statusFilter);
+  }, [chargerLots, statusFilter]);
 
   function showToast(msg, type = "success") {
     setToast({ msg, type });
@@ -145,16 +181,43 @@ export default function GestionCartesPage() {
     setConfirmDelete({ open: true, ids });
   }
 
-  function handleConfirmDelete() {
+  async function handleConfirmDelete() {
     const ids = confirmDelete.ids;
-    setLotsHistorique(prev => prev.filter(l => !ids.includes(l.id)));
-    setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
-    setConfirmDelete({ open: false, ids: [] });
-    showToast(`${ids.length} lot${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""} avec succès.`);
+    setIsDeleting(true);
+    try {
+      const response = await axios.post("/api/admin/qrcodes/supprimer", { lot_ids: ids });
+      if (response.data.success) {
+        setSelectedIds(prev => prev.filter(id => !ids.includes(id)));
+        setConfirmDelete({ open: false, ids: [] });
+        // Recharger les lots depuis le serveur
+        await chargerLots(1, pagination.limit, statusFilter);
+        showToast(response.data.message);
+      } else {
+        showToast(response.data.message || "Erreur lors de la suppression.", "error");
+      }
+    } catch (err) {
+      console.error("Erreur suppression lots:", err);
+      showToast("Erreur lors de la suppression.", "error");
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete({ open: false, ids: [] });
+    }
   }
 
-  function handleAnnulerAttente(lotId) {
+  async function handleAnnulerAttente(lotId) {
     const lot = lotsEnAttente.find(l => l.id === lotId);
+    if (!lot) return;
+
+    // Marquer les cartes comme annulées en DB
+    const carteIds = (lot.cartes || []).map(c => c.id_carte).filter(Boolean);
+    if (carteIds.length > 0) {
+      try {
+        await axios.post("/api/admin/qrcodes/annuler", { carte_ids: carteIds });
+      } catch (err) {
+        console.error("Erreur annulation cartes:", err);
+      }
+    }
+
     setLotsEnAttente(prev => prev.filter(l => l.id !== lotId));
     showToast(`${lot?.numero} annulé.`, "error");
   }
@@ -163,7 +226,7 @@ export default function GestionCartesPage() {
     const lot = lotsEnAttente.find(l => l.id === lotId);
     if (!lot) return;
     setLotsEnAttente(prev => prev.filter(l => l.id !== lotId));
-    setLotsHistorique(prev => [{ ...lot, imprime: true }, ...prev]);
+    chargerLots(1, pagination.limit, statusFilter);
     showToast(`${lot.numero} ajouté à l'historique.`);
   }
 
@@ -212,6 +275,97 @@ export default function GestionCartesPage() {
       showToast("Erreur lors de la génération.", "error");
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function exportRapportCompletPDF() {
+    try {
+      const response = await axios.get("/api/admin/qrcodes/lots?include_annule=1");
+      if (!response.data.success) throw new Error();
+
+      const tous = response.data.data;
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const W = doc.internal.pageSize.getWidth();
+      const H = doc.internal.pageSize.getHeight();
+
+      // Bannière
+      doc.setFillColor(255, 102, 0);
+      doc.rect(0, 0, W, 22, "F");
+      doc.setFillColor(255, 255, 255);
+      doc.circle(17, 11, 6, "F");
+      doc.setTextColor(255, 102, 0);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.text("BC", 17, 12.5, { align: "center" });
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.text("BOMBA CASH", 27, 10);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text("Rapport complet des lots de cartes", 27, 16);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("HISTORIQUE DES LOTS", W - 14, 10, { align: "right" });
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Genere le : ${new Date().toLocaleDateString("fr-FR")}`, W - 14, 16, { align: "right" });
+
+      // Stats bar
+      doc.setFillColor(30, 42, 58);
+      doc.rect(0, 22, W, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7.5);
+      const actifs   = tous.filter(l => !l.annule).length;
+      const annules  = tous.filter(l => l.annule).length;
+      doc.text(`Total lots : ${tous.length}`, 14, 27);
+      doc.text(`Actifs : ${actifs}  |  Annulés : ${annules}`, W / 2, 27, { align: "center" });
+      doc.text(`Rapport complet (tous statuts)`, W - 14, 27, { align: "right" });
+
+      autoTable(doc, {
+        head: [["No.", "Date", "Quantite", "Statut"]],
+        body: tous.map(l => [l.numero, l.dateGeneration, l.quantite, l.annule ? "ANNULE" : l.statut]),
+        startY: 32,
+        theme: "grid",
+        margin: { left: 14, right: 14 },
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [30, 42, 58], textColor: 255, fontStyle: "bold", halign: "center" },
+        alternateRowStyles: { fillColor: [255, 248, 242] },
+        columnStyles: {
+          0: { cellWidth: 40, halign: "center" },
+          1: { cellWidth: 40, halign: "center" },
+          2: { cellWidth: 40, halign: "center" },
+          3: { cellWidth: 40, halign: "center" },
+        },
+        didParseCell: (data) => {
+          if (data.column.index === 3 && data.cell.raw === "ANNULE") {
+            data.cell.styles.textColor = [220, 38, 38];
+            data.cell.styles.fontStyle = "bold";
+          }
+        },
+        tableLineWidth: 0.2,
+        tableLineColor: [220, 220, 220],
+      });
+
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setDrawColor(255, 102, 0);
+        doc.setLineWidth(0.4);
+        doc.line(14, H - 12, W - 14, H - 12);
+        doc.setFontSize(7);
+        doc.setTextColor(130);
+        doc.text("BOMBA CASH - Rapport confidentiel", 14, H - 7);
+        doc.text(`Page ${i} / ${pageCount}`, W / 2, H - 7, { align: "center" });
+        doc.text(new Date().toLocaleDateString("fr-FR"), W - 14, H - 7, { align: "right" });
+      }
+
+      doc.save(`rapport_lots_bomba_cash_${new Date().toISOString().slice(0, 10)}.pdf`);
+      showToast("Rapport PDF généré avec succès !", "success");
+
+    } catch (err) {
+      console.error("Erreur rapport PDF:", err);
+      showToast("Impossible de générer le rapport.", "error");
     }
   }
 
@@ -398,32 +552,59 @@ export default function GestionCartesPage() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h3 className="text-xl font-bold text-gray-800">Historique des lots générés</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Lots exportés en PDF</p>
+              <p className="text-sm text-gray-500 mt-0.5">Les lots annulés sont automatiquement exclus</p>
             </div>
-            {tousLots.length > 0 && (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleSelectAll}
-                  className="text-sm font-semibold px-4 py-2 rounded-xl border-2 border-gray-300 text-gray-600 hover:bg-gray-100 transition-all"
-                >
-                  {tousSelectionnes ? "Tout désélectionner" : "Tout sélectionner"}
-                </button>
-                <AnimatePresence>
-                  {selectedIds.length > 0 && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      onClick={() => handleDeleteRequest(selectedIds)}
-                      className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all shadow-md"
-                    >
-                      <Trash2 size={14} />
-                      Supprimer ({selectedIds.length})
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Filtre par statut */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setSelectedIds([]);
+                }}
+                className="px-3 py-2 border-2 border-gray-300 rounded-xl text-sm font-semibold text-gray-600 focus:outline-none focus:border-orange-400 transition-colors"
+              >
+                <option value="">Tous les statuts</option>
+                <option value="vierge">Vierge</option>
+                <option value="actif">Actif</option>
+                <option value="expiré">Expiré</option>
+                <option value="terminé">Terminé</option>
+              </select>
+              {/* Rapport PDF complet (inclut les lots annulés) */}
+              <button
+                onClick={exportRapportCompletPDF}
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl border-2 border-orange-300 text-orange-600 hover:bg-orange-50 transition-all"
+                title="Rapport PDF incluant les lots annulés"
+              >
+                <FileText size={14} />
+                Rapport complet
+              </button>
+              {tousLots.length > 0 && (
+                <>
+                  <button
+                    onClick={handleSelectAll}
+                    className="text-sm font-semibold px-4 py-2 rounded-xl border-2 border-gray-300 text-gray-600 hover:bg-gray-100 transition-all"
+                  >
+                    {tousSelectionnes ? "Tout désélectionner" : "Tout sélectionner"}
+                  </button>
+                  <AnimatePresence>
+                    {selectedIds.length > 0 && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        onClick={() => handleDeleteRequest(selectedIds)}
+                        disabled={isDeleting}
+                        className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-all shadow-md disabled:opacity-50"
+                      >
+                        <Trash2 size={14} />
+                        {isDeleting ? "Suppression…" : `Supprimer (${selectedIds.length})`}
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -464,6 +645,88 @@ export default function GestionCartesPage() {
             </AnimatePresence>
           )}
         </div>
+
+        {/* Pagination */}
+        {tousLots.length > 0 && (
+          <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex items-center justify-between flex-wrap gap-4">
+            {/* Infos */}
+            <div className="text-sm text-gray-600">
+              Affichage de <span className="font-semibold">{(pagination.current_page - 1) * pagination.limit + 1}</span> à{" "}
+              <span className="font-semibold">
+                {Math.min(pagination.current_page * pagination.limit, pagination.total)}
+              </span> sur <span className="font-semibold">{pagination.total}</span> résultats
+            </div>
+
+            {/* Contrôles */}
+            <div className="flex items-center gap-3">
+              {/* Items par page */}
+              <select
+                value={pagination.limit}
+                onChange={(e) => {
+                  const newLimit = parseInt(e.target.value);
+                  setPagination(prev => ({ ...prev, limit: newLimit }));
+                  chargerLots(1, newLimit, statusFilter);
+                }}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value={5}>5 par page</option>
+                <option value={10}>10 par page</option>
+                <option value={15}>15 par page</option>
+                <option value={25}>25 par page</option>
+              </select>
+
+              {/* Navigation */}
+              <button
+                onClick={() => chargerLots(pagination.current_page - 1, pagination.limit, statusFilter)}
+                disabled={pagination.current_page <= 1}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Précédent
+              </button>
+
+              {/* Numéros */}
+              <div className="flex gap-1">
+                {Array.from(
+                  { length: Math.min(5, pagination.total_pages) },
+                  (_, i) => {
+                    let pageNum;
+                    if (pagination.total_pages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.current_page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.current_page >= pagination.total_pages - 2) {
+                      pageNum = pagination.total_pages - 4 + i;
+                    } else {
+                      pageNum = pagination.current_page - 2 + i;
+                    }
+                    return pageNum;
+                  }
+                ).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => chargerLots(pageNum, pagination.limit, statusFilter)}
+                    className={[
+                      "px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors",
+                      pageNum === pagination.current_page
+                        ? "bg-orange-600 text-white"
+                        : "border border-gray-300 hover:bg-orange-50",
+                    ].join(" ")}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => chargerLots(pagination.current_page + 1, pagination.limit, statusFilter)}
+                disabled={pagination.current_page >= pagination.total_pages}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Suivant →
+              </button>
+            </div>
+          </div>
+        )}
       </motion.div>
 
     </div>

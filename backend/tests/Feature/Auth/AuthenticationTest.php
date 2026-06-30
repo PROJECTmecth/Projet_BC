@@ -12,36 +12,60 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'name' => 'testuser',
+            'password' => bcrypt('password'),
+        ]);
 
-        $response = $this->post('/login', [
-            'email' => $user->email,
+        $response = $this->postJson('/api/login', [
+            'name' => 'testuser',
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertNoContent();
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'message',
+            'token',
+            'user' => [
+                'id',
+                'name',
+                'email',
+                'role',
+                'statut',
+            ]
+        ]);
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'name' => 'testuser',
+            'password' => bcrypt('password'),
+        ]);
 
-        $this->post('/login', [
-            'email' => $user->email,
+        $response = $this->postJson('/api/login', [
+            'name' => 'testuser',
             'password' => 'wrong-password',
         ]);
 
-        $this->assertGuest();
+        $response->assertStatus(422);
     }
 
     public function test_users_can_logout(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'name' => 'testuser',
+        ]);
 
-        $response = $this->actingAs($user)->post('/logout');
+        $token = $user->createToken('bc_token')->plainTextToken;
 
-        $this->assertGuest();
-        $response->assertNoContent();
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/api/logout');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'message' => 'Déconnecté avec succès.',
+        ]);
     }
 }
