@@ -86,6 +86,17 @@ export default function ProfilClientPage() {
 
   const { infos, carte, compte, transactions } = client;
 
+  // Déterminer si le bouton "Ajouter opération" doit être grisé
+  const isCarteActive = carte?.statut === 'actif' || carte?.statut === 'active';
+  const isObjectifAtteint = (carte?.progression ?? 0) >= 100;
+  const isAjoutDisabled = !isCarteActive || isObjectifAtteint;
+
+  const raisonDesactivation = !isCarteActive
+    ? `Carte ${carte?.statut ?? 'inactive'}`
+    : isObjectifAtteint
+      ? 'Objectif atteint (100%)'
+      : '';
+
   return (
     <div className="profil-container">
 
@@ -95,10 +106,17 @@ export default function ProfilClientPage() {
           ← <span>Profil Client</span>
         </button>
         <button
-          className="btn-ajouter-op"
-          onClick={() => navigate(`/agent/clients/${id}/operation`)}
+          className={`btn-ajouter-op${isAjoutDisabled ? ' btn-ajouter-op--disabled' : ''}`}
+          onClick={() => !isAjoutDisabled && navigate(`/agent/clients/${id}/operation`)}
+          disabled={isAjoutDisabled}
+          title={raisonDesactivation}
         >
           + Ajouter une opération
+          {isAjoutDisabled && (
+            <span style={{ display: 'block', fontSize: '11px', fontWeight: 500, opacity: 0.85, marginTop: '2px' }}>
+              {raisonDesactivation}
+            </span>
+          )}
         </button>
       </div>
 
