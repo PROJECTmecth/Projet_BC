@@ -350,9 +350,19 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Activité</label>
-                    <input className={`form-input ${errors.activite ? "form-input--error" : ""}`}
-                      name="activite" placeholder="Profession / Activité" value={form.activite} onChange={handleChange} />
+                    <label className="form-label">Activité *</label>
+                    <select
+                      className={`form-input ${errors.activite ? "form-input--error" : ""}`}
+                      name="activite"
+                      value={form.activite}
+                      onChange={handleChange}
+                    >
+                      <option value="">Sélectionnez une activité</option>
+                      <option value="Commerçant">Commerçant(e)</option>
+                      <option value="Ménagère">Ménagère</option>
+                      <option value="Travailleur">Travailleur</option>
+                      <option value="Étudiant">Étudiant(e)</option>
+                    </select>
                     {errors.activite && <span className="form-error">{errors.activite}</span>}
                   </div>
 
