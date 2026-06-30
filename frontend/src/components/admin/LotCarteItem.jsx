@@ -14,6 +14,7 @@ const statutStyles = {
   "En attente": "bg-yellow-100 text-yellow-700",
   "Expiré":     "bg-red-100 text-red-600",
   "Terminé":    "bg-purple-100 text-purple-600",
+  "Annulé":     "bg-red-100 text-red-500",
 };
 
 export default function LotCarteItem({ lot, onDelete, isSelected, onSelect }) {
