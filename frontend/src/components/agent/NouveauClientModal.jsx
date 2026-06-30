@@ -9,7 +9,7 @@ const ETAPES = { SCAN: "scan", FORMULAIRE: "formulaire" };
 const initialForm = {
   genre: "Homme", prenom: "", nom: "", adresse: "", ville: "",
   activite: "", nationalite: "Résident", type_piece: "CNI",
-  num_piece: "", telephone: "+242 06 ", montant: "", duree: "15 jours",
+  num_piece: "", photo_pieces: [], telephone: "+242 06 ", montant: "", duree: "15 jours",
   qrCodeUid: "",
 };
 
@@ -20,6 +20,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
   const [scanning, setScanning]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors]         = useState({});
+  const [photoPreview, setPhotoPreview] = useState([]);
   const scannerRef                  = useRef(null);
   const html5QrRef                  = useRef(null);
 
@@ -152,6 +153,13 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     setErrors(er => ({ ...er, [e.target.name]: "" }));
   };
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    setForm(f => ({ ...f, photo_pieces: files }));
+    setErrors(er => ({ ...er, photo_pieces: "" }));
+    setPhotoPreview(files.map(file => URL.createObjectURL(file)));
+  };
+
   const validate = () => {
     const e = {};
     if (!form.prenom.trim())    e.prenom    = "Requis";
@@ -160,14 +168,32 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     if (!form.ville.trim())     e.ville     = "Requis";
     if (!form.activite.trim())  e.activite  = "Requis";
     if (!form.num_piece.trim()) e.num_piece = "Requis";
+    if (!form.photo_pieces.length) e.photo_pieces = "Au moins une photo de pièce est requise";
     if (!form.telephone.trim()) e.telephone = "Requis";
     if (!form.montant || Number(form.montant) < 1000) e.montant = "Montant minimum : 1 000 F";
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return { isValid: Object.keys(e).length === 0, errors: e };
+  };
+
+  const focusFirstError = (errors) => {
+    const firstField = Object.keys(errors)[0];
+    if (!firstField) return;
+    let control = document.querySelector(`[name="${firstField}"]`);
+    if (!control) {
+      control = document.querySelector(`[name="${firstField}[]"]`);
+    }
+    if (control) {
+      control.scrollIntoView({ behavior: "smooth", block: "center" });
+      control.focus?.();
+    }
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+    const { isValid, errors: validationErrors } = validate();
+    if (!isValid) {
+      focusFirstError(validationErrors);
+      return;
+    }
 
     const result = await Swal.fire({
       title: "Confirmer l'enregistrement ?",
@@ -187,15 +213,34 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
 
     try {
       setSubmitting(true);
-      await axiosClient.post("/api/agent/clients/register", {
-        ...form,
-        qr_code_uid: carteInfo.qr_code_uid,
-        montant: Number(form.montant),
+      const payload = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (key === 'photo_pieces') return;
+        if (value !== null && value !== undefined) payload.append(key, value);
+      });
+      payload.append('qr_code_uid', carteInfo.qr_code_uid);
+      payload.set('montant', Number(form.montant));
+
+      form.photo_pieces.forEach(file => payload.append('photo_pieces[]', file));
+      await axiosClient.post("/api/agent/clients/register", payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       onSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || "Erreur lors de l'enregistrement.";
-      Swal.fire({ icon: "error", title: "Erreur", text: msg, confirmButtonColor: "#F97316" });
+      const status = err.response?.status;
+      const data = err.response?.data;
+      if (status === 422 && data?.errors) {
+        const fieldErrors = Object.keys(data.errors).reduce((acc, key) => {
+          const normalizedKey = key.replace(/\.\d+$/, '');
+          acc[normalizedKey] = Array.isArray(data.errors[key]) ? data.errors[key][0] : data.errors[key];
+          return acc;
+        }, {});
+        setErrors(fieldErrors);
+        focusFirstError(fieldErrors);
+      } else {
+        const msg = data?.message || "Erreur lors de l'enregistrement.";
+        Swal.fire({ icon: "error", title: "Erreur", text: msg, confirmButtonColor: "#F97316" });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -321,6 +366,18 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                     </select>
                   </div>
 
+                  <div className="form-group">
+                    <label className="form-label">Activité</label>
+                    <select className={`form-input ${errors.activite ? "form-input--error" : ""}`} name="activite" value={form.activite} onChange={handleChange}>
+                      <option value="">Sélectionnez une activité</option>
+                      <option value="Travailleurs">Travailleurs</option>
+                      <option value="Étudiants">Étudiants</option>
+                      <option value="Ménagère">Ménagère</option>
+                      <option value="commercant">commercant</option>
+                    </select>
+                    {errors.activite && <span className="form-error">{errors.activite}</span>}
+                  </div>
+
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">Pièce d'identité</label>
@@ -350,37 +407,18 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Activité *</label>
-                    <select
-                      className={`form-input ${errors.activite ? "form-input--error" : ""}`}
-                      name="activite"
-                      value={form.activite}
-                      onChange={handleChange}
-                    >
-                      <option value="">Sélectionnez une activité</option>
-                      <option value="Commerçant">Commerçant(e)</option>
-                      <option value="Ménagère">Ménagère</option>
-                      <option value="Travailleur">Travailleur</option>
-                      <option value="Étudiant">Étudiant(e)</option>
-                    </select>
-                    {errors.activite && <span className="form-error">{errors.activite}</span>}
-                  </div>
-
-                </div>
-              </div>
-
-              {/* COLONNE DROITE : Activation carte */}
-              <div className="form-col">
-                <div className="form-col-header form-col-header--green">
-                  Activation carte
-                </div>
-                <div className="form-col-body">
-
-                  <div className="form-group">
-                    <label className="form-label">Numéro de carte *</label>
-                    <input className="form-input form-input--readonly"
-                      value={carteInfo?.numero_carte || ""} readOnly />
-                  </div>
+                    <label className="form-label">Photos de la pièce</label>
+                    <input type="file" accept="image/*" capture="environment" multiple
+                      className={`form-input ${errors.photo_pieces ? "form-input--error" : ""}`}
+                      name="photo_pieces[]" onChange={handleFileChange} />
+                    {errors.photo_pieces && <span className="form-error">{errors.photo_pieces}</span>}
+                    {photoPreview.length > 0 && (
+                      <div className="form-image-preview-grid">
+                        {photoPreview.map((src, index) => (
+                          <img key={index} src={src} alt={`Prévisualisation pièce ${index + 1}`} className="form-image-preview" />
+                        ))}
+                      </div>
+                    )}
 
                   <div className="form-group">
                     <label className="form-label">Durée de carte</label>

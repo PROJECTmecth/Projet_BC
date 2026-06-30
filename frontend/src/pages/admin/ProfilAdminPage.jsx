@@ -11,7 +11,7 @@ import axios from "../../lib/axios";
 import Toast from "../../components/ui/Toast";
 import { Button } from "../../components/ui/button";
 
-// ── Avatar initiales ──────────────────────────────────────────────────────────
+// ── Avatar initiales  ──────────────────────────────────────────────────────────
 function Avatar({ name, size = "lg" }) {
   const initiales = name
     ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
@@ -25,7 +25,7 @@ function Avatar({ name, size = "lg" }) {
   );
 }
 
-// ── Champ éditable ────────────────────────────────────────────────────────────
+// ── Champ éditable:modifié ────────────────────────────────────────────────────────────
 function ChampEditable({ label, value, onSave, type = "text", icon: Icon, readOnly = false }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal]         = useState(value);

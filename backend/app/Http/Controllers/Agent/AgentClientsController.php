@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class AgentClientsController extends Controller
@@ -28,15 +29,16 @@ class AgentClientsController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(fn($c) => [
-                'id_client'       => $c->id_client,
-                'nom_prenom'      => $c->prenom . ' ' . $c->nom,
-                'telephone'       => $c->telephone,
-                'adresse'         => $c->adresse,
-                'ville'           => $c->ville,
-                'numero_carte'    => $c->carte->numero_carte ?? 'N/A',
-                'statut_carte'    => $c->carte->statut ?? 'N/A',
-                'date_activation' => $c->carte->date_activation ?? null,
-                'date_expiration' => $c->carte->date_expiration ?? null,
+                'id_client'        => $c->id_client,
+                'nom_prenom'       => $c->prenom . ' ' . $c->nom,
+                'telephone'        => $c->telephone,
+                'adresse'          => $c->adresse,
+                'ville'            => $c->ville,
+                'numero_carte'     => $c->carte->numero_carte ?? 'N/A',
+                'statut_carte'     => $c->carte->statut ?? 'N/A',
+                'date_activation'  => $c->carte->date_activation ?? null,
+                'date_expiration'  => $c->carte->date_expiration ?? null,
+                'photo_piece_url'  => $c->photo_pieces ? Storage::url($c->photo_pieces[0]) : ($c->photo_piece ? Storage::url($c->photo_piece) : null),
             ]);
 
         return response()->json(['success' => true, 'data' => ['total' => $clients->count(), 'clients' => $clients]]);
@@ -90,6 +92,7 @@ class AgentClientsController extends Controller
                     'telephone'   => $client->telephone,
                     'type_piece'  => $client->type_piece,
                     'num_piece'   => $client->num_piece,
+                    'photo_piece_url' => $client->photo_pieces ? Storage::url($client->photo_pieces[0]) : ($client->photo_piece ? Storage::url($client->photo_piece) : null),
                 ],
                 'carte'        => $client->carte,
                 'compte'       => $client->compte,
@@ -125,19 +128,22 @@ class AgentClientsController extends Controller
     public function register(Request $request): JsonResponse
     {
         $request->validate([
-            'genre'       => 'required|in:Homme,Femme',
-            'prenom'      => 'required|string|max:100',
-            'nom'         => 'required|string|max:100',
-            'adresse'     => 'required|string|max:255',
-            'ville'       => 'required|string|max:100',
-            'activite'    => 'required|string|max:150',
-            'nationalite' => 'required|in:Résident,Étranger',
-            'type_piece'  => 'required|in:CNI,NIU,Passeport,Permis',
-            'num_piece'   => 'required|string|max:50|unique:clients',
-            'telephone'   => 'required|string|max:20',
-            'qr_code_uid' => 'required|string',
-            'montant'     => 'required|numeric|min:1000',
-            'duree'       => 'required|in:15 jours,30 jours',
+            'genre'           => 'required|in:Homme,Femme',
+            'prenom'          => 'required|string|max:100',
+            'nom'             => 'required|string|max:100',
+            'adresse'         => 'required|string|max:255',
+            'ville'           => 'required|string|max:100',
+            'activite'        => 'required|string|max:150',
+            'nationalite'     => 'required|in:Résident,Étranger',
+            'type_piece'      => 'required|in:CNI,NIU,Passeport,Permis',
+            'num_piece'       => 'required|string|max:50|unique:clients',
+            'photo_pieces'    => 'required_without:photo_piece|array|min:1',
+            'photo_pieces.*'  => 'image|max:2048',
+            'photo_piece'     => 'sometimes|image|max:2048',
+            'telephone'       => 'required|string|max:20',
+            'qr_code_uid'     => 'required|string',
+            'montant'         => 'required|numeric|min:1000',
+            'duree'           => 'required|in:15 jours,30 jours',
         ]);
 
         $user  = $request->user();
@@ -149,19 +155,36 @@ class AgentClientsController extends Controller
 
         DB::beginTransaction();
         try {
+            $photoPath  = null;
+            $photoPaths = [];
+
+            if ($request->hasFile('photo_pieces')) {
+                foreach ($request->file('photo_pieces') as $file) {
+                    $photoPaths[] = $file->store('client_photos', 'public');
+                }
+            } elseif ($request->hasFile('photo_piece')) {
+                $photoPaths[] = $request->file('photo_piece')->store('client_photos', 'public');
+            }
+
+            if (count($photoPaths) > 0) {
+                $photoPath = $photoPaths[0];
+            }
+
             $client = Client::create([
-                'genre'       => $request->genre,
-                'prenom'      => $request->prenom,
-                'nom'         => $request->nom,
-                'adresse'     => $request->adresse,
-                'ville'       => $request->ville,
-                'activite'    => $request->activite,
-                'nationalite' => $request->nationalite,
-                'type_piece'  => $request->type_piece,
-                'num_piece'   => $request->num_piece,
-                'telephone'   => $request->telephone,
-                'id_agent'    => $agent->id_agent,
-                'id_user'     => $user->id,
+                'genre'         => $request->genre,
+                'prenom'        => $request->prenom,
+                'nom'           => $request->nom,
+                'adresse'       => $request->adresse,
+                'ville'         => $request->ville,
+                'activite'      => $request->activite,
+                'nationalite'   => $request->nationalite,
+                'type_piece'    => $request->type_piece,
+                'num_piece'     => $request->num_piece,
+                'photo_piece'   => $photoPath,
+                'photo_pieces'  => $photoPaths,
+                'telephone'     => $request->telephone,
+                'id_agent'      => $agent->id_agent,
+                'id_user'       => $user->id,
             ]);
 
             $fraisGarde     = $request->montant * 0.5;
@@ -233,7 +256,7 @@ class AgentClientsController extends Controller
                 return response()->json(['success' => false, 'message' => 'Solde insuffisant.'], 422);
             }
         } elseif ($request->type_op === 'retrait_partiel') {
-            $penaliteCalculee = $carte->montant_initial * 0.10;
+            $penaliteCalculee = 100;
             if (($request->montant + $penaliteCalculee) > $soldeAvant) {
                 return response()->json(['success' => false, 'message' => "Solde insuffisant pour ce retrait partiel (incluant la pénalité de {$penaliteCalculee} F)."], 422);
             }
@@ -245,21 +268,97 @@ class AgentClientsController extends Controller
             $soldeApres = $soldeAvant;
 
             if ($request->type_op === 'dépôt_cash') {
-                $soldeApres = $soldeAvant + $request->montant;
-                $compte->increment('total_depots', $request->montant);
-                $compte->update(['solde_total' => $soldeApres]);
+                $trancheSize = $carte ? ($carte->montant_initial - $carte->frais_garde) : 0;
+
+                if ($trancheSize > 0 && $request->montant > $trancheSize) {
+                    $montantTotal = $request->montant;
+                    $currentSolde = $soldeAvant;
+
+                    while ($montantTotal > 0) {
+                        $montantTranche = min($trancheSize, $montantTotal);
+                        $soldeTrancheAvant = $currentSolde;
+                        $soldeTrancheApres = $soldeTrancheAvant + $montantTranche;
+
+                        $compte->increment('total_depots', $montantTranche);
+                        $compte->update(['solde_total' => $soldeTrancheApres]);
+
+                        Transaction::create([
+                            'id_carte'   => $carte->id_carte,
+                            'id_client'  => $client->id_client,
+                            'id_agent'   => $agent->id_agent,
+                            'id_kiosque' => $agent->id_kiosque,
+                            'type_op'    => $request->type_op,
+                            'montant'    => $montantTranche,
+                            'penalite'   => 0,
+                            'solde_avant'=> $soldeTrancheAvant,
+                            'solde_apres'=> $soldeTrancheApres,
+                            'date_heure' => now(),
+                            'sync_status'=> 'synchronisé',
+                        ]);
+
+                        $currentSolde = $soldeTrancheApres;
+                        $montantTotal -= $montantTranche;
+                    }
+                    $soldeApres = $currentSolde;
+                } else {
+                    $soldeApres = $soldeAvant + $request->montant;
+                    $compte->increment('total_depots', $request->montant);
+                    $compte->update(['solde_total' => $soldeApres]);
+
+                    Transaction::create([
+                        'id_carte'   => $carte->id_carte,
+                        'id_client'  => $client->id_client,
+                        'id_agent'   => $agent->id_agent,
+                        'id_kiosque' => $agent->id_kiosque,
+                        'type_op'    => $request->type_op,
+                        'montant'    => $request->montant,
+                        'penalite'   => 0,
+                        'solde_avant'=> $soldeAvant,
+                        'solde_apres'=> $soldeApres,
+                        'date_heure' => now(),
+                        'sync_status'=> 'synchronisé',
+                    ]);
+                }
             } elseif ($request->type_op === 'retrait_partiel') {
-                $penalite   = $carte->montant_initial * 0.10; // 10% de la somme initiale (mise)
+                $penalite   = 100; // pénalité fixe de 100 F pour chaque retrait partiel
                 $soldeApres = $soldeAvant - $request->montant - $penalite; // Diminution effective du solde
                 $compte->increment('total_retraits_partiels', $request->montant);
                 $compte->increment('total_penalites', $penalite);
                 $compte->update(['solde_total' => $soldeApres]);
+
+                Transaction::create([
+                    'id_carte'   => $carte->id_carte,
+                    'id_client'  => $client->id_client,
+                    'id_agent'   => $agent->id_agent,
+                    'id_kiosque' => $agent->id_kiosque,
+                    'type_op'    => $request->type_op,
+                    'montant'    => $request->montant,
+                    'penalite'   => $penalite,
+                    'solde_avant'=> $soldeAvant,
+                    'solde_apres'=> $soldeApres,
+                    'date_heure' => now(),
+                    'sync_status'=> 'synchronisé',
+                ]);
             } elseif ($request->type_op === 'retrait_solde_compte') {
                 $soldeApres = 0;
                 $compte->increment('total_retraits', $soldeAvant);
                 $compte->update(['solde_total' => 0, 'date_cloture' => now()]);
                 // La carte expire automatiquement lors du retrait total
                 $carte->update(['statut' => 'terminé', 'date_expiration' => now()]);
+
+                Transaction::create([
+                    'id_carte'   => $carte->id_carte,
+                    'id_client'  => $client->id_client,
+                    'id_agent'   => $agent->id_agent,
+                    'id_kiosque' => $agent->id_kiosque,
+                    'type_op'    => $request->type_op,
+                    'montant'    => $request->montant,
+                    'penalite'   => 0,
+                    'solde_avant'=> $soldeAvant,
+                    'solde_apres'=> $soldeApres,
+                    'date_heure' => now(),
+                    'sync_status'=> 'synchronisé',
+                ]);
             }
 
             // Calculer progression carte par rapport à l'objectif total (15 ou 30 jours)
@@ -271,20 +370,6 @@ class AgentClientsController extends Controller
                 $progression = max(0, min(100, $prog));
                 $carte->update(['progression' => $progression]);
             }
-
-            Transaction::create([
-                'id_carte'   => $carte->id_carte,
-                'id_client'  => $client->id_client,
-                'id_agent'   => $agent->id_agent,
-                'id_kiosque' => $agent->id_kiosque,
-                'type_op'    => $request->type_op,
-                'montant'    => $request->montant,
-                'penalite'   => $penalite,
-                'solde_avant'=> $soldeAvant,
-                'solde_apres'=> $soldeApres,
-                'date_heure' => now(),
-                'sync_status'=> 'synchronisé',
-            ]);
 
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Transaction enregistrée.', 'data' => [
