@@ -83,6 +83,20 @@ function ModalClient({ clientId, onClose }) {
             </div>
 
             <div className="px-6 py-5">
+              {/* --- Section Photos d'identité --- */}
+              {data.infos.photo_pieces_urls && data.infos.photo_pieces_urls.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-bold text-[#1e2a3a] text-lg mb-3">Pièces d'identité</h3>
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {data.infos.photo_pieces_urls.map((url, idx) => (
+                      <a key={idx} href={`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api', '')}${url}`} target="_blank" rel="noreferrer" className="flex-shrink-0 block border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        <img src={`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api', '')}${url}`} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <h3 className="font-bold text-[#1e2a3a] text-lg mb-4">Tableau de bord de la Carte</h3>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
                 <div className="shrink-0">
@@ -106,6 +120,7 @@ function ModalClient({ clientId, onClose }) {
                   <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                     <p className="text-xs text-gray-500">Montant actuel</p>
                     <p className="text-green-600 font-bold text-xl">{fmt(data.carte.montant_actuel)} FCFA</p>
+                    <p className="text-[10px] text-green-700/80 mt-1 leading-tight">Ce montant correspond au solde net disponible sur la carte, déduction faite des frais de garde éventuels.</p>
                   </div>
                 </div>
               </div>

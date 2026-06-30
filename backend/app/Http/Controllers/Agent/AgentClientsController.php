@@ -60,7 +60,7 @@ class AgentClientsController extends Controller
         if (!$client) return response()->json(['success' => false, 'message' => 'Client introuvable.'], 404);
 
         // Transactions du client
-        $transactions = Transaction::with(['kiosque', 'agent.user'])
+        $transactions = Transaction::with(['kiosque', 'agent.user', 'agent.kiosque'])
             ->where('id_client', $client->id_client)
             ->orderBy('date_heure', 'desc')
             ->get()
@@ -74,7 +74,7 @@ class AgentClientsController extends Controller
                     default                 => $t->type_op,
                 },
                 'montant'   => number_format($t->montant, 0, ',', ' ') . ' F',
-                'kiosque'   => $t->kiosque->nom_kiosque ?? '—',
+                'kiosque'   => $t->kiosque->nom_kiosque ?? $t->agent->kiosque->nom_kiosque ?? '—',
                 'agent'     => $t->agent->user->name ?? '—',
             ]);
 
