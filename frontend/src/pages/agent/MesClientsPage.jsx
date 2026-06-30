@@ -89,13 +89,14 @@ export default function MesClientsPage() {
                   <th>DATE EXP.</th>
                   <th>ADRESSE</th>
                   <th>TÉLÉPHONE</th>
+                  <th>PHOTO</th>
                   <th>STATUT</th>
                   <th>INFO</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredClients.length === 0 ? (
-                  <tr><td colSpan={8} className="table-empty">
+                  <tr><td colSpan={9} className="table-empty">
                     {search ? "Aucun client trouvé." : "Aucun client enregistré."}
                   </td></tr>
                 ) : (
@@ -107,6 +108,11 @@ export default function MesClientsPage() {
                       <td>{c.date_expiration ? new Date(c.date_expiration).toLocaleDateString("fr-FR") : "—"}</td>
                       <td className="adresse-cell">{c.adresse?.length > 18 ? c.adresse.slice(0, 18) + "..." : c.adresse}</td>
                       <td>{c.telephone}</td>
+                      <td className="table-photo-cell">
+                        {c.photo_piece_url ? (
+                          <img src={c.photo_piece_url} alt="Photo pièce" className="client-photo-thumb" />
+                        ) : "—"}
+                      </td>
                       <td>
                         <span className={`badge-statut badge-statut--${c.statut_carte}`}>
                           {c.statut_carte.charAt(0).toUpperCase() + c.statut_carte.slice(1)}

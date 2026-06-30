@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Printer, Download, FileText, Info, X } from "lucide-react";
 import api from "../../lib/axios";
 import Swal from "sweetalert2";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
@@ -154,25 +154,26 @@ export default function MouvementCaisse() {
       cancelButtonText: "Annuler"
     }).then((result) => {
       if (result.isConfirmed) {
-        const doc = new jsPDF();
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
         doc.text("Mouvement de Solde - Rapport", 14, 15);
         
         const tableColumn = ["ID Carte", "ID Client", "Opération", "Montant", "Pénalité", "Solde"];
         const tableRows = transactions.map(t => [
           t.id_carte,
           t.id_client,
-          t.type_op,
-          `${t.montant} XAF`,
-          `${t.penalite} XAF`,
-          `${t.solde_apres} XAF`
+          opLabel(t.type_op),
+          `${t.type_op === "dépôt_cash" ? "+" : "-"}${fmt(t.montant)} XAF`,
+          `${fmt(t.penalite)} XAF`,
+          `${fmt(t.solde_apres)} XAF`
         ]);
 
-        doc.autoTable({
+        autoTable(doc, {
           head: [tableColumn],
           body: tableRows,
-          startY: 20,
+          startY: 22,
           theme: 'grid',
-          headStyles: { fillColor: [30, 42, 58] }
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [30, 42, 58], textColor: 255 }
         });
 
         doc.save(`mouvements_caisse_${new Date().getTime()}.pdf`);
@@ -211,16 +212,19 @@ export default function MouvementCaisse() {
       {/* ── Actions (Hidden on Print) ─────────────────────────────── */}
       <div className="bg-white rounded-2xl p-4 flex flex-wrap gap-2 justify-end mb-5 shadow-sm no-print">
         <button 
+          type="button"
           onClick={handlePrint}
           className="flex items-center gap-2 border border-[#1e2a3a] text-[#1e2a3a] px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 text-xs sm:text-sm font-medium">
           <Printer size={15} /> <span className="hidden sm:inline">Imprimer</span>
         </button>
         <button 
+          type="button"
           onClick={exportPDF}
           className="flex items-center gap-2 border border-red-500 text-red-500 px-3 sm:px-4 py-2 rounded-lg hover:bg-red-50 text-xs sm:text-sm font-medium">
           <FileText size={15} /> <span className="hidden sm:inline">Exporter PDF</span><span className="sm:hidden">PDF</span>
         </button>
         <button 
+          type="button"
           onClick={exportExcel}
           className="flex items-center gap-2 border border-green-600 text-green-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-green-50 text-xs sm:text-sm font-medium">
           <Download size={15} /> <span className="hidden sm:inline">Exporter Excel</span><span className="sm:hidden">Excel</span>
@@ -228,8 +232,8 @@ export default function MouvementCaisse() {
       </div>
 
       {/* ── Tableau ───────────────────────────────────────────────── */}
-      {/* 👇 AJOUT DE LA CLASSE print-table-wrapper */}
-      <div className="print-table-wrapper bg-white rounded-2xl shadow-sm overflow-hidden mb-5">
+      {/* 👇 AJOUT DE L'ID print-table pour le CSS d'impression global */}
+      <div id="print-table" className="print-table-wrapper bg-white rounded-2xl shadow-sm overflow-hidden mb-5">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[640px]">
             <thead>
