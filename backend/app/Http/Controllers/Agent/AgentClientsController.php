@@ -233,7 +233,7 @@ class AgentClientsController extends Controller
                 return response()->json(['success' => false, 'message' => 'Solde insuffisant.'], 422);
             }
         } elseif ($request->type_op === 'retrait_partiel') {
-            $penaliteCalculee = $carte->montant_initial * 0.10;
+            $penaliteCalculee = 100;
             if (($request->montant + $penaliteCalculee) > $soldeAvant) {
                 return response()->json(['success' => false, 'message' => "Solde insuffisant pour ce retrait partiel (incluant la pénalité de {$penaliteCalculee} F)."], 422);
             }
@@ -245,21 +245,97 @@ class AgentClientsController extends Controller
             $soldeApres = $soldeAvant;
 
             if ($request->type_op === 'dépôt_cash') {
-                $soldeApres = $soldeAvant + $request->montant;
-                $compte->increment('total_depots', $request->montant);
-                $compte->update(['solde_total' => $soldeApres]);
+                $trancheSize = $carte ? ($carte->montant_initial - $carte->frais_garde) : 0;
+
+                if ($trancheSize > 0 && $request->montant > $trancheSize) {
+                    $montantTotal = $request->montant;
+                    $currentSolde = $soldeAvant;
+
+                    while ($montantTotal > 0) {
+                        $montantTranche = min($trancheSize, $montantTotal);
+                        $soldeTrancheAvant = $currentSolde;
+                        $soldeTrancheApres = $soldeTrancheAvant + $montantTranche;
+
+                        $compte->increment('total_depots', $montantTranche);
+                        $compte->update(['solde_total' => $soldeTrancheApres]);
+
+                        Transaction::create([
+                            'id_carte'   => $carte->id_carte,
+                            'id_client'  => $client->id_client,
+                            'id_agent'   => $agent->id_agent,
+                            'id_kiosque' => $agent->id_kiosque,
+                            'type_op'    => $request->type_op,
+                            'montant'    => $montantTranche,
+                            'penalite'   => 0,
+                            'solde_avant'=> $soldeTrancheAvant,
+                            'solde_apres'=> $soldeTrancheApres,
+                            'date_heure' => now(),
+                            'sync_status'=> 'synchronisé',
+                        ]);
+
+                        $currentSolde = $soldeTrancheApres;
+                        $montantTotal -= $montantTranche;
+                    }
+                    $soldeApres = $currentSolde;
+                } else {
+                    $soldeApres = $soldeAvant + $request->montant;
+                    $compte->increment('total_depots', $request->montant);
+                    $compte->update(['solde_total' => $soldeApres]);
+
+                    Transaction::create([
+                        'id_carte'   => $carte->id_carte,
+                        'id_client'  => $client->id_client,
+                        'id_agent'   => $agent->id_agent,
+                        'id_kiosque' => $agent->id_kiosque,
+                        'type_op'    => $request->type_op,
+                        'montant'    => $request->montant,
+                        'penalite'   => 0,
+                        'solde_avant'=> $soldeAvant,
+                        'solde_apres'=> $soldeApres,
+                        'date_heure' => now(),
+                        'sync_status'=> 'synchronisé',
+                    ]);
+                }
             } elseif ($request->type_op === 'retrait_partiel') {
-                $penalite   = $carte->montant_initial * 0.10; // 10% de la somme initiale (mise)
+                $penalite   = 100; // pénalité fixe de 100 F pour chaque retrait partiel
                 $soldeApres = $soldeAvant - $request->montant - $penalite; // Diminution effective du solde
                 $compte->increment('total_retraits_partiels', $request->montant);
                 $compte->increment('total_penalites', $penalite);
                 $compte->update(['solde_total' => $soldeApres]);
+
+                Transaction::create([
+                    'id_carte'   => $carte->id_carte,
+                    'id_client'  => $client->id_client,
+                    'id_agent'   => $agent->id_agent,
+                    'id_kiosque' => $agent->id_kiosque,
+                    'type_op'    => $request->type_op,
+                    'montant'    => $request->montant,
+                    'penalite'   => $penalite,
+                    'solde_avant'=> $soldeAvant,
+                    'solde_apres'=> $soldeApres,
+                    'date_heure' => now(),
+                    'sync_status'=> 'synchronisé',
+                ]);
             } elseif ($request->type_op === 'retrait_solde_compte') {
                 $soldeApres = 0;
                 $compte->increment('total_retraits', $soldeAvant);
                 $compte->update(['solde_total' => 0, 'date_cloture' => now()]);
                 // La carte expire automatiquement lors du retrait total
                 $carte->update(['statut' => 'terminé', 'date_expiration' => now()]);
+
+                Transaction::create([
+                    'id_carte'   => $carte->id_carte,
+                    'id_client'  => $client->id_client,
+                    'id_agent'   => $agent->id_agent,
+                    'id_kiosque' => $agent->id_kiosque,
+                    'type_op'    => $request->type_op,
+                    'montant'    => $request->montant,
+                    'penalite'   => 0,
+                    'solde_avant'=> $soldeAvant,
+                    'solde_apres'=> $soldeApres,
+                    'date_heure' => now(),
+                    'sync_status'=> 'synchronisé',
+                ]);
             }
 
             // Calculer progression carte par rapport à l'objectif total (15 ou 30 jours)
@@ -271,20 +347,6 @@ class AgentClientsController extends Controller
                 $progression = max(0, min(100, $prog));
                 $carte->update(['progression' => $progression]);
             }
-
-            Transaction::create([
-                'id_carte'   => $carte->id_carte,
-                'id_client'  => $client->id_client,
-                'id_agent'   => $agent->id_agent,
-                'id_kiosque' => $agent->id_kiosque,
-                'type_op'    => $request->type_op,
-                'montant'    => $request->montant,
-                'penalite'   => $penalite,
-                'solde_avant'=> $soldeAvant,
-                'solde_apres'=> $soldeApres,
-                'date_heure' => now(),
-                'sync_status'=> 'synchronisé',
-            ]);
 
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Transaction enregistrée.', 'data' => [
