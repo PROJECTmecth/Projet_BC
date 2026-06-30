@@ -613,11 +613,8 @@ export default function ScanCartePage() {
                             title: 'Client enregistré !',
                             text: 'Le nouveau client a bien été associé à cette carte.',
                             confirmButtonColor: '#F97316',
-                        }).then(() => resetScan());
-                    }}
-                />
-            )}
-
-        </div>
-    );
+                                }).then(() => {
+                                    resetScan();
+                                    navigate('/agent/dashboard');
+                                });
 }

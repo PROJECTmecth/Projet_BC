@@ -9,7 +9,7 @@ const ETAPES = { SCAN: "scan", FORMULAIRE: "formulaire" };
 const initialForm = {
   genre: "Homme", prenom: "", nom: "", adresse: "", ville: "",
   activite: "", nationalite: "Résident", type_piece: "CNI",
-  num_piece: "", telephone: "+242 06 ", montant: "", duree: "15 jours",
+  num_piece: "", photo_piece: null, telephone: "+242 06 ", montant: "", duree: "15 jours",
   qrCodeUid: "",
 };
 
@@ -20,6 +20,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
   const [scanning, setScanning]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors]         = useState({});
+  const [photoPreview, setPhotoPreview] = useState(null);
   const scannerRef                  = useRef(null);
   const html5QrRef                  = useRef(null);
 
@@ -152,6 +153,17 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     setErrors(er => ({ ...er, [e.target.name]: "" }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setForm(f => ({ ...f, photo_piece: file }));
+    setErrors(er => ({ ...er, photo_piece: "" }));
+    if (file) {
+      setPhotoPreview(URL.createObjectURL(file));
+    } else {
+      setPhotoPreview(null);
+    }
+  };
+
   const validate = () => {
     const e = {};
     if (!form.prenom.trim())    e.prenom    = "Requis";
@@ -160,6 +172,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     if (!form.ville.trim())     e.ville     = "Requis";
     if (!form.activite.trim())  e.activite  = "Requis";
     if (!form.num_piece.trim()) e.num_piece = "Requis";
+    if (!form.photo_piece) e.photo_piece = "Photo de la pièce requise";
     if (!form.telephone.trim()) e.telephone = "Requis";
     if (!form.montant || Number(form.montant) < 1000) e.montant = "Montant minimum : 1 000 F";
     setErrors(e);
@@ -187,15 +200,30 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
 
     try {
       setSubmitting(true);
-      await axiosClient.post("/api/agent/clients/register", {
-        ...form,
-        qr_code_uid: carteInfo.qr_code_uid,
-        montant: Number(form.montant),
+      const payload = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (value !== null) payload.append(key, value);
+      });
+      payload.append('qr_code_uid', carteInfo.qr_code_uid);
+      payload.set('montant', Number(form.montant));
+
+      await axiosClient.post("/api/agent/clients/register", payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       onSuccess();
     } catch (err) {
-      const msg = err.response?.data?.message || "Erreur lors de l'enregistrement.";
-      Swal.fire({ icon: "error", title: "Erreur", text: msg, confirmButtonColor: "#F97316" });
+      const status = err.response?.status;
+      const data = err.response?.data;
+      if (status === 422 && data?.errors) {
+        const fieldErrors = Object.keys(data.errors).reduce((acc, key) => {
+          acc[key] = Array.isArray(data.errors[key]) ? data.errors[key][0] : data.errors[key];
+          return acc;
+        }, {});
+        setErrors(fieldErrors);
+      } else {
+        const msg = data?.message || "Erreur lors de l'enregistrement.";
+        Swal.fire({ icon: "error", title: "Erreur", text: msg, confirmButtonColor: "#F97316" });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -321,6 +349,18 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                     </select>
                   </div>
 
+                  <div className="form-group">
+                    <label className="form-label">Activité</label>
+                    <select className={`form-input ${errors.activite ? "form-input--error" : ""}`} name="activite" value={form.activite} onChange={handleChange}>
+                      <option value="">Sélectionnez une activité</option>
+                      <option value="Travailleurs">Travailleurs</option>
+                      <option value="Étudiants">Étudiants</option>
+                      <option value="Ménagère">Ménagère</option>
+                      <option value="commercant">commercant</option>
+                    </select>
+                    {errors.activite && <span className="form-error">{errors.activite}</span>}
+                  </div>
+
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">Pièce d'identité</label>
@@ -350,10 +390,14 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Activité</label>
-                    <input className={`form-input ${errors.activite ? "form-input--error" : ""}`}
-                      name="activite" placeholder="Profession / Activité" value={form.activite} onChange={handleChange} />
-                    {errors.activite && <span className="form-error">{errors.activite}</span>}
+                    <label className="form-label">Photo de la pièce</label>
+                    <input type="file" accept="image/*" capture="environment"
+                      className={`form-input ${errors.photo_piece ? "form-input--error" : ""}`}
+                      name="photo_piece" onChange={handleFileChange} />
+                    {errors.photo_piece && <span className="form-error">{errors.photo_piece}</span>}
+                    {photoPreview && (
+                      <img src={photoPreview} alt="Prévisualisation pièce" className="form-image-preview" />
+                    )}
                   </div>
 
                 </div>

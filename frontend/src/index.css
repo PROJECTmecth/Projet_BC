@@ -46,6 +46,4 @@
   #print-table table { width: 100% !important; border-collapse: collapse !important; }
   #print-table th, #print-table td { color: #000 !important; background: transparent !important; border-color: #ddd !important; }
   #print-table td:last-child, #print-table th:last-child { display: none !important; }
-  #print-table .bg-[#FF6600] { justify-content: center !important; }
-  #print-table .bg-[#FF6600] h3 { margin: 0 auto !important; text-align: center !important; }
 }
