@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../lib/axios";
 
-const DEFAULT_LIMIT = 10;
+const DEFAULT_LIMIT = 5;
 const POLLING_INTERVAL = 30000; // 30 secondes (faire la mise à jour automatique)
 
 export function useOperations(enablePolling = true, pollingInterval = POLLING_INTERVAL) {
@@ -43,7 +43,7 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
   const [pollingId, setPollingId] = useState(null);
 
   // 🔄 Fonction de fetch avec tous les paramètres
-  const fetchOperations = useCallback(async (page = 1) => {
+  const fetchOperations = useCallback(async (page = 1, overrideLimit = null) => {
     setLoading(true);
     setError(null);
 
@@ -51,9 +51,10 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
       // 🔨 Construire les params
       const params = {
         page,
-        limit: pagination.limit,
+        limit: overrideLimit ?? pagination.limit,
         sort_by: sortBy,
         sort_order: sortOrder,
+        recent_only: 1,
       };
 
       // Ajouter les filtres s'ils sont définis
@@ -67,9 +68,57 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
       const response = await api.get("/api/admin/mouvements-caisse", { params });
 
       if (response.data?.success) {
-        setOperations(response.data.transactions || []);
+        const raw = response.data.transactions || [];
+
+        // Normaliser la forme des données pour OperationsTable
+        const mapped = raw.map((t) => {
+          // Carte: backend peut renvoyer id_carte (numero) ou objet carte
+          const carte = t.id_carte || t.numero_carte || t.carte?.numero_carte || '';
+
+          // Client: priorité au champ nom_client puis objet client
+          const client = t.nom_client || (t.client ? `${t.client.nom || ''} ${t.client.prenom || ''}`.trim() : '');
+
+          // Type lisible
+          const rawType = t.type_op || t.operation || t.type || '';
+          const type = rawType ? String(rawType).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+
+          // Montant
+          const montant = (t.montant !== undefined && t.montant !== null) ? Number(t.montant) : '';
+
+          // Date: essayer date_heure ISO ou champ date formaté
+          let date = '';
+          if (t.date) date = t.date;
+          else if (t.date_heure) {
+            try {
+              const d = new Date(t.date_heure);
+              date = d.toLocaleDateString('fr-FR');
+            } catch (e) { date = t.date_heure; }
+          }
+
+          // Agent: plusieurs fallback possibles
+          const agent = t.nom_agent || (t.agent ? (t.agent.user?.name || `${t.agent.nom || ''} ${t.agent.prenom || ''}`.trim()) : '');
+
+          // Kiosque
+          const kiosque = t.kiosque?._attributes?.nom_kiosque || t.kiosque?.nom_kiosque || t.kiosque?.nom || t.kiosque || '';
+
+          return {
+            // champs attendus par OperationsTable
+            carte,
+            client,
+            type,
+            montant,
+            date,
+            kiosque,
+            agent,
+
+            // champs bruts pour debug/usage ultérieur
+            _raw: t,
+          };
+        });
+
+        setOperations(mapped);
         setPagination(response.data.pagination || {});
-        console.log("✅ Operations loaded:", response.data.transactions?.length);
+        console.log("✅ Operations loaded:", mapped.length);
       } else {
         throw new Error("Invalid response format");
       }
@@ -110,8 +159,8 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
   };
 
   const handleLimitChange = (newLimit) => {
-    setPagination(prev => ({ ...prev, limit: newLimit }));
-    fetchOperations(1);
+    setPagination(prev => ({ ...prev, limit: newLimit, current_page: 1 }));
+    fetchOperations(1, newLimit);
   };
 
   const handleSort = (column) => {

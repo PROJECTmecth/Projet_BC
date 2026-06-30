@@ -269,7 +269,7 @@ class AgentClientsController extends Controller
                 $compte->increment('total_retraits', $soldeAvant);
                 $compte->update(['solde_total' => 0, 'date_cloture' => now()]);
                 // La carte expire automatiquement lors du retrait total
-                $carte->update(['statut' => 'clôturé', 'date_expiration' => now()]);
+                $carte->update(['statut' => 'terminé', 'date_expiration' => now()]);
             }
 
             // Calculer progression carte par rapport à l'objectif total (15 ou 30 jours)
