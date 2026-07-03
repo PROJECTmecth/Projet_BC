@@ -237,9 +237,10 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       payload.set('montant', Number(form.montant));
 
       form.photo_pieces.filter(Boolean).forEach(file => payload.append('photo_pieces[]', file));
-      await axiosClient.post("/api/agent/clients/register", payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // ⚠️ Ne pas forcer Content-Type ici : axios détecte automatiquement
+      // le boundary multipart/form-data quand on passe un FormData.
+      // Forcer le header manuellement supprime le boundary et casse le parsing côté PHP.
+      await axiosClient.post("/api/agent/clients/register", payload);
       onSuccess();
     } catch (err) {
       const status = err.response?.status;
