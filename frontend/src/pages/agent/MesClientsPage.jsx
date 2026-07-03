@@ -110,7 +110,9 @@ export default function MesClientsPage() {
                       <td>{c.telephone}</td>
                       <td className="table-photo-cell">
                         {c.photo_piece_url ? (
-                          <img src={c.photo_piece_url} alt="Photo pièce" className="client-photo-thumb" />
+                          <a href={c.photo_piece_url} target="_blank" rel="noreferrer" className="photo-preview-link" title="Voir la photo de pièce">
+                            <img src={c.photo_piece_url} alt="Photo pièce" className="client-photo-thumb" />
+                          </a>
                         ) : "—"}
                       </td>
                       <td>
