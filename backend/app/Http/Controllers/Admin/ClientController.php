@@ -142,7 +142,7 @@ class ClientController extends Controller
             ->get();
 
         foreach ($dbCounts as $c) {
-            $act = strtolower($c->activite ?? '');
+            $act = mb_strtolower(trim($c->activite ?? ''), 'UTF-8');
             if (in_array($act, ['commerçant', 'commerçante', 'commercant', 'commercante'])) {
                 $counts['Commerçant'] += $c->count;
             } elseif (in_array($act, ['ménagère', 'menagere'])) {
