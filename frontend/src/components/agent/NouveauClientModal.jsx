@@ -235,11 +235,8 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       });
       payload.append('qr_code_uid', carteInfo.qr_code_uid);
       payload.set('montant', Number(form.montant));
-
       form.photo_pieces.filter(Boolean).forEach(file => payload.append('photo_pieces[]', file));
-      await axiosClient.post("/api/agent/clients/register", payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await axiosClient.post("/api/agent/clients/register", payload);
       onSuccess();
     } catch (err) {
       const status = err.response?.status;

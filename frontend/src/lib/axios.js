@@ -22,7 +22,6 @@ const api = axios.create({
   // ❌ withCredentials retiré : on utilise Bearer token (localStorage),
   //    pas les cookies de session. Les deux ensemble = CORS qui bloque.
   headers: {
-    "Content-Type": "application/json",
     "Accept": "application/json",         // Force Laravel à répondre en JSON
     "X-Requested-With": "XMLHttpRequest", // Identifie comme requête AJAX
   },
