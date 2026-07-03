@@ -4,6 +4,45 @@ import Swal from "sweetalert2";
 import axiosClient from "../../lib/axios";
 import "./NouveauClientModal.css";
 
+const compressImageFile = async (file) => {
+  if (!file || !file.type?.startsWith("image/")) return file;
+  const shouldCompress = file.size > 1200000 || /heic|heif/i.test(file.type);
+  if (!shouldCompress) return file;
+
+  try {
+    const loadImage = async () => {
+      if (window.createImageBitmap) {
+        return await createImageBitmap(file);
+      }
+      return await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    };
+
+    const image = await loadImage();
+    const maxSize = 1200;
+    const ratio = Math.min(1, maxSize / Math.max(image.width, image.height));
+    const width = Math.round(image.width * ratio);
+    const height = Math.round(image.height * ratio);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.75));
+    if (!blob) return file;
+
+    const name = file.name.replace(/\.[^/.]+$/, ".jpg");
+    return new File([blob], name, { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+};
+
 const ETAPES = { SCAN: "scan", FORMULAIRE: "formulaire" };
 
 const initialForm = {
@@ -153,23 +192,36 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     setErrors(er => ({ ...er, [e.target.name]: "" }));
   };
 
-  const handleSingleFileChange = (e, index) => {
-    const file = e.target.files?.[0];
+  const handleSingleFileChange = async (e, index) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) {
+      setForm(f => {
+        const newPhotos = [...(f.photo_pieces || [])];
+        newPhotos[index] = null;
+        return { ...f, photo_pieces: newPhotos };
+      });
+      setPhotoPreview(prev => {
+        const newPreview = [...prev];
+        newPreview[index] = null;
+        return newPreview;
+      });
+      setErrors(er => ({ ...er, photo_pieces: "" }));
+      return;
+    }
+
+    const file = await compressImageFile(selectedFile);
+
     setForm(f => {
       const newPhotos = [...(f.photo_pieces || [])];
-      newPhotos[index] = file || null;
+      newPhotos[index] = file;
       return { ...f, photo_pieces: newPhotos };
     });
     setErrors(er => ({ ...er, photo_pieces: "" }));
     
     setPhotoPreview(prev => {
       const newPreview = [...prev];
-      if (file) {
-        if (newPreview[index]) URL.revokeObjectURL(newPreview[index]);
-        newPreview[index] = URL.createObjectURL(file);
-      } else {
-        newPreview[index] = null;
-      }
+      if (newPreview[index]) URL.revokeObjectURL(newPreview[index]);
+      newPreview[index] = URL.createObjectURL(file);
       return newPreview;
     });
   };

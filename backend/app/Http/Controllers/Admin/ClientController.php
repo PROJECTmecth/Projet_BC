@@ -95,10 +95,10 @@ class ClientController extends Controller
                     'nationalite' => $client->nationalite,
                     'type_piece'  => $client->type_piece,
                     'num_piece'   => $client->num_piece,
-                    'photo_pieces_urls' => collect($client->photo_pieces ?? [])
+                    'photo_pieces_urls' => collect(is_array($client->photo_pieces) ? $client->photo_pieces : (json_decode($client->photo_pieces ?? '[]', true) ?: []))
                         ->map(fn($p) => \Illuminate\Support\Facades\Storage::url($p))
                         ->toArray(),
-                    'photo_piece_url' => (!empty($client->photo_pieces) && count($client->photo_pieces) > 0)
+                    'photo_piece_url' => (!empty($client->photo_pieces) && is_array($client->photo_pieces) && count($client->photo_pieces) > 0)
                         ? \Illuminate\Support\Facades\Storage::url($client->photo_pieces[0])
                         : ($client->photo_piece ? \Illuminate\Support\Facades\Storage::url($client->photo_piece) : null),
                 ],

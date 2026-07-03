@@ -5,12 +5,11 @@ import { X, Printer, FileText } from "lucide-react";
 
 const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
-
 const getPhotoUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const base = API.replace(/\/api$/, '').replace(/\/$/, '');
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+  const base = apiUrl.replace(/\/api$/, '').replace(/\/$/, '');
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 const h   = () => ({
