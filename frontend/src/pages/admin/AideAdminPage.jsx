@@ -1,7 +1,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // fichier : src/pages/admin/AideAdminPage.jsx
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useRef } from "react";
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  Store,
+  UserCheck,
+  Users,
+  QrCode,
+  History,
+  Coins,
+  Lock,
+  HelpCircle,
+  Search,
+  ChevronDown,
+  Info,
+  AlertTriangle,
+  CheckCircle2
+} from "lucide-react";
 
 // ── Composants locaux ──────────────────────────────────────────────────────────
 const Badge = ({ children, color = "orange" }) => {
@@ -16,14 +32,15 @@ const Badge = ({ children, color = "orange" }) => {
 
 const Note = ({ type = "info", children }) => {
   const styles = {
-    info:    { bg: "bg-blue-50 border-blue-400",   icon: "ℹ️" },
-    warning: { bg: "bg-orange-50 border-orange-400", icon: "⚠️" },
-    success: { bg: "bg-green-50 border-green-400",  icon: "✅" },
+    info:    { bg: "bg-blue-50 border-blue-400",   icon: Info, color: "text-blue-500" },
+    warning: { bg: "bg-orange-50 border-orange-400", icon: AlertTriangle, color: "text-orange-500" },
+    success: { bg: "bg-green-50 border-green-400",  icon: CheckCircle2, color: "text-green-500" },
   };
   const s = styles[type];
+  const IconComponent = s.icon;
   return (
-    <div className={`flex gap-3 p-4 rounded-xl border-l-4 ${s.bg} my-3`}>
-      <span className="text-lg shrink-0">{s.icon}</span>
+    <div className={`flex gap-3 p-4 rounded-xl border-l-4 ${s.bg} my-3 items-start`}>
+      <IconComponent className={`w-5 h-5 shrink-0 ${s.color} mt-0.5`} />
       <p className="text-sm text-gray-700">{children}</p>
     </div>
   );
@@ -43,20 +60,20 @@ const Accordion = ({ question, children }) => {
       <button onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-orange-50 transition-colors">
         <span className="font-semibold text-gray-800 text-sm">{question}</span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round"
-          style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+        <ChevronDown
+          className="w-5 h-5 text-gray-500 transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
       </button>
       {open && <div className="px-5 pb-4 text-sm text-gray-600 space-y-2 border-t border-gray-100">{children}</div>}
     </div>
   );
 };
 
-const SectionCard = ({ id, title, gradient, children }) => (
+const SectionCard = ({ id, title, icon: IconComponent, gradient, children }) => (
   <div id={id} className="bg-white rounded-2xl shadow-xl overflow-hidden scroll-mt-24">
-    <div className={`bg-gradient-to-r ${gradient} px-6 py-5`}>
+    <div className={`bg-gradient-to-r ${gradient} px-6 py-5 flex items-center gap-3`}>
+      {IconComponent && <IconComponent className="w-6 h-6 text-white shrink-0" />}
       <h2 className="text-xl font-bold text-white">{title}</h2>
     </div>
     <div className="p-6 space-y-4">{children}</div>
@@ -65,15 +82,15 @@ const SectionCard = ({ id, title, gradient, children }) => (
 
 // ── Sections de navigation rapide ─────────────────────────────────────────────
 const QUICK_LINKS = [
-  { id: "dashboard",     label: "Dashboard",           icon: "📊" },
-  { id: "kiosques",      label: "Kiosques",             icon: "🏪" },
-  { id: "agents",        label: "Agents",               icon: "👤" },
-  { id: "clients",       label: "Clients",              icon: "👥" },
-  { id: "cartes",        label: "Cartes QR",            icon: "🎫" },
-  { id: "journal",       label: "Journal",              icon: "📋" },
-  { id: "caisse",        label: "Mouvement Caisse",     icon: "💰" },
-  { id: "profil",        label: "Profil & Sécurité",    icon: "🔒" },
-  { id: "faq",           label: "FAQ",                  icon: "❓" },
+  { id: "dashboard",     label: "Dashboard",           icon: LayoutDashboard },
+  { id: "kiosques",      label: "Kiosques",             icon: Store },
+  { id: "agents",        label: "Agents",               icon: UserCheck },
+  { id: "clients",       label: "Clients",              icon: Users },
+  { id: "cartes",        label: "Cartes QR",            icon: QrCode },
+  { id: "journal",       label: "Journal",              icon: History },
+  { id: "caisse",        label: "Mouvement Caisse",     icon: Coins },
+  { id: "profil",        label: "Profil & Sécurité",    icon: Lock },
+  { id: "faq",           label: "FAQ",                  icon: HelpCircle },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,7 +111,7 @@ export default function AideAdminPage() {
         <div className="px-8 py-10 flex flex-col sm:flex-row items-start sm:items-center gap-6">
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
             <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-xl font-black text-white">?</span>
+              <HelpCircle className="w-6 h-6 text-white" />
             </div>
           </div>
           <div className="flex-1">
@@ -106,10 +123,7 @@ export default function AideAdminPage() {
         {/* Barre de recherche */}
         <div className="px-8 pb-8">
           <div className="relative max-w-xl">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" width="18" height="18"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input type="text" placeholder="Rechercher une section…" value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/90 text-gray-800 placeholder-gray-400 font-medium text-sm focus:outline-none focus:bg-white transition-colors" />
@@ -121,18 +135,21 @@ export default function AideAdminPage() {
       <div className="bg-white rounded-2xl shadow-xl p-6">
         <h2 className="font-bold text-gray-800 mb-4 text-lg">Navigation rapide</h2>
         <div className="flex flex-wrap gap-2">
-          {filtered.map(link => (
-            <button key={link.id} onClick={() => scrollTo(link.id)}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-sm font-semibold transition-colors border border-orange-200">
-              <span>{link.icon}</span> {link.label}
-            </button>
-          ))}
+          {filtered.map(link => {
+            const IconComponent = link.icon;
+            return (
+              <button key={link.id} onClick={() => scrollTo(link.id)}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl text-sm font-semibold transition-colors border border-orange-200">
+                <IconComponent className="w-4 h-4 shrink-0" /> {link.label}
+              </button>
+            );
+          })}
           {filtered.length === 0 && <p className="text-gray-400 text-sm">Aucune section trouvée.</p>}
         </div>
       </div>
 
       {/* ── Section Dashboard ── */}
-      <SectionCard id="dashboard" title="📊 Tableau de bord" gradient="from-orange-500 to-orange-600">
+      <SectionCard id="dashboard" title="Tableau de bord" icon={LayoutDashboard} gradient="from-orange-500 to-orange-600">
         <p className="text-gray-600 text-sm">La page d'accueil vous donne une vue d'ensemble de toute l'activité du système en temps réel.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
@@ -151,7 +168,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── Section Kiosques ── */}
-      <SectionCard id="kiosques" title="🏪 Gestion des kiosques" gradient="from-blue-500 to-blue-600">
+      <SectionCard id="kiosques" title="Gestion des kiosques" icon={Store} gradient="from-blue-500 to-blue-600">
         <p className="text-gray-600 text-sm">Gérez tous les points de vente du réseau BOMBA CASH.</p>
         <h3 className="font-bold text-gray-800">Créer un kiosque</h3>
         <Step n={1}>Cliquez sur le bouton <Badge>+ Ajouter un kiosque</Badge> en haut de la liste.</Step>
@@ -163,7 +180,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── Section Agents ── */}
-      <SectionCard id="agents" title="👤 Gestion des agents" gradient="from-purple-500 to-purple-600">
+      <SectionCard id="agents" title="Gestion des agents" icon={UserCheck} gradient="from-purple-500 to-purple-600">
         <p className="text-gray-600 text-sm">Administrez les comptes des agents affectés aux kiosques.</p>
         <h3 className="font-bold text-gray-800">Créer un agent</h3>
         <Step n={1}>Cliquez sur <Badge>+ Ajouter un agent</Badge>.</Step>
@@ -175,7 +192,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── Section Clients ── */}
-      <SectionCard id="clients" title="👥 Gestion des clients" gradient="from-cyan-500 to-cyan-600">
+      <SectionCard id="clients" title="Gestion des clients" icon={Users} gradient="from-cyan-500 to-cyan-600">
         <p className="text-gray-600 text-sm">Consultez et gérez la liste de tous les clients enregistrés dans le système.</p>
         <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
           <li>Recherche par nom, prénom ou téléphone</li>
@@ -187,7 +204,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── Section Cartes QR ── */}
-      <SectionCard id="cartes" title="🎫 Gestion des cartes QR" gradient="from-emerald-500 to-emerald-600">
+      <SectionCard id="cartes" title="Gestion des cartes QR" icon={QrCode} gradient="from-emerald-500 to-emerald-600">
         <p className="text-gray-600 text-sm">Générez et gérez les lots de cartes QR pour les clients.</p>
         <h3 className="font-bold text-gray-800">Générer un lot</h3>
         <Step n={1}>Choisissez la quantité de cartes à générer.</Step>
@@ -199,7 +216,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── Section Journal ── */}
-      <SectionCard id="journal" title="📋 Journal des transactions" gradient="from-slate-500 to-slate-600">
+      <SectionCard id="journal" title="Journal des transactions" icon={History} gradient="from-slate-500 to-slate-600">
         <p className="text-gray-600 text-sm">Consultez l'historique complet de toutes les opérations effectuées sur la plateforme.</p>
         <Step n={1}>Sélectionnez une plage de dates <Badge>Du</Badge> → <Badge>Au</Badge>.</Step>
         <Step n={2}>Cliquez sur <Badge color="blue">Rechercher</Badge>.</Step>
@@ -213,7 +230,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── Section Caisse ── */}
-      <SectionCard id="caisse" title="💰 Mouvement de caisse" gradient="from-yellow-500 to-yellow-600">
+      <SectionCard id="caisse" title="Mouvement de caisse" icon={Coins} gradient="from-yellow-500 to-yellow-600">
         <p className="text-gray-600 text-sm">Suivi des flux financiers globaux : dépôts, retraits et soldes des comptes.</p>
         <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
           <li>Total dépôts et retraits sur toutes périodes</li>
@@ -225,7 +242,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── Section Profil ── */}
-      <SectionCard id="profil" title="🔒 Profil & Sécurité" gradient="from-gray-600 to-gray-700">
+      <SectionCard id="profil" title="Profil & Sécurité" icon={Lock} gradient="from-gray-600 to-gray-700">
         <p className="text-gray-600 text-sm">Gérez votre compte administrateur et votre mot de passe.</p>
         <h3 className="font-bold text-gray-800">Modifier vos informations</h3>
         <Step n={1}>Cliquez sur votre avatar en haut à droite ou allez dans <Badge>Profil</Badge>.</Step>
@@ -237,7 +254,7 @@ export default function AideAdminPage() {
       </SectionCard>
 
       {/* ── FAQ ── */}
-      <SectionCard id="faq" title="❓ Questions fréquentes" gradient="from-rose-500 to-rose-600">
+      <SectionCard id="faq" title="Questions fréquentes" icon={HelpCircle} gradient="from-rose-500 to-rose-600">
         <div className="space-y-3">
           <Accordion question="Pourquoi les revenus affichent 0 sur le dashboard ?">
             <p>Les revenus sont calculés sur la totalité des données (frais de garde des cartes actives + pénalités de retrait). Si aucune carte n'est active ou aucun retrait n'a été effectué, le montant sera 0.</p>

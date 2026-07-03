@@ -6,6 +6,13 @@ import { X, Printer, FileText } from "lucide-react";
 const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+
+const getPhotoUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const base = API.replace(/\/api$/, '').replace(/\/$/, '');
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 const h   = () => ({
   "Content-Type": "application/json",
   Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -81,8 +88,8 @@ export default function ClientDetailModal({ client, onClose }) {
                   <h3 className="font-bold text-[#1e2a3a] text-lg mb-3">Pièces d'identité</h3>
                   <div className="flex gap-4 overflow-x-auto pb-2">
                     {data.infos.photo_pieces_urls.map((url, idx) => (
-                      <a key={idx} href={`${API.replace('/api', '')}${url}`} target="_blank" rel="noreferrer" className="flex-shrink-0 block border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                        <img src={`${API.replace('/api', '')}${url}`} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" />
+                      <a key={idx} href={getPhotoUrl(url)} target="_blank" rel="noreferrer" className="flex-shrink-0 block border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        <img src={getPhotoUrl(url)} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" />
                       </a>
                     ))}
                   </div>

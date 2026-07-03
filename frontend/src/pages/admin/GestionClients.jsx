@@ -16,6 +16,13 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => 
   "'": "&#039;",
 }[char]));
 
+const getPhotoUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const base = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/api$/, '').replace(/\/$/, '');
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 // ── Composant : Progression circulaire ─────────────────────────────────────
 function CircleProgress({ pct = 0 }) {
   const r = 54, circ = 2 * Math.PI * r, dash = (pct / 100) * circ;
@@ -89,8 +96,8 @@ function ModalClient({ clientId, onClose }) {
                   <h3 className="font-bold text-[#1e2a3a] text-lg mb-3">Pièces d'identité</h3>
                   <div className="flex gap-4 overflow-x-auto pb-2">
                     {data.infos.photo_pieces_urls.map((url, idx) => (
-                      <a key={idx} href={`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api', '')}${url}`} target="_blank" rel="noreferrer" className="flex-shrink-0 block border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                        <img src={`${(import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api', '')}${url}`} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" />
+                      <a key={idx} href={getPhotoUrl(url)} target="_blank" rel="noreferrer" className="flex-shrink-0 block border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        <img src={getPhotoUrl(url)} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" />
                       </a>
                     ))}
                   </div>
