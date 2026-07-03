@@ -161,6 +161,7 @@ export default function MouvementCaisse() {
             td { color: #111; }
             .text-right { text-align: right; }
             .text-center { text-align: center; }
+            .no-print { display: none !important; }
             @media print { body { margin: 8mm; } }</style>
         </head>
         <body>
