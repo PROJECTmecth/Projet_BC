@@ -17,8 +17,15 @@ class ClientController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $clients = Client::with(['carte', 'agent.user'])
-            ->orderBy('created_at', 'desc')
+        $query = Client::with(['carte', 'agent.user']);
+
+        if ($request->filled('id_kiosque')) {
+            $query->whereHas('agent', function ($query) use ($request) {
+                $query->where('id_kiosque', $request->id_kiosque);
+            });
+        }
+
+        $clients = $query->orderBy('created_at', 'desc')
             ->get()
             ->map(fn($c) => [
                 'id_client'    => $c->id_client,

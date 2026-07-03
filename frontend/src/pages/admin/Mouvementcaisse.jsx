@@ -140,7 +140,51 @@ export default function MouvementCaisse() {
       confirmButtonText: "Oui, imprimer",
       cancelButtonText: "Annuler"
     }).then((result) => {
-      if (result.isConfirmed) window.print();
+      if (!result.isConfirmed) return;
+      const table = document.querySelector("#print-table table");
+      if (!table) {
+        Swal.fire("Erreur", "Impossible de trouver le tableau pour l'impression.", "error");
+        return;
+      }
+      const printHtml = `<!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Mouvement de Solde - Impression</title>
+          <style>
+            body { margin: 0; font-family: Arial, sans-serif; color: #111; background: #fff; }
+            h1, p { margin: 0 0 12px; }
+            .header { padding: 16px; border-bottom: 1px solid #ddd; }
+            .header h1 { font-size: 18px; color: #1e2a3a; }
+            .header p { color: #444; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 10pt; }
+            th, td { border: 1px solid #444; padding: 8px; text-align: left; vertical-align: middle; }
+            th { background: #1e2a3a; color: #fff; font-weight: 700; }
+            td { color: #111; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            @media print { body { margin: 8mm; } }</style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Mouvement de Solde</h1>
+            <p>Impression générée le ${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR")}</p>
+          </div>
+          ${table.outerHTML}
+        </body>
+      </html>`;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        Swal.fire("Erreur", "Impossible d'ouvrir une fenêtre d'impression.", "error");
+        return;
+      }
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 300);
     });
   };
 
@@ -439,57 +483,6 @@ export default function MouvementCaisse() {
       </div>
 
       <ModalDetail row={selected} onClose={() => setSelected(null)} />
-
-      {/* ✅ Styles CSS pour l'impression — UNIQUEMENT LE TABLEAU */}
-      <style>{`
-        @media print {
-          /* 1. Cacher tout par défaut */
-          body { margin: 0; background: white; }
-          body * { visibility: hidden; }
-          
-          /* 2. Afficher uniquement le tableau */
-          .print-table-wrapper,
-          .print-table-wrapper * { visibility: visible !important; }
-          .print-table-wrapper {
-            position: static !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 10px 0 !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            overflow: visible !important;
-          }
-
-          /* 3. Masquer explicitement les éléments non désirés */
-          .no-print,
-          .printable-area > div:first-child,
-          .printable-area > div:nth-child(2),
-          .printable-area > div:last-child { display: none !important; }
-
-          /* 4. Mise en forme du tableau pour l'impression */
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            font-size: 10pt;
-            page-break-inside: auto;
-          }
-          thead { display: table-header-group; }
-          tr { page-break-inside: avoid; }
-          th, td {
-            border: 1px solid #333 !important;
-            padding: 6px 8px !important;
-            text-align: left;
-          }
-          th {
-            background-color: #1e2a3a !important;
-            color: white !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          /* Afficher les colonnes masquées sur mobile */
-          .hidden { display: table-cell !important; }
-        }
-      `}</style>
     </div>
   );
 }
