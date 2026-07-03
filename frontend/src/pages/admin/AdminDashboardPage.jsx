@@ -319,7 +319,7 @@ export default function AdminDashboardPage() {
 
       </div>
 
-      {/* ══ 4. GRAPHIQUES ════════════════════════════════════════════════════ */}
+      {/* ══ 4. GRAPHIQUE ════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* ── BarChart : Enregistrement clients ── */}
