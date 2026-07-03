@@ -5,6 +5,15 @@ import axiosClient from "../../lib/axios";
 import NouveauClientModal from "../../components/agent/NouveauClientModal";
 import "./MesClientsPage.css";
 
+// Build a full URL for images stored via Laravel Storage::url()
+const getPhotoUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const api = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+  const base = api.replace(/\/api$/, "").replace(/\/$/, "");
+  return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export default function MesClientsPage() {
   const navigate = useNavigate();
   const [clients, setClients]     = useState([]);
@@ -110,8 +119,8 @@ export default function MesClientsPage() {
                       <td>{c.telephone}</td>
                       <td className="table-photo-cell">
                         {c.photo_piece_url ? (
-                          <a href={c.photo_piece_url} target="_blank" rel="noreferrer" className="photo-preview-link" title="Voir la photo de pièce">
-                            <img src={c.photo_piece_url} alt="Photo pièce" className="client-photo-thumb" />
+                          <a href={getPhotoUrl(c.photo_piece_url)} target="_blank" rel="noreferrer" className="photo-preview-link" title="Voir la photo de pièce">
+                            <img src={getPhotoUrl(c.photo_piece_url)} alt="Photo pièce" className="client-photo-thumb" />
                           </a>
                         ) : "—"}
                       </td>
