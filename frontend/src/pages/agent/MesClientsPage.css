@@ -107,6 +107,27 @@
 }
 .btn-info:hover { transform: scale(1.2); }
 
+.table-photo-cell {
+  padding: 0.5rem 0.75rem;
+  width: 90px;
+}
+
+.photo-preview-link {
+  display: inline-block;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.client-photo-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid #E5E7EB;
+  display: block;
+}
+
 .table-empty {
   text-align: center; padding: 40px;
   color: #9CA3AF; font-style: italic;

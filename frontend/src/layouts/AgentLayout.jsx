@@ -29,6 +29,8 @@ const [profil, setProfil] = useState(() => {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "16px",
         padding: "16px 24px",
         minHeight: "80px",
         background: "#fff",
@@ -36,7 +38,7 @@ const [profil, setProfil] = useState(() => {
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", minWidth: 0, flexWrap: "wrap" }}>
           <img
             src={logo2}
             alt="BOMBA CASH logo"
@@ -45,11 +47,11 @@ const [profil, setProfil] = useState(() => {
           <img
             src={logo3}
             alt="BOMBA CASH"
-            style={{ height: "90px", objectFit: "contain" }}
+            style={{ height: "90px", objectFit: "contain", maxWidth: "180px", minWidth: 0 }}
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: "16px", minWidth: 0, flexWrap: "wrap", marginLeft: "auto" }}>
           <button
             onClick={() => setShowHelp(true)}
             style={{
@@ -63,6 +65,7 @@ const [profil, setProfil] = useState(() => {
               cursor: "pointer",
               fontSize: "14px",
               transition: "all 0.2s",
+              whiteSpace: "nowrap",
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "#16A34A"; e.currentTarget.style.color = "#fff"; e.currentTarget.querySelector("span").style.background = "#fff"; e.currentTarget.querySelector("span").style.color = "#16A34A"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#16A34A"; e.currentTarget.querySelector("span").style.background = "#16A34A"; e.currentTarget.querySelector("span").style.color = "#fff"; }}
@@ -79,7 +82,7 @@ const [profil, setProfil] = useState(() => {
             Aide
           </button>
 
-          <span style={{ fontSize: "14px", color: "#374151" }}>
+          <span className="bienvenue-text" style={{ fontSize: "14px", color: "#374151", minWidth: 0, whiteSpace: "nowrap" }}>
             Bienvenue <strong>{user?.name ?? "Agent"}</strong>
           </span>
 
