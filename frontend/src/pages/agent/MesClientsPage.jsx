@@ -11,6 +11,7 @@ export default function MesClientsPage() {
   const [total, setTotal]         = useState(0);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [search, setSearch]       = useState("");
 
   const fetchClients = async () => {
@@ -110,9 +111,14 @@ export default function MesClientsPage() {
                       <td>{c.telephone}</td>
                       <td className="table-photo-cell">
                         {c.photo_piece_url ? (
-                          <a href={c.photo_piece_url} target="_blank" rel="noreferrer" className="photo-preview-link" title="Voir la photo de pièce">
+                          <button
+                            type="button"
+                            className="photo-preview-link"
+                            title="Voir la photo de pièce"
+                            onClick={() => setSelectedPhoto(c.photo_piece_url)}
+                          >
                             <img src={c.photo_piece_url} alt="Photo pièce" className="client-photo-thumb" />
-                          </a>
+                          </button>
                         ) : "—"}
                       </td>
                       <td>
@@ -138,6 +144,15 @@ export default function MesClientsPage() {
 
       {showModal && (
         <NouveauClientModal onClose={() => setShowModal(false)} onSuccess={handleSuccess} />
+      )}
+
+      {selectedPhoto && (
+        <div className="photo-modal" onClick={() => setSelectedPhoto(null)}>
+          <div className="photo-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="photo-modal-close" onClick={() => setSelectedPhoto(null)} aria-label="Fermer">✕</button>
+            <img src={selectedPhoto} alt="Photo pièce agrandie" />
+          </div>
+        </div>
       )}
     </div>
   );
