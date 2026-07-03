@@ -99,7 +99,7 @@ export function useOperations(enablePolling = true, pollingInterval = POLLING_IN
           const agent = t.nom_agent || (t.agent ? (t.agent.user?.name || `${t.agent.nom || ''} ${t.agent.prenom || ''}`.trim()) : '');
 
           // Kiosque
-          const kiosque = t.kiosque?._attributes?.nom_kiosque || t.kiosque?.nom_kiosque || t.kiosque?.nom || t.kiosque || '';
+          const kiosque = t.nom_kiosque || t.kiosque?._attributes?.nom_kiosque || t.kiosque?.nom_kiosque || t.kiosque?.nom || t.kiosque || '';
 
           return {
             // champs attendus par OperationsTable

@@ -153,11 +153,25 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     setErrors(er => ({ ...er, [e.target.name]: "" }));
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    setForm(f => ({ ...f, photo_pieces: files }));
+  const handleSingleFileChange = (e, index) => {
+    const file = e.target.files?.[0];
+    setForm(f => {
+      const newPhotos = [...(f.photo_pieces || [])];
+      newPhotos[index] = file || null;
+      return { ...f, photo_pieces: newPhotos };
+    });
     setErrors(er => ({ ...er, photo_pieces: "" }));
-    setPhotoPreview(files.map(file => URL.createObjectURL(file)));
+    
+    setPhotoPreview(prev => {
+      const newPreview = [...prev];
+      if (file) {
+        if (newPreview[index]) URL.revokeObjectURL(newPreview[index]);
+        newPreview[index] = URL.createObjectURL(file);
+      } else {
+        newPreview[index] = null;
+      }
+      return newPreview;
+    });
   };
 
   const validate = () => {
@@ -168,7 +182,8 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     if (!form.ville.trim())     e.ville     = "Requis";
     if (!form.activite.trim())  e.activite  = "Requis";
     if (!form.num_piece.trim()) e.num_piece = "Requis";
-    if (!form.photo_pieces.length) e.photo_pieces = "Au moins une photo de pièce est requise";
+    const validPhotos = form.photo_pieces.filter(Boolean);
+    if (validPhotos.length === 0) e.photo_pieces = "La photo recto est requise";
     if (!form.telephone.trim()) e.telephone = "Requis";
     if (!form.montant || Number(form.montant) < 1000) e.montant = "Montant minimum : 1 000 F";
     setErrors(e);
@@ -220,11 +235,11 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       });
       payload.append('qr_code_uid', carteInfo.qr_code_uid);
       payload.set('montant', Number(form.montant));
-
-      form.photo_pieces.forEach(file => payload.append('photo_pieces[]', file));
-      await axiosClient.post("/api/agent/clients/register", payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      form.photo_pieces.filter(Boolean).forEach(file => payload.append('photo_pieces[]', file));
+      // ⚠️ Ne pas forcer Content-Type ici : axios détecte automatiquement
+      // le boundary multipart/form-data quand on passe un FormData.
+      // Forcer le header manuellement supprime le boundary et casse le parsing côté PHP.
+      await axiosClient.post("/api/agent/clients/register", payload);
       onSuccess();
     } catch (err) {
       const status = err.response?.status;
@@ -407,36 +422,30 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Photos de la pièce</label>
-                    <input type="file" accept="image/*" capture="environment" multiple
-                      className={`form-input ${errors.photo_pieces ? "form-input--error" : ""}`}
-                      name="photo_pieces[]" onChange={handleFileChange} />
+                    <label className="form-label">Pièce d'identité (Photos)</label>
+                    <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Recto (Avant) *</label>
+                        <input type="file" accept="image/*" capture="environment"
+                          className={`form-input ${errors.photo_pieces ? "form-input--error" : ""}`}
+                          onChange={(e) => handleSingleFileChange(e, 0)} style={{ padding: '8px', fontSize: '12px' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Verso (Arrière)</label>
+                        <input type="file" accept="image/*" capture="environment"
+                          className="form-input"
+                          onChange={(e) => handleSingleFileChange(e, 1)} style={{ padding: '8px', fontSize: '12px' }} />
+                      </div>
+                    </div>
                     {errors.photo_pieces && <span className="form-error">{errors.photo_pieces}</span>}
-                    {photoPreview.length > 0 && (
-                      <div className="form-image-preview-grid">
+                    {photoPreview.some(Boolean) && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                         {photoPreview.map((src, index) => (
-                          <img key={index} src={src} alt={`Prévisualisation pièce ${index + 1}`} className="form-image-preview" />
+                          src ? <img key={index} src={src} alt={`Face ${index + 1}`} style={{ width: '100px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb' }} /> : null
                         ))}
                       </div>
                     )}
                   </div>
-
-                </div>
-              </div>
-
-              {/* COLONNE DROITE : Activation carte */}
-              <div className="form-col">
-                <div className="form-col-header form-col-header--green">
-                  Activation carte
-                </div>
-                <div className="form-col-body">
-
-                  <div className="form-group">
-                    <label className="form-label">Numéro de carte *</label>
-                    <input className="form-input form-input--readonly"
-                      value={carteInfo?.numero_carte || ""} readOnly />
-                  </div>
-
                   <div className="form-group">
                     <label className="form-label">Durée de carte</label>
                     <div className="radio-group">

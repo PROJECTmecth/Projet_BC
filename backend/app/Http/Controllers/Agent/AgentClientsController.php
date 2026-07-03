@@ -60,7 +60,7 @@ class AgentClientsController extends Controller
         if (!$client) return response()->json(['success' => false, 'message' => 'Client introuvable.'], 404);
 
         // Transactions du client
-        $transactions = Transaction::with(['kiosque', 'agent.user'])
+        $transactions = Transaction::with(['kiosque', 'agent.user', 'agent.kiosque'])
             ->where('id_client', $client->id_client)
             ->orderBy('date_heure', 'desc')
             ->get()
@@ -74,7 +74,7 @@ class AgentClientsController extends Controller
                     default                 => $t->type_op,
                 },
                 'montant'   => number_format($t->montant, 0, ',', ' ') . ' F',
-                'kiosque'   => $t->kiosque->nom_kiosque ?? '—',
+                'kiosque'   => $t->kiosque->nom_kiosque ?? $t->agent->kiosque->nom_kiosque ?? '—',
                 'agent'     => $t->agent->user->name ?? '—',
             ]);
 
@@ -137,9 +137,9 @@ class AgentClientsController extends Controller
             'nationalite'     => 'required|in:Résident,Étranger',
             'type_piece'      => 'required|in:CNI,NIU,Passeport,Permis',
             'num_piece'       => 'required|string|max:50|unique:clients',
-            'photo_pieces'    => 'required_without:photo_piece|array|min:1',
-            'photo_pieces.*'  => 'image|max:2048',
-            'photo_piece'     => 'sometimes|image|max:2048',
+            'photo_pieces'    => 'required_without:photo_piece|array|min:1|max:2',
+            'photo_pieces.*'  => 'image|max:5120',
+            'photo_piece'     => 'sometimes|image|max:5120',
             'telephone'       => 'required|string|max:20',
             'qr_code_uid'     => 'required|string',
             'montant'         => 'required|numeric|min:1000',
@@ -187,9 +187,10 @@ class AgentClientsController extends Controller
                 'id_user'       => $user->id,
             ]);
 
-            $fraisGarde     = $request->montant * 0.5;
-            $soldeFinal     = $request->montant - $fraisGarde;
             $nbJours        = $request->duree === '15 jours' ? 15 : 30;
+            $tauxFrais      = $nbJours === 15 ? 0.5 : 1.0; // 50% pour 15j, 100% pour 30j
+            $fraisGarde     = $request->montant * $tauxFrais;
+            $soldeFinal     = $request->montant - $fraisGarde;
             $dateActivation = Carbon::today();
             $dateExpiration = $dateActivation->copy()->addDays($nbJours);
 
