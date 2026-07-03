@@ -28,6 +28,14 @@ export default function ProfilClientPage() {
 
   const fmt = (v) => new Intl.NumberFormat("fr-FR").format(isNaN(Number(v)) ? 0 : Number(v)) + " F";
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
+  const getPhotoUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    const base = (axiosClient.defaults.baseURL || import.meta.env.VITE_API_URL || window.location.origin || "http://localhost:8000")
+      .replace(/\/api\/?$/, '')
+      .replace(/\/$/, '');
+    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
 
   // Cercle de progression SVG
   const CircleProgress = ({ pct = 0 }) => {
@@ -122,11 +130,21 @@ export default function ProfilClientPage() {
 
       {/* Bloc identité */}
       <div className="profil-identite">
-        <div className="profil-avatar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-          </svg>
+          <div className="profil-avatar">
+          {infos.photo_piece_url ? (
+            <a href={getPhotoUrl(infos.photo_piece_url)} target="_blank" rel="noreferrer">
+              <img
+                src={getPhotoUrl(infos.photo_piece_url)}
+                alt="Photo de pièce"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', border: '2px solid #F97316' }}
+              />
+            </a>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          )}
         </div>
         <div className="profil-infos">
           <h2 className="profil-nom">{infos.prenom} {infos.nom}</h2>

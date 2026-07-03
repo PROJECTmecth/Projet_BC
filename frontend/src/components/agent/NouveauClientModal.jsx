@@ -4,6 +4,39 @@ import Swal from "sweetalert2";
 import axiosClient from "../../lib/axios";
 import "./NouveauClientModal.css";
 
+const compressImageFile = async (file) => {
+  if (!file || !file.type?.startsWith("image/")) return file;
+  const maxSizeBytes = 1200000; // 1.2MB
+  if (file.size <= maxSizeBytes && !/heic|heif/i.test(file.type)) return file;
+
+  try {
+    const img = await new Promise((resolve, reject) => {
+      if (window.createImageBitmap) {
+        createImageBitmap(file).then(resolve).catch(reject);
+      } else {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = URL.createObjectURL(file);
+      }
+    });
+
+    const maxSide = 1200;
+    const ratio = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * ratio);
+    canvas.height = Math.round(img.height * ratio);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+};
+
 const ETAPES = { SCAN: "scan", FORMULAIRE: "formulaire" };
 
 const initialForm = {
@@ -153,23 +186,36 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     setErrors(er => ({ ...er, [e.target.name]: "" }));
   };
 
-  const handleSingleFileChange = (e, index) => {
-    const file = e.target.files?.[0];
+  const handleSingleFileChange = async (e, index) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) {
+      setForm(f => {
+        const newPhotos = [...(f.photo_pieces || [])];
+        newPhotos[index] = null;
+        return { ...f, photo_pieces: newPhotos };
+      });
+      setPhotoPreview(prev => {
+        const newPreview = [...prev];
+        newPreview[index] = null;
+        return newPreview;
+      });
+      setErrors(er => ({ ...er, photo_pieces: "" }));
+      return;
+    }
+
+    const file = await compressImageFile(selectedFile);
+
     setForm(f => {
       const newPhotos = [...(f.photo_pieces || [])];
-      newPhotos[index] = file || null;
+      newPhotos[index] = file;
       return { ...f, photo_pieces: newPhotos };
     });
     setErrors(er => ({ ...er, photo_pieces: "" }));
-    
+
     setPhotoPreview(prev => {
       const newPreview = [...prev];
-      if (file) {
-        if (newPreview[index]) URL.revokeObjectURL(newPreview[index]);
-        newPreview[index] = URL.createObjectURL(file);
-      } else {
-        newPreview[index] = null;
-      }
+      if (newPreview[index]) URL.revokeObjectURL(newPreview[index]);
+      newPreview[index] = URL.createObjectURL(file);
       return newPreview;
     });
   };
@@ -426,13 +472,13 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Recto (Avant) *</label>
-                        <input name="photo_pieces[]" type="file" accept="image/*" capture="environment"
+                        <input name="photo_pieces[]" type="file" accept="image/jpeg,image/png,image/jpg,image/webp,image/heic,image/heif" capture="environment"
                           className={`form-input ${errors.photo_pieces ? "form-input--error" : ""}`}
                           onChange={(e) => handleSingleFileChange(e, 0)} style={{ padding: '8px', fontSize: '12px' }} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Verso (Arrière)</label>
-                        <input name="photo_pieces[]" type="file" accept="image/*" capture="environment"
+                        <input name="photo_pieces[]" type="file" accept="image/jpeg,image/png,image/jpg,image/webp,image/heic,image/heif" capture="environment"
                           className="form-input"
                           onChange={(e) => handleSingleFileChange(e, 1)} style={{ padding: '8px', fontSize: '12px' }} />
                       </div>

@@ -38,7 +38,7 @@ class AgentClientsController extends Controller
                 'statut_carte'     => $c->carte->statut ?? 'N/A',
                 'date_activation'  => $c->carte->date_activation ?? null,
                 'date_expiration'  => $c->carte->date_expiration ?? null,
-                'photo_piece_url'  => (!empty($c->photo_pieces) && count($c->photo_pieces) > 0)
+                'photo_piece_url'  => (is_array($c->photo_pieces) && count($c->photo_pieces) > 0)
                     ? Storage::url($c->photo_pieces[0])
                     : ($c->photo_piece ? Storage::url($c->photo_piece) : null),
             ]);
@@ -94,7 +94,7 @@ class AgentClientsController extends Controller
                     'telephone'   => $client->telephone,
                     'type_piece'  => $client->type_piece,
                     'num_piece'   => $client->num_piece,
-                    'photo_piece_url' => (!empty($client->photo_pieces) && count($client->photo_pieces) > 0)
+                    'photo_piece_url' => (is_array($client->photo_pieces) && count($client->photo_pieces) > 0)
                         ? Storage::url($client->photo_pieces[0])
                         : ($client->photo_piece ? Storage::url($client->photo_piece) : null),
                 ],
@@ -142,8 +142,8 @@ class AgentClientsController extends Controller
             'type_piece'      => 'required|in:CNI,NIU,Passeport,Permis',
             'num_piece'       => 'required|string|max:50|unique:clients',
             'photo_pieces'    => 'required_without:photo_piece|array|min:1|max:2',
-            'photo_pieces.*'  => 'image|max:5120',
-            'photo_piece'     => 'sometimes|image|max:5120',
+            'photo_pieces.*'  => 'file|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:10240',
+            'photo_piece'     => 'sometimes|file|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:10240',
             'telephone'       => 'required|string|max:20',
             'qr_code_uid'     => 'required|string',
             'montant'         => 'required|numeric|min:1000',

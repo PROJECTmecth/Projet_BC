@@ -2,21 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { X, Printer, FileText } from "lucide-react";
+import axiosClient from "../../lib/axios";
 
 const fmt = (n) => Number(n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u00A0");
-
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 const getPhotoUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const base = API.replace(/\/api$/, '').replace(/\/$/, '');
+  const base = (import.meta.env.VITE_API_URL || window.location.origin || "http://localhost:8000")
+    .replace(/\/api\/?$/, '')
+    .replace(/\/$/, '');
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
-const h   = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("token")}`,
-});
 
 function CircleProgress({ pct = 0 }) {
   const r = 54, circ = 2 * Math.PI * r, dash = (pct / 100) * circ;
@@ -46,9 +43,8 @@ export default function ClientDetailModal({ client, onClose }) {
   useEffect(() => {
     if (!client) return;
     setLoading(true);
-    fetch(`${API}/admin/clients/${client.id_client}`, { headers: h() })
-      .then(r => r.json())
-      .then(res => setData(res.data))
+    axiosClient.get(`/api/admin/clients/${client.id_client}`)
+      .then(({ data: res }) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [client]);
