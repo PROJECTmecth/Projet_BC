@@ -426,13 +426,13 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
                       <div style={{ flex: 1 }}>
                         <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Recto (Avant) *</label>
-                        <input type="file" accept="image/*" capture="environment"
+                        <input name="photo_pieces[]" type="file" accept="image/*" capture="environment"
                           className={`form-input ${errors.photo_pieces ? "form-input--error" : ""}`}
                           onChange={(e) => handleSingleFileChange(e, 0)} style={{ padding: '8px', fontSize: '12px' }} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>Verso (Arrière)</label>
-                        <input type="file" accept="image/*" capture="environment"
+                        <input name="photo_pieces[]" type="file" accept="image/*" capture="environment"
                           className="form-input"
                           onChange={(e) => handleSingleFileChange(e, 1)} style={{ padding: '8px', fontSize: '12px' }} />
                       </div>
