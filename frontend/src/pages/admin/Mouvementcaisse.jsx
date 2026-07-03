@@ -102,6 +102,8 @@ function ModalDetail({ row, onClose }) {
 
 export default function MouvementCaisse() {
   const [transactions, setTransactions] = useState([]);
+  const [filterOp, setFilterOp]         = useState("");
+  const [currentPage, setCurrentPage]   = useState(1);
   const [totaux, setTotaux]             = useState({});
   const [loading, setLoading]           = useState(true);
   const [selected, setSelected]         = useState(null);
@@ -118,7 +120,7 @@ export default function MouvementCaisse() {
 
   // --- Sécurité : Vérification des données ---
   const hasData = (action) => {
-    if (transactions.length === 0) {
+    if (filteredTransactions.length === 0) {
       Swal.fire("Action impossible", `Il n'y a aucune donnée à ${action}.`, "warning");
       return false;
     }
@@ -203,7 +205,7 @@ export default function MouvementCaisse() {
         doc.text("Mouvement de Solde - Rapport", 14, 15);
         
         const tableColumn = ["ID Carte", "ID Client", "Opération", "Montant", "Pénalité", "Solde"];
-        const tableRows = transactions.map(t => [
+        const tableRows = filteredTransactions.map(t => [
           t.id_carte,
           t.id_client,
           opLabel(t.type_op),
@@ -238,13 +240,33 @@ export default function MouvementCaisse() {
       cancelButtonText: "Annuler"
     }).then((result) => {
       if (result.isConfirmed) {
-        const worksheet = XLSX.utils.json_to_sheet(transactions);
+        const worksheet = XLSX.utils.json_to_sheet(filteredTransactions);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
         XLSX.writeFile(workbook, "mouvements_caisse.xlsx");
       }
     });
   };
+
+  // --- Filtre et pagination ---
+  const filteredTransactions = transactions.filter(t => {
+    if (filterOp && t.type_op !== filterOp) return false;
+    return true;
+  });
+
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const paginatedTransactions = filteredTransactions.slice(startIdx, endIdx);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterOp]);
+
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
 
   return (
     <div className="printable-area">
@@ -255,25 +277,41 @@ export default function MouvementCaisse() {
       </div>
 
       {/* ── Actions (Hidden on Print) ─────────────────────────────── */}
-      <div className="bg-white rounded-2xl p-4 flex flex-wrap gap-2 justify-end mb-5 shadow-sm no-print">
-        <button 
-          type="button"
-          onClick={handlePrint}
-          className="flex items-center gap-2 border border-[#1e2a3a] text-[#1e2a3a] px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 text-xs sm:text-sm font-medium">
-          <Printer size={15} /> <span className="hidden sm:inline">Imprimer</span>
-        </button>
-        <button 
-          type="button"
-          onClick={exportPDF}
-          className="flex items-center gap-2 border border-red-500 text-red-500 px-3 sm:px-4 py-2 rounded-lg hover:bg-red-50 text-xs sm:text-sm font-medium">
-          <FileText size={15} /> <span className="hidden sm:inline">Exporter PDF</span><span className="sm:hidden">PDF</span>
-        </button>
-        <button 
-          type="button"
-          onClick={exportExcel}
-          className="flex items-center gap-2 border border-green-600 text-green-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-green-50 text-xs sm:text-sm font-medium">
-          <Download size={15} /> <span className="hidden sm:inline">Exporter Excel</span><span className="sm:hidden">Excel</span>
-        </button>
+      <div className="bg-white rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between mb-5 shadow-sm no-print">
+        {/* Filtre type d'opération */}
+        <div className="flex items-center gap-2">
+          <select
+            value={filterOp}
+            onChange={(e) => setFilterOp(e.target.value)}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold outline-none transition-colors border-none cursor-pointer min-w-[200px]"
+          >
+            <option value="">Toutes les opérations</option>
+            <option value="dépôt_cash">Dépôt cash</option>
+            <option value="retrait_partiel">Retrait partiel</option>
+            <option value="retrait_solde_compte">Retrait total</option>
+          </select>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button 
+            type="button"
+            onClick={handlePrint}
+            className="flex items-center gap-2 border border-[#1e2a3a] text-[#1e2a3a] px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 text-xs sm:text-sm font-medium">
+            <Printer size={15} /> <span className="hidden sm:inline">Imprimer</span>
+          </button>
+          <button 
+            type="button"
+            onClick={exportPDF}
+            className="flex items-center gap-2 border border-red-500 text-red-500 px-3 sm:px-4 py-2 rounded-lg hover:bg-red-50 text-xs sm:text-sm font-medium">
+            <FileText size={15} /> <span className="hidden sm:inline">Exporter PDF</span><span className="sm:hidden">PDF</span>
+          </button>
+          <button 
+            type="button"
+            onClick={exportExcel}
+            className="flex items-center gap-2 border border-green-600 text-green-600 px-3 sm:px-4 py-2 rounded-lg hover:bg-green-50 text-xs sm:text-sm font-medium">
+            <Download size={15} /> <span className="hidden sm:inline">Exporter Excel</span><span className="sm:hidden">Excel</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Tableau ───────────────────────────────────────────────── */}
@@ -296,9 +334,9 @@ export default function MouvementCaisse() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={8} className="text-center py-10 text-gray-400">Chargement…</td></tr>
-              ) : transactions.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-400">Aucune transaction</td></tr>
-              ) : transactions.map((t, i) => {
+              ) : filteredTransactions.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-10 text-gray-400">Aucune transaction correspondante</td></tr>
+              ) : paginatedTransactions.map((t, i) => {
                 const isPositif = t.type_op === "dépôt_cash";
                 return (
                   <tr key={t.id_trans} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
@@ -330,6 +368,93 @@ export default function MouvementCaisse() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredTransactions.length > ITEMS_PER_PAGE && (
+        <div className="bg-white rounded-2xl px-6 py-4 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm border border-gray-100 no-print mb-5">
+
+          {/* Info */}
+          <p className="text-sm text-gray-500">
+            Affichage{" "}
+            <span className="font-semibold text-gray-800">{startIdx + 1}</span>
+            {" "}&agrave;{" "}
+            <span className="font-semibold text-gray-800">{Math.min(endIdx, filteredTransactions.length)}</span>
+            {" "}sur{" "}
+            <span className="font-semibold text-[#FF6600]">{filteredTransactions.length}</span>
+            {" "}op&eacute;ration{filteredTransactions.length > 1 ? "s" : ""}
+          </p>
+
+          {/* Boutons */}
+          <div className="flex items-center gap-1">
+
+            {/* Précédent */}
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span className="hidden sm:inline">Pr&eacute;c&eacute;dent</span>
+            </button>
+
+            {/* Numéros de pages avec ellipsis */}
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const delta = 1;
+                const left  = currentPage - delta;
+                const right = currentPage + delta;
+
+                let prev = null;
+                for (let p = 1; p <= totalPages; p++) {
+                  if (p === 1 || p === totalPages || (p >= left && p <= right)) {
+                    if (prev !== null && p - prev > 1) {
+                      pages.push("...");
+                    }
+                    pages.push(p);
+                    prev = p;
+                  }
+                }
+
+                return pages.map((p, i) =>
+                  p === "..." ? (
+                    <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm select-none">
+                      &hellip;
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                        currentPage === p
+                          ? "bg-[#FF6600] text-white shadow-md shadow-orange-200 scale-105"
+                          : "text-gray-600 border border-gray-200 bg-white hover:bg-orange-50 hover:border-orange-200 hover:text-[#FF6600]"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                );
+              })()}
+            </div>
+
+            {/* Suivant */}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <span className="hidden sm:inline">Suivant</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+
+          </div>
+        </div>
+      )}
 
       {/* ── Totaux ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

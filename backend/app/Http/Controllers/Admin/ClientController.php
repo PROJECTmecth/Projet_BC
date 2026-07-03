@@ -130,28 +130,56 @@ class ClientController extends Controller
         $femmes = Client::where('genre', 'Femme')->count();
         
         // 📊 Catégories par activité
-        $categories = Client::selectRaw('activite, COUNT(*) as count')
+        $counts = [
+            'Commerçant'   => 0,
+            'Ménagère'     => 0,
+            'Travailleurs' => 0,
+            'Étudiants'    => 0,
+        ];
+
+        $dbCounts = Client::selectRaw('activite, COUNT(*) as count')
             ->groupBy('activite')
-            ->orderByDesc('count')
-            ->get()
-            ->map(fn($c) => [
-                'label' => $c->activite ?? 'Autre',
-                'count' => $c->count,
-                'color' => match(strtolower($c->activite ?? '')) {
-                    'commerçant', 'commerçante', 'commercant', 'commercante' => 'text-blue-600',
-                    'ménagère', 'menagere'                                   => 'text-purple-600',
-                    'travailleur', 'travailleurs'                           => 'text-yellow-600',
-                    'étudiant', 'étudiants', 'étudiante', 'etudiant', 'etudiants', 'etudiante' => 'text-green-600',
-                    default                                                 => 'text-gray-600',
-                },
-                'bg' => match(strtolower($c->activite ?? '')) {
-                    'commerçant', 'commerçante', 'commercant', 'commercante' => 'bg-blue-50',
-                    'ménagère', 'menagere'                                   => 'bg-purple-50',
-                    'travailleur', 'travailleurs'                           => 'bg-yellow-50',
-                    'étudiant', 'étudiants', 'étudiante', 'etudiant', 'etudiants', 'etudiante' => 'bg-green-50',
-                    default                                                 => 'bg-gray-50',
-                },
-            ]);
+            ->get();
+
+        foreach ($dbCounts as $c) {
+            $act = strtolower($c->activite ?? '');
+            if (in_array($act, ['commerçant', 'commerçante', 'commercant', 'commercante'])) {
+                $counts['Commerçant'] += $c->count;
+            } elseif (in_array($act, ['ménagère', 'menagere'])) {
+                $counts['Ménagère'] += $c->count;
+            } elseif (in_array($act, ['travailleur', 'travailleurs'])) {
+                $counts['Travailleurs'] += $c->count;
+            } elseif (in_array($act, ['étudiant', 'étudiants', 'étudiante', 'etudiant', 'etudiants', 'etudiante'])) {
+                $counts['Étudiants'] += $c->count;
+            }
+        }
+
+        $categories = [
+            [
+                'label' => 'Commerçant',
+                'count' => $counts['Commerçant'],
+                'color' => 'text-blue-600',
+                'bg'    => 'bg-blue-50',
+            ],
+            [
+                'label' => 'Ménagère',
+                'count' => $counts['Ménagère'],
+                'color' => 'text-purple-600',
+                'bg'    => 'bg-purple-50',
+            ],
+            [
+                'label' => 'Travailleurs',
+                'count' => $counts['Travailleurs'],
+                'color' => 'text-yellow-600',
+                'bg'    => 'bg-yellow-50',
+            ],
+            [
+                'label' => 'Étudiants',
+                'count' => $counts['Étudiants'],
+                'color' => 'text-green-600',
+                'bg'    => 'bg-green-50',
+            ],
+        ];
         
         // 📈 Enregistrements par mois : 12 derniers mois (100% dynamique depuis la BDD)
         $monthly = collect(range(11, 0))->map(function ($i) {

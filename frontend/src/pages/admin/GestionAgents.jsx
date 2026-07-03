@@ -17,6 +17,7 @@ import {
   WifiOff,
   UserPlus,
   Pencil,
+  Search,
 } from "lucide-react";
 
 const BASE = "/api/admin/agents";
@@ -24,6 +25,8 @@ const BASE_KIOSQUE = "/api/admin/kiosques";
 
 export default function GestionAgents() {
   const [agents, setAgents] = useState([]);
+  const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [kiosques, setKiosques] = useState([]);
   const [stats, setStats] = useState({ total: 0, en_ligne: 0, hors_ligne: 0 });
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,10 @@ const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   // ── Supprimer ───────────────────────────────────────────────────────────────
   const handleDelete = async (agent) => {
@@ -150,6 +157,23 @@ const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation
     }
   };
 
+  // ── Filtrage et Pagination ────────────────────────────────────────────────
+  const filteredAgents = agents.filter(a =>
+    `${a.nom} ${a.email} ${a.telephone} ${a.adresse} ${a.kiosque?.nom_kiosque ?? ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredAgents.length / ITEMS_PER_PAGE));
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const paginatedAgents = filteredAgents.slice(startIdx, endIdx);
+
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
+
   return (
     <div>
       {/* ── Bannière ────────────────────────────────────────────────────── */}
@@ -197,10 +221,22 @@ const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation
       </div>
 
       {/* ── Barre actions ────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
-        <h2 className="text-[16px] font-bold text-gray-700">
-          Liste des agents
-        </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3 flex-1 min-w-[240px]">
+          <h2 className="text-[16px] font-bold text-gray-700 shrink-0">
+            Liste des agents
+          </h2>
+          <div className="relative flex-1 max-w-xs">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher un agent..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-xl text-xs outline-none border border-transparent focus:border-[#FF6600] focus:bg-white transition-colors"
+            />
+          </div>
+        </div>
         <button
           onClick={() => setModal(true)}
           className="flex items-center gap-2 px-5 py-[10px] bg-[#FF6600] hover:bg-orange-700 text-white rounded-xl font-bold text-[13px] transition-colors w-full sm:w-auto justify-center sm:justify-start"
@@ -248,7 +284,7 @@ const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation
               {loading ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="text-center py-16 text-gray-400 text-sm"
                   >
                     ⏳ Chargement…
@@ -257,14 +293,23 @@ const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation
               ) : agents.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="text-center py-16 text-gray-400 text-sm"
                   >
                     Aucun agent trouvé
                   </td>
                 </tr>
+              ) : paginatedAgents.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="text-center py-16 text-gray-400 text-sm"
+                  >
+                    Aucun agent ne correspond à votre recherche
+                  </td>
+                </tr>
               ) : (
-                agents.map((a, i) => (
+                paginatedAgents.map((a, i) => (
                   <tr
                     key={a.id}
                     className={[
@@ -273,7 +318,7 @@ const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation
                     ].join(" ")}
                   >
                     <td className="px-4 py-4 text-[13px] font-bold text-gray-400">
-                      {i + 1}
+                      {startIdx + i + 1}
                     </td>
                     <td className="px-4 py-4">
                       <p className="font-bold text-[13px] text-gray-900">
@@ -334,6 +379,93 @@ const [animatedHorsLigne, setAnimatedHorsLigne] = useState(0); // pour animation
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredAgents.length > ITEMS_PER_PAGE && (
+        <div className="bg-white rounded-2xl px-6 py-4 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm border border-gray-100">
+
+          {/* Info */}
+          <p className="text-sm text-gray-500">
+            Affichage{" "}
+            <span className="font-semibold text-gray-800">{startIdx + 1}</span>
+            {" "}&agrave;{" "}
+            <span className="font-semibold text-gray-800">{Math.min(endIdx, filteredAgents.length)}</span>
+            {" "}sur{" "}
+            <span className="font-semibold text-[#FF6600]">{filteredAgents.length}</span>
+            {" "}agent{filteredAgents.length > 1 ? "s" : ""}
+          </p>
+
+          {/* Boutons */}
+          <div className="flex items-center gap-1">
+
+            {/* Précédent */}
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              <span className="hidden sm:inline">Pr&eacute;c&eacute;dent</span>
+            </button>
+
+            {/* Numéros de pages avec ellipsis */}
+            <div className="flex items-center gap-1">
+              {(() => {
+                const pages = [];
+                const delta = 1;
+                const left  = currentPage - delta;
+                const right = currentPage + delta;
+
+                let prev = null;
+                for (let p = 1; p <= totalPages; p++) {
+                  if (p === 1 || p === totalPages || (p >= left && p <= right)) {
+                    if (prev !== null && p - prev > 1) {
+                      pages.push("...");
+                    }
+                    pages.push(p);
+                    prev = p;
+                  }
+                }
+
+                return pages.map((p, i) =>
+                  p === "..." ? (
+                    <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm select-none">
+                      &hellip;
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                        currentPage === p
+                          ? "bg-[#FF6600] text-white shadow-md shadow-orange-200 scale-105"
+                          : "text-gray-600 border border-gray-200 bg-white hover:bg-orange-50 hover:border-orange-200 hover:text-[#FF6600]"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                );
+              })()}
+            </div>
+
+            {/* Suivant */}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <span className="hidden sm:inline">Suivant</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+
+          </div>
+        </div>
+      )}
 
       {/* ── Modal création ──────────────────────────────────────────────── */}
       {modal && (
