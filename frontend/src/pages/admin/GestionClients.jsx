@@ -187,6 +187,8 @@ export default function GestionClients() {
   const [total, setTotal]           = useState(0);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
+  const [filterActivite, setFilterActivite] = useState("");
+  const [filterGenre, setFilterGenre]       = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -211,13 +213,38 @@ export default function GestionClients() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = useMemo(() =>
-    clients.filter(c =>
-      `${c.nom} ${c.prenom} ${c.telephone} ${c.numero_carte}`
-        .toLowerCase().includes(search.toLowerCase())
-    ), [clients, search]);
+  const filtered = useMemo(() => {
+    return clients.filter(c => {
+      // 1. Recherche par texte
+      const matchesSearch = `${c.nom} ${c.prenom} ${c.telephone} ${c.numero_carte}`
+        .toLowerCase().includes(search.toLowerCase());
 
-  useEffect(() => { setCurrentPage(1); }, [search]);
+      // 2. Filtre Activité
+      let matchesActivite = true;
+      if (filterActivite) {
+        const act = (c.activite ?? "").toLowerCase();
+        if (filterActivite === "commercant") {
+          matchesActivite = ['commerçant', 'commerçante', 'commercant', 'commercante'].includes(act);
+        } else if (filterActivite === "menagere") {
+          matchesActivite = ['ménagère', 'menagere'].includes(act);
+        } else if (filterActivite === "travailleurs") {
+          matchesActivite = ['travailleur', 'travailleurs'].includes(act);
+        } else if (filterActivite === "etudiants") {
+          matchesActivite = ['étudiant', 'étudiants', 'étudiante', 'etudiant', 'etudiants', 'etudiante'].includes(act);
+        }
+      }
+
+      // 3. Filtre Genre
+      let matchesGenre = true;
+      if (filterGenre) {
+        matchesGenre = c.genre === filterGenre;
+      }
+
+      return matchesSearch && matchesActivite && matchesGenre;
+    });
+  }, [clients, search, filterActivite, filterGenre]);
+
+  useEffect(() => { setCurrentPage(1); }, [search, filterActivite, filterGenre]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const startIdx   = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -531,6 +558,30 @@ export default function GestionClients() {
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none" />
         </div>
+
+        {/* Filtre Activité */}
+        <select
+          value={filterActivite}
+          onChange={e => setFilterActivite(e.target.value)}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-750 px-3 py-2.5 rounded-xl text-sm font-semibold outline-none transition-colors border-none cursor-pointer min-w-[150px]"
+        >
+          <option value="">Toutes activités</option>
+          <option value="commercant">Commerçant</option>
+          <option value="menagere">Ménagère</option>
+          <option value="travailleurs">Travailleurs</option>
+          <option value="etudiants">Étudiants</option>
+        </select>
+
+        {/* Filtre Genre */}
+        <select
+          value={filterGenre}
+          onChange={e => setFilterGenre(e.target.value)}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-755 px-3 py-2.5 rounded-xl text-sm font-semibold outline-none transition-colors border-none cursor-pointer min-w-[120px]"
+        >
+          <option value="">Tous genres</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
+        </select>
         <button onClick={handlePrint} 
           className="flex items-center gap-1.5 border border-[#1e2a3a] text-[#1e2a3a] px-3 py-2 rounded-lg text-sm hover:bg-gray-50" 
           title="Imprimer">
