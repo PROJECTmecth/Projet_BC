@@ -19,9 +19,8 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => 
 const getPhotoUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const base = (import.meta.env.VITE_API_URL || window.location.origin || 'http://localhost:8000')
-    .replace(/\/api\/?$/, '')
-    .replace(/\/$/, '');
+  const apiUrl = import.meta.env.VITE_API_URL || window.location.origin || 'http://localhost:8000';
+  const base = apiUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 

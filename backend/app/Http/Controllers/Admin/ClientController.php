@@ -95,7 +95,9 @@ class ClientController extends Controller
                     'nationalite' => $client->nationalite,
                     'type_piece'  => $client->type_piece,
                     'num_piece'   => $client->num_piece,
-                    'photo_pieces_urls' => collect(is_array($client->photo_pieces) ? $client->photo_pieces : [])
+                    'photo_pieces_urls' => collect(
+                        is_array($client->photo_pieces) ? $client->photo_pieces : (json_decode($client->photo_pieces ?? '[]', true) ?: [])
+                    )
                         ->filter()
                         ->map(fn($p) => \Illuminate\Support\Facades\Storage::url($p))
                         ->toArray(),

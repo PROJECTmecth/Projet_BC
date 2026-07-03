@@ -6,32 +6,38 @@ import "./NouveauClientModal.css";
 
 const compressImageFile = async (file) => {
   if (!file || !file.type?.startsWith("image/")) return file;
-  const maxSizeBytes = 1200000; // 1.2MB
-  if (file.size <= maxSizeBytes && !/heic|heif/i.test(file.type)) return file;
+  const shouldCompress = file.size > 1200000 || /heic|heif/i.test(file.type);
+  if (!shouldCompress) return file;
 
   try {
-    const img = await new Promise((resolve, reject) => {
+    const loadImage = async () => {
       if (window.createImageBitmap) {
-        createImageBitmap(file).then(resolve).catch(reject);
-      } else {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = URL.createObjectURL(file);
+        return await createImageBitmap(file);
       }
-    });
+      return await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    };
 
-    const maxSide = 1200;
-    const ratio = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const image = await loadImage();
+    const maxSize = 1200;
+    const ratio = Math.min(1, maxSize / Math.max(image.width, image.height));
+    const width = Math.round(image.width * ratio);
+    const height = Math.round(image.height * ratio);
     const canvas = document.createElement("canvas");
-    canvas.width = Math.round(img.width * ratio);
-    canvas.height = Math.round(img.height * ratio);
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0, width, height);
 
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.75));
     if (!blob) return file;
-    return new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: "image/jpeg" });
+
+    const name = file.name.replace(/\.[^/.]+$/, ".jpg");
+    return new File([blob], name, { type: "image/jpeg" });
   } catch {
     return file;
   }
