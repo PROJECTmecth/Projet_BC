@@ -38,7 +38,9 @@ class AgentClientsController extends Controller
                 'statut_carte'     => $c->carte->statut ?? 'N/A',
                 'date_activation'  => $c->carte->date_activation ?? null,
                 'date_expiration'  => $c->carte->date_expiration ?? null,
-                'photo_piece_url'  => $c->photo_pieces ? Storage::url($c->photo_pieces[0]) : ($c->photo_piece ? Storage::url($c->photo_piece) : null),
+                'photo_piece_url'  => (!empty($c->photo_pieces) && count($c->photo_pieces) > 0)
+                    ? Storage::url($c->photo_pieces[0])
+                    : ($c->photo_piece ? Storage::url($c->photo_piece) : null),
             ]);
 
         return response()->json(['success' => true, 'data' => ['total' => $clients->count(), 'clients' => $clients]]);
@@ -92,7 +94,9 @@ class AgentClientsController extends Controller
                     'telephone'   => $client->telephone,
                     'type_piece'  => $client->type_piece,
                     'num_piece'   => $client->num_piece,
-                    'photo_piece_url' => $client->photo_pieces ? Storage::url($client->photo_pieces[0]) : ($client->photo_piece ? Storage::url($client->photo_piece) : null),
+                    'photo_piece_url' => (!empty($client->photo_pieces) && count($client->photo_pieces) > 0)
+                        ? Storage::url($client->photo_pieces[0])
+                        : ($client->photo_piece ? Storage::url($client->photo_piece) : null),
                 ],
                 'carte'        => $client->carte,
                 'compte'       => $client->compte,

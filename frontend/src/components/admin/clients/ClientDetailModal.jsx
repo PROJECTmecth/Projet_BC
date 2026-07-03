@@ -83,11 +83,11 @@ export default function ClientDetailModal({ client, onClose }) {
 
             <div className="px-6 py-5">
               {/* --- Section Photos d'identité --- */}
-              {data.infos.photo_pieces_urls && data.infos.photo_pieces_urls.length > 0 && (
+              {((data.infos.photo_pieces_urls && data.infos.photo_pieces_urls.length > 0) || data.infos.photo_piece_url) && (
                 <div className="mb-6">
                   <h3 className="font-bold text-[#1e2a3a] text-lg mb-3">Pièces d'identité</h3>
                   <div className="flex gap-4 overflow-x-auto pb-2">
-                    {data.infos.photo_pieces_urls.map((url, idx) => (
+                    {((data.infos.photo_pieces_urls && data.infos.photo_pieces_urls.length > 0) ? data.infos.photo_pieces_urls : [data.infos.photo_piece_url]).map((url, idx) => (
                       <a key={idx} href={getPhotoUrl(url)} target="_blank" rel="noreferrer" className="flex-shrink-0 block border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         <img src={getPhotoUrl(url)} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" />
                       </a>

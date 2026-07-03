@@ -9,8 +9,9 @@ import "./MesClientsPage.css";
 const getPhotoUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const api = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
-  const base = api.replace(/\/api$/, "").replace(/\/$/, "");
+  const base = (axiosClient.defaults.baseURL || import.meta.env.VITE_API_URL || "http://localhost:8000")
+    .replace(/\/api$/, "")
+    .replace(/\/$/, "");
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
