@@ -136,7 +136,9 @@ export default function ProfilClientPage() {
               <img
                 src={getPhotoUrl(infos.photo_piece_url)}
                 alt="Photo de pièce"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', border: '2px solid #F97316' }}
+              loading="lazy"
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder-client.svg'; }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', border: '2px solid #F97316' }}
               />
             </a>
           ) : (

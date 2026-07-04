@@ -84,7 +84,7 @@ export default function ClientDetailModal({ client, onClose }) {
                   <div className="flex gap-4 overflow-x-auto pb-2">
                     {((data.infos.photo_pieces_urls && data.infos.photo_pieces_urls.length > 0) ? data.infos.photo_pieces_urls : [data.infos.photo_piece_url]).map((url, idx) => (
                       <a key={idx} href={getPhotoUrl(url)} target="_blank" rel="noreferrer" className="flex-shrink-0 block border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                        <img src={getPhotoUrl(url)} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" />
+                        <img src={getPhotoUrl(url)} alt={`Pièce ${idx + 1}`} className="w-48 h-32 object-cover bg-gray-100" loading="lazy" width="192" height="128" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder-client.svg'; }} />
                       </a>
                     ))}
                   </div>

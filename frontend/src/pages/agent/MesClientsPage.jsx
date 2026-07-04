@@ -120,7 +120,7 @@ export default function MesClientsPage() {
                       <td className="table-photo-cell">
                         {c.photo_piece_url ? (
                           <a href={getPhotoUrl(c.photo_piece_url)} target="_blank" rel="noreferrer" className="photo-preview-link" title="Voir la photo de pièce">
-                            <img src={getPhotoUrl(c.photo_piece_url)} alt="Photo pièce" className="client-photo-thumb" />
+                            <img src={getPhotoUrl(c.photo_piece_url)} alt="Photo pièce" className="client-photo-thumb" loading="lazy" width="60" height="60" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/placeholder-client.svg'; }} />
                           </a>
                         ) : "—"}
                       </td>
