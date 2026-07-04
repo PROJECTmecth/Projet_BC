@@ -274,6 +274,10 @@ class AgentClientsController extends Controller
 
     private function resolveDepositBaseAmount(?Carte $carte, ?Compte $compte): float
     {
+        if ($compte && $compte->solde_total > 0) {
+            return (float) $compte->solde_total;
+        }
+
         return (float) self::OPERATION_UNIT;
     }
 
@@ -342,9 +346,13 @@ class AgentClientsController extends Controller
 
                 $montantTotal = $montantDepot;
                 $currentSolde = $soldeAvant;
+                $baseAmount = $this->resolveDepositBaseAmount($carte, $compte);
+                if ($baseAmount <= 0) {
+                    $baseAmount = (float) self::OPERATION_UNIT;
+                }
 
                 while ($montantTotal > 0) {
-                    $montantTranche = (float) $montantTotal;
+                    $montantTranche = min($baseAmount, $montantTotal);
                     $soldeTrancheAvant = $currentSolde;
                     $soldeTrancheApres = $soldeTrancheAvant + $montantTranche;
 
