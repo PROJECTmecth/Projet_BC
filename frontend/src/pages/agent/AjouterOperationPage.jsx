@@ -85,6 +85,17 @@ export default function AjouterOperationPage() {
       return;
     }
 
+    // If deposit exceeds daily base, show an excited informational alert explaining tranche splitting
+    if (typeOp === "dépôt_cash" && dailyDepositAmount > 0 && montantValue > dailyDepositAmount) {
+      await Swal.fire({
+        icon: "info",
+        title: "Seuil dépassé !",
+        text: `Bravo — le seuil de dépôt du jour (${fmt(dailyDepositAmount)}) est dépassé. Le montant saisi sera automatiquement divisé en tranches de ${fmt(dailyDepositAmount)}.`,
+        confirmButtonText: "Continuer",
+        confirmButtonColor: "#F59E0B",
+      });
+    }
+
     const confirm = await Swal.fire({
       title: "Confirmer l'opération ?",
       html: `<p>Client : <b>${client.infos.prenom} ${client.infos.nom}</b></p>
