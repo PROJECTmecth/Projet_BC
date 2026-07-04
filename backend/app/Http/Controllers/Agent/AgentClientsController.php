@@ -273,9 +273,24 @@ class AgentClientsController extends Controller
             $soldeApres = $soldeAvant;
 
             if ($request->type_op === 'dépôt_cash') {
-                $trancheSize = $carte ? ($carte->montant_initial - $carte->frais_garde) : 0;
+                $trancheSize = $carte ? $carte->montant_initial : 0;
 
-                if ($trancheSize > 0 && $request->montant > $trancheSize) {
+                if ($trancheSize <= 0) {
+                    return response()->json(['success' => false, 'message' => 'Impossible de déterminer la taille de tranche pour le dépôt. Veuillez vérifier la carte du client.'], 422);
+                }
+
+                $montantCentimes = (int) round($request->montant * 100);
+                $trancheCentimes = (int) round($trancheSize * 100);
+
+                if ($montantCentimes < $trancheCentimes) {
+                    return response()->json(['success' => false, 'message' => "Dépôt refusé : le montant doit être au moins de {$trancheSize} F (taille d'une tranche)."], 422);
+                }
+
+                if ($montantCentimes % $trancheCentimes !== 0) {
+                    return response()->json(['success' => false, 'message' => "Dépôt refusé : le montant doit être un multiple exact de {$trancheSize} F (par exemple 1000, 2000, 3000)."], 422);
+                }
+
+                if ($request->montant > $trancheSize) {
                     $montantTotal = $request->montant;
                     $currentSolde = $soldeAvant;
 
