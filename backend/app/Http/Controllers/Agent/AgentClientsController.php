@@ -255,6 +255,10 @@ class AgentClientsController extends Controller
                 'nb_retraits_jour' => 0,
                 'reset_date' => $today,
             ]);
+            // Ensure the in-memory model matches the DB after reset
+            $carte->nb_depots_jour = 0;
+            $carte->nb_retraits_jour = 0;
+            $carte->reset_date = $today;
         }
     }
 
@@ -265,7 +269,24 @@ class AgentClientsController extends Controller
 
     private function canProcessDailyOperation(Carte $carte, int $units = 1): bool
     {
-        $this->resetDailyOperationCounters($carte);
+        // Reload the card counters from DB to avoid stale in-memory values
+        $freshCarte = Carte::where('id_carte', $carte->id_carte)->first();
+        if ($freshCarte) {
+            $carte = $freshCarte;
+        }
+
+        // If reset needed, perform it and keep model in sync
+        $today = Carbon::today()->toDateString();
+        if ($carte->reset_date !== $today) {
+            $carte->update([
+                'nb_depots_jour' => 0,
+                'nb_retraits_jour' => 0,
+                'reset_date' => $today,
+            ]);
+            $carte->nb_depots_jour = 0;
+            $carte->nb_retraits_jour = 0;
+            $carte->reset_date = $today;
+        }
 
         $usedOperations = (int) $carte->nb_depots_jour + (int) $carte->nb_retraits_jour;
 
