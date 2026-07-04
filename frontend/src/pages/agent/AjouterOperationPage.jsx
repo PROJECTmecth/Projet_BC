@@ -34,7 +34,7 @@ export default function AjouterOperationPage() {
       }
     };
     fetchClient();
-  }, [id]);
+  }, [id, navigate]);
 
   const fmt = (v) => new Intl.NumberFormat("fr-FR").format(v) + " F";
 
