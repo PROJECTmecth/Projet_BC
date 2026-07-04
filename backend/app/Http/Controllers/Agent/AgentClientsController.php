@@ -195,9 +195,6 @@ class AgentClientsController extends Controller
             ]);
 
             $montant = (float) $request->montant;
-            if (fmod($montant, self::OPERATION_UNIT) !== 0.0) {
-                return response()->json(['success' => false, 'message' => 'Le montant doit être un multiple de 50 000 F.'], 422);
-            }
 
             $nbJours        = $request->duree === '15 jours' ? 15 : 30;
             $tauxFrais      = $nbJours === 15 ? 0.5 : 1.0; // 50% pour 15j, 100% pour 30j
@@ -255,7 +252,7 @@ class AgentClientsController extends Controller
 
     private function calculateDepositOperationUnits(float $montant): int
     {
-        return (int) ($montant / self::OPERATION_UNIT);
+        return max(1, (int) ceil($montant / self::OPERATION_UNIT));
     }
 
     private function canProcessDailyOperation(Carte $carte, int $units = 1): bool
@@ -329,18 +326,9 @@ class AgentClientsController extends Controller
             $soldeApres = $soldeAvant;
 
             if ($request->type_op === 'dépôt_cash') {
-                $trancheSize = $this->resolveDepositBaseAmount($carte, $compte);
                 $montantDepot = (float) $request->montant;
-
-                if ($trancheSize <= 0) {
-                    return response()->json(['success' => false, 'message' => 'Impossible de déterminer la taille de tranche pour le dépôt. Veuillez vérifier la carte du client.'], 422);
-                }
-
-                if ($montantDepot < $trancheSize || fmod($montantDepot, $trancheSize) !== 0.0) {
-                    return response()->json(['success' => false, 'message' => "Dépôt refusé : le montant doit être un multiple exact de {$trancheSize} F (par exemple 50 000, 100 000, 150 000)."], 422);
-                }
-
                 $unitsRequired = $this->calculateDepositOperationUnits($montantDepot);
+
                 if ($unitsRequired > self::MAX_OPERATIONS_PER_DAY || !$this->canProcessDailyOperation($carte, $unitsRequired)) {
                     return response()->json(['success' => false, 'message' => 'Le client a déjà atteint la limite de 3 opérations pour la journée.'], 422);
                 }
@@ -349,7 +337,7 @@ class AgentClientsController extends Controller
                 $currentSolde = $soldeAvant;
 
                 while ($montantTotal > 0) {
-                    $montantTranche = min($trancheSize, $montantTotal);
+                    $montantTranche = (float) $montantTotal;
                     $soldeTrancheAvant = $currentSolde;
                     $soldeTrancheApres = $soldeTrancheAvant + $montantTranche;
 

@@ -98,7 +98,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
   //     1. Supprimer le bloc useEffect TEST ci-dessus
   //     2. Décommenter CE bloc useEffect ci-dessous
   // ============================================================
-  
+
   useEffect(() => {
     if (etape !== ETAPES.SCAN) return;
     let scanner;
@@ -140,7 +140,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       }
     };
   }, [etape]);
-  
+
   // ============================================================
   // FIN MODE PRODUCTION
   // ============================================================
@@ -241,8 +241,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       e.montant = "Requis";
     } else {
       const montant = Number(form.montant);
-      if (montant < 50000) e.montant = "Montant minimum : 50 000 F";
-      else if (montant % 50000 !== 0) e.montant = "Le montant doit être un multiple de 50 000 F";
+      if (montant < 1000) e.montant = "Montant minimum : 1 000 F";
     }
     setErrors(e);
     return { isValid: Object.keys(e).length === 0, errors: e };
@@ -335,7 +334,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
         {etape === ETAPES.SCAN && (
           <div className="scan-section">
             <div className="scan-frame-wrapper">
-              
+
               {/* Masquer la fausse animation quand la caméra tourne */}
               {!scanning && (
                 <>
@@ -360,16 +359,16 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
               </p>
 
               {/* Zone caméra rendue visible */}
-              <div 
-                id="qr-reader" 
-                ref={scannerRef} 
-                style={{ 
-                  width: "100%", 
-                  borderRadius: "12px", 
-                  overflow: "hidden", 
+              <div
+                id="qr-reader"
+                ref={scannerRef}
+                style={{
+                  width: "100%",
+                  borderRadius: "12px",
+                  overflow: "hidden",
                   background: "#000",
                   marginTop: "8px"
-                }} 
+                }}
               />
             </div>
 
@@ -522,22 +521,18 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                     <input
                       className={`form-input ${errors.montant ? "form-input--error" : ""}`}
                       name="montant" type="number" placeholder="Montant en FCFA"
-                      value={form.montant} onChange={handleChange} min="50000" step="50000" />
-                    {errors.montant && <span className="form-error">{errors.montant}</span>}
-                  </div>
+                        value={form.montant} onChange={handleChange} min="1000" />
+                      {errors.montant && <span className="form-error">{errors.montant}</span>}
+                    </div>
 
-                  <div className="info-box">
-                    <p className="info-box__title">Informations importantes :</p>
-                    <ul>
-                      <li>La carte sera active immédiatement après validation</li>
-                      <li>Le montant doit être un multiple de 50 000 F</li>
-                      <li>Un dépôt de 100 000 F compte pour 2 opérations et le client peut faire 3 opérations par jour</li>
-                    </ul>
-                  </div>
-
-                </div>
-              </div>
-            </div>
+                    <div className="info-box">
+                      <p className="info-box__title">Informations importantes :</p>
+                      <ul>
+                        <li>La carte sera active immédiatement après validation</li>
+                        <li>Le montant minimum de versement est de 1 000 F</li>
+                        <li>Les versements suivants peuvent être libres, selon les jours choisis</li>
+                      </ul>
+                    </div>
 
             <div className="form-actions">
               <button className="btn-annuler" onClick={onClose} disabled={submitting}>
