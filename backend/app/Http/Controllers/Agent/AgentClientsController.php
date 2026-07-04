@@ -16,6 +16,9 @@ use Carbon\Carbon;
 
 class AgentClientsController extends Controller
 {
+    private const OPERATION_UNIT = 50000;
+    private const MAX_OPERATIONS_PER_DAY = 3;
+
     /**
      * GET /api/agent/clients
      */
@@ -191,10 +194,15 @@ class AgentClientsController extends Controller
                 'id_user'       => $user->id,
             ]);
 
+            $montant = (float) $request->montant;
+            if (fmod($montant, self::OPERATION_UNIT) !== 0.0) {
+                return response()->json(['success' => false, 'message' => 'Le montant doit être un multiple de 50 000 F.'], 422);
+            }
+
             $nbJours        = $request->duree === '15 jours' ? 15 : 30;
             $tauxFrais      = $nbJours === 15 ? 0.5 : 1.0; // 50% pour 15j, 100% pour 30j
-            $fraisGarde     = $request->montant * $tauxFrais;
-            $soldeFinal     = $request->montant - $fraisGarde;
+            $fraisGarde     = $montant * $tauxFrais;
+            $soldeFinal     = $montant - $fraisGarde;
             $dateActivation = Carbon::today();
             $dateExpiration = $dateActivation->copy()->addDays($nbJours);
 
@@ -233,15 +241,35 @@ class AgentClientsController extends Controller
         }
     }
 
+    private function resetDailyOperationCounters(Carte $carte): void
+    {
+        $today = Carbon::today()->toDateString();
+        if ($carte->reset_date !== $today) {
+            $carte->update([
+                'nb_depots_jour' => 0,
+                'nb_retraits_jour' => 0,
+                'reset_date' => $today,
+            ]);
+        }
+    }
+
+    private function calculateDepositOperationUnits(float $montant): int
+    {
+        return (int) ($montant / self::OPERATION_UNIT);
+    }
+
+    private function canProcessDailyOperation(Carte $carte, int $units = 1): bool
+    {
+        $this->resetDailyOperationCounters($carte);
+
+        $usedOperations = (int) $carte->nb_depots_jour + (int) $carte->nb_retraits_jour;
+
+        return ($usedOperations + $units) <= self::MAX_OPERATIONS_PER_DAY;
+    }
+
     private function resolveDepositBaseAmount(?Carte $carte, ?Compte $compte): float
     {
-        $soldeActuel = (float) ($compte->solde_total ?? 0);
-
-        if ($soldeActuel > 0) {
-            return $soldeActuel;
-        }
-
-        return (float) ($carte->montant_initial ?? 0);
+        return (float) self::OPERATION_UNIT;
     }
 
     private function syncCompteTotals(Compte $compte, int $idClient): void
@@ -302,56 +330,31 @@ class AgentClientsController extends Controller
 
             if ($request->type_op === 'dépôt_cash') {
                 $trancheSize = $this->resolveDepositBaseAmount($carte, $compte);
+                $montantDepot = (float) $request->montant;
 
                 if ($trancheSize <= 0) {
                     return response()->json(['success' => false, 'message' => 'Impossible de déterminer la taille de tranche pour le dépôt. Veuillez vérifier la carte du client.'], 422);
                 }
 
-                $montantCentimes = (int) round($request->montant * 100);
-                $trancheCentimes = (int) round($trancheSize * 100);
-
-                if ($montantCentimes < $trancheCentimes) {
-                    return response()->json(['success' => false, 'message' => "Dépôt refusé : le montant doit être au moins de {$trancheSize} F (taille d'une tranche)."], 422);
+                if ($montantDepot < $trancheSize || fmod($montantDepot, $trancheSize) !== 0.0) {
+                    return response()->json(['success' => false, 'message' => "Dépôt refusé : le montant doit être un multiple exact de {$trancheSize} F (par exemple 50 000, 100 000, 150 000)."], 422);
                 }
 
-                if ($montantCentimes % $trancheCentimes !== 0) {
-                    return response()->json(['success' => false, 'message' => "Dépôt refusé : le montant doit être un multiple exact de {$trancheSize} F (par exemple 1000, 2000, 3000)."], 422);
+                $unitsRequired = $this->calculateDepositOperationUnits($montantDepot);
+                if ($unitsRequired > self::MAX_OPERATIONS_PER_DAY || !$this->canProcessDailyOperation($carte, $unitsRequired)) {
+                    return response()->json(['success' => false, 'message' => 'Le client a déjà atteint la limite de 3 opérations pour la journée.'], 422);
                 }
 
-                if ($request->montant > $trancheSize) {
-                    $montantTotal = $request->montant;
-                    $currentSolde = $soldeAvant;
+                $montantTotal = $montantDepot;
+                $currentSolde = $soldeAvant;
 
-                    while ($montantTotal > 0) {
-                        $montantTranche = min($trancheSize, $montantTotal);
-                        $soldeTrancheAvant = $currentSolde;
-                        $soldeTrancheApres = $soldeTrancheAvant + $montantTranche;
+                while ($montantTotal > 0) {
+                    $montantTranche = min($trancheSize, $montantTotal);
+                    $soldeTrancheAvant = $currentSolde;
+                    $soldeTrancheApres = $soldeTrancheAvant + $montantTranche;
 
-                        $compte->increment('total_depots', $montantTranche);
-                        $compte->update(['solde_total' => $soldeTrancheApres]);
-
-                        Transaction::create([
-                            'id_carte'   => $carte->id_carte,
-                            'id_client'  => $client->id_client,
-                            'id_agent'   => $agent->id_agent,
-                            'id_kiosque' => $agent->id_kiosque,
-                            'type_op'    => $request->type_op,
-                            'montant'    => $montantTranche,
-                            'penalite'   => 0,
-                            'solde_avant'=> $soldeTrancheAvant,
-                            'solde_apres'=> $soldeTrancheApres,
-                            'date_heure' => now(),
-                            'sync_status'=> 'synchronisé',
-                        ]);
-
-                        $currentSolde = $soldeTrancheApres;
-                        $montantTotal -= $montantTranche;
-                    }
-                    $soldeApres = $currentSolde;
-                } else {
-                    $soldeApres = $soldeAvant + $request->montant;
-                    $compte->increment('total_depots', $request->montant);
-                    $compte->update(['solde_total' => $soldeApres]);
+                    $compte->increment('total_depots', $montantTranche);
+                    $compte->update(['solde_total' => $soldeTrancheApres]);
 
                     Transaction::create([
                         'id_carte'   => $carte->id_carte,
@@ -359,15 +362,30 @@ class AgentClientsController extends Controller
                         'id_agent'   => $agent->id_agent,
                         'id_kiosque' => $agent->id_kiosque,
                         'type_op'    => $request->type_op,
-                        'montant'    => $request->montant,
+                        'montant'    => $montantTranche,
                         'penalite'   => 0,
-                        'solde_avant'=> $soldeAvant,
-                        'solde_apres'=> $soldeApres,
+                        'solde_avant'=> $soldeTrancheAvant,
+                        'solde_apres'=> $soldeTrancheApres,
                         'date_heure' => now(),
                         'sync_status'=> 'synchronisé',
                     ]);
+
+                    $currentSolde = $soldeTrancheApres;
+                    $montantTotal -= $montantTranche;
                 }
+
+                $this->resetDailyOperationCounters($carte);
+                $carte->update([
+                    'nb_depots_jour' => (int) $carte->nb_depots_jour + $unitsRequired,
+                    'reset_date' => Carbon::today()->toDateString(),
+                ]);
+
+                $soldeApres = $currentSolde;
             } elseif ($request->type_op === 'retrait_partiel') {
+                if (!$this->canProcessDailyOperation($carte, 1)) {
+                    return response()->json(['success' => false, 'message' => 'Le client a déjà atteint la limite de 3 opérations pour la journée.'], 422);
+                }
+
                 $penalite   = 100; // pénalité fixe de 100 F pour chaque retrait partiel
                 $soldeApres = $soldeAvant - $request->montant - $penalite; // Diminution effective du solde
                 $compte->increment('total_retraits_partiels', $request->montant);
@@ -387,7 +405,17 @@ class AgentClientsController extends Controller
                     'date_heure' => now(),
                     'sync_status'=> 'synchronisé',
                 ]);
+
+                $this->resetDailyOperationCounters($carte);
+                $carte->update([
+                    'nb_retraits_jour' => (int) $carte->nb_retraits_jour + 1,
+                    'reset_date' => Carbon::today()->toDateString(),
+                ]);
             } elseif ($request->type_op === 'retrait_solde_compte') {
+                if (!$this->canProcessDailyOperation($carte, 1)) {
+                    return response()->json(['success' => false, 'message' => 'Le client a déjà atteint la limite de 3 opérations pour la journée.'], 422);
+                }
+
                 $soldeApres = 0;
                 $compte->increment('total_retraits', $soldeAvant);
                 $compte->update(['solde_total' => 0, 'date_cloture' => now()]);
@@ -406,6 +434,12 @@ class AgentClientsController extends Controller
                     'solde_apres'=> $soldeApres,
                     'date_heure' => now(),
                     'sync_status'=> 'synchronisé',
+                ]);
+
+                $this->resetDailyOperationCounters($carte);
+                $carte->update([
+                    'nb_retraits_jour' => (int) $carte->nb_retraits_jour + 1,
+                    'reset_date' => Carbon::today()->toDateString(),
                 ]);
             }
 

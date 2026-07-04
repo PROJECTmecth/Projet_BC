@@ -237,7 +237,13 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
     const validPhotos = form.photo_pieces.filter(Boolean);
     if (validPhotos.length === 0) e.photo_pieces = "La photo recto est requise";
     if (!form.telephone.trim()) e.telephone = "Requis";
-    if (!form.montant || Number(form.montant) < 1000) e.montant = "Montant minimum : 1 000 F";
+    if (!form.montant) {
+      e.montant = "Requis";
+    } else {
+      const montant = Number(form.montant);
+      if (montant < 50000) e.montant = "Montant minimum : 50 000 F";
+      else if (montant % 50000 !== 0) e.montant = "Le montant doit être un multiple de 50 000 F";
+    }
     setErrors(e);
     return { isValid: Object.keys(e).length === 0, errors: e };
   };
@@ -516,7 +522,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                     <input
                       className={`form-input ${errors.montant ? "form-input--error" : ""}`}
                       name="montant" type="number" placeholder="Montant en FCFA"
-                      value={form.montant} onChange={handleChange} min="1000" />
+                      value={form.montant} onChange={handleChange} min="50000" step="50000" />
                     {errors.montant && <span className="form-error">{errors.montant}</span>}
                   </div>
 
@@ -524,8 +530,8 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                     <p className="info-box__title">Informations importantes :</p>
                     <ul>
                       <li>La carte sera active immédiatement après validation</li>
-                      <li>Le client recevra une carte avec QR code unique</li>
-                      <li>La date d'expiration sera calculée automatiquement</li>
+                      <li>Le montant doit être un multiple de 50 000 F</li>
+                      <li>Un dépôt de 100 000 F compte pour 2 opérations et le client peut faire 3 opérations par jour</li>
                     </ul>
                   </div>
 
