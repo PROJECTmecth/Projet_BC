@@ -348,12 +348,12 @@ class AgentClientsController extends Controller
 
         if ($request->type_op === 'retrait_solde_compte') {
             if ($request->montant > $soldeAvant) {
-                return response()->json(['success' => false, 'message' => 'Insufficient balance.'], 422);
+                return response()->json(['success' => false, 'message' => 'Solde insuffisant.'], 422);
             }
         } elseif ($request->type_op === 'retrait_partiel') {
             $penaliteCalculee = 100;
             if (($request->montant + $penaliteCalculee) > $soldeAvant) {
-                return response()->json(['success' => false, 'message' => "Insufficient balance for partial withdrawal (including {$penaliteCalculee} F penalty)."], 422);
+                return response()->json(['success' => false, 'message' => "Solde insuffisant pour ce retrait partiel (incluant la pénalité de {$penaliteCalculee} F)."], 422);
             }
         }
 
