@@ -538,16 +538,21 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
                       </ul>
                     </div>
 
-            <div className="form-actions">
-              <button className="btn-annuler" onClick={onClose} disabled={submitting}>
-                Annuler
-              </button>
-              <button className="btn-enregistrer" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? "Enregistrement..." : "Enregistrer"}
-              </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button className="btn-annuler" onClick={onClose} disabled={submitting}>
+                  Annuler
+                </button>
+                <button className="btn-enregistrer" onClick={handleSubmit} disabled={submitting}>
+                  {submitting ? "Enregistrement..." : "Enregistrer"}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
       </div>
     </div>
