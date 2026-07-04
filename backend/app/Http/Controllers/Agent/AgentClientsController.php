@@ -233,6 +233,17 @@ class AgentClientsController extends Controller
         }
     }
 
+    private function resolveDepositBaseAmount(?Carte $carte, ?Compte $compte): float
+    {
+        $soldeActuel = (float) ($compte->solde_total ?? 0);
+
+        if ($soldeActuel > 0) {
+            return $soldeActuel;
+        }
+
+        return (float) ($carte->montant_initial ?? 0);
+    }
+
     private function syncCompteTotals(Compte $compte, int $idClient): void
     {
         $stats = Transaction::where('id_client', $idClient)
@@ -290,7 +301,7 @@ class AgentClientsController extends Controller
             $soldeApres = $soldeAvant;
 
             if ($request->type_op === 'dépôt_cash') {
-                $trancheSize = $carte ? $carte->montant_initial : 0;
+                $trancheSize = $this->resolveDepositBaseAmount($carte, $compte);
 
                 if ($trancheSize <= 0) {
                     return response()->json(['success' => false, 'message' => 'Impossible de déterminer la taille de tranche pour le dépôt. Veuillez vérifier la carte du client.'], 422);
