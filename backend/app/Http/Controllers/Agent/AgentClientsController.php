@@ -233,6 +233,23 @@ class AgentClientsController extends Controller
         }
     }
 
+    private function syncCompteTotals(Compte $compte, int $idClient): void
+    {
+        $stats = Transaction::where('id_client', $idClient)
+            ->selectRaw('COALESCE(SUM(CASE WHEN type_op = "dépôt_cash" THEN montant ELSE 0 END), 0) as total_depots')
+            ->selectRaw('COALESCE(SUM(CASE WHEN type_op = "retrait_solde_compte" THEN montant ELSE 0 END), 0) as total_retraits')
+            ->selectRaw('COALESCE(SUM(CASE WHEN type_op = "retrait_partiel" THEN montant ELSE 0 END), 0) as total_retraits_partiels')
+            ->selectRaw('COALESCE(SUM(CASE WHEN type_op IN ("retrait_partiel", "retrait_solde_compte") THEN penalite ELSE 0 END), 0) as total_penalites')
+            ->first();
+
+        $compte->update([
+            'total_depots'            => max((float) $compte->total_depots, (float) $stats->total_depots),
+            'total_retraits'         => max((float) $compte->total_retraits, (float) $stats->total_retraits),
+            'total_retraits_partiels'=> max((float) $compte->total_retraits_partiels, (float) $stats->total_retraits_partiels),
+            'total_penalites'        => max((float) $compte->total_penalites, (float) $stats->total_penalites),
+        ]);
+    }
+
     /**
      * POST /api/agent/transactions
      */
@@ -380,6 +397,8 @@ class AgentClientsController extends Controller
                     'sync_status'=> 'synchronisé',
                 ]);
             }
+
+            $this->syncCompteTotals($compte, $client->id_client);
 
             // Calculer progression carte par rapport à l'objectif total (15 ou 30 jours)
             if ($carte && $carte->montant_initial > 0) {
