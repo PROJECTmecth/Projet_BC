@@ -426,9 +426,7 @@ class AgentClientsController extends Controller
 
                 $soldeApres = $currentSolde;
             } elseif ($request->type_op === 'retrait_partiel') {
-                if (!$this->canProcessDailyOperation($carte, 1)) {
-                    return response()->json(['success' => false, 'message' => 'Daily operation limit (3 per day) reached.'], 422);
-                }
+                    // Allow partial withdrawals even if daily operation limit reached
 
                 $penalite   = 100;
                 $soldeApres = $soldeAvant - $request->montant - $penalite;
@@ -457,7 +455,7 @@ class AgentClientsController extends Controller
                 ]);
             } elseif ($request->type_op === 'retrait_solde_compte') {
                 if (!$this->canProcessDailyOperation($carte, 1)) {
-                    return response()->json(['success' => false, 'message' => 'Daily operation limit (3 per day) reached.'], 422);
+                    return response()->json(['success' => false, 'message' => 'La limite d\'opérations journalières (3 par jour) a été atteinte.'], 422);
                 }
 
                 $soldeApres = 0;
