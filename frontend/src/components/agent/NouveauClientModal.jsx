@@ -287,11 +287,15 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
       setSubmitting(true);
       const payload = new FormData();
       Object.entries(form).forEach(([key, value]) => {
-        if (key === 'photo_pieces') return;
+        if (key === 'photo_pieces' || key === 'montant') return;
         if (value !== null && value !== undefined) payload.append(key, value);
       });
       payload.append('qr_code_uid', carteInfo.qr_code_uid);
-      payload.set('montant', Number(form.montant));
+      // ✅ Ajouter le montant correctement en tant que nombre validé
+      const montantValue = Number(form.montant);
+      if (montantValue >= 1000) {
+        payload.append('montant', montantValue);
+      }
       form.photo_pieces.filter(Boolean).forEach(file => payload.append('photo_pieces[]', file));
       // ⚠️ Ne pas forcer Content-Type ici : axios détecte automatiquement
       // le boundary multipart/form-data quand on passe un FormData.

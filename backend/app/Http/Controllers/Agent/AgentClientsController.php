@@ -134,7 +134,7 @@ class AgentClientsController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'genre'           => 'required|in:Homme,Femme',
             'prenom'          => 'required|string|max:100',
             'nom'             => 'required|string|max:100',
@@ -152,6 +152,15 @@ class AgentClientsController extends Controller
             'montant'         => 'required|numeric|min:1000',
             'duree'           => 'required|in:15 jours,30 jours',
         ]);
+
+        // ✅ Vérification stricte supplémentaire : montant >= 1000
+        if ((float)$validated['montant'] < 1000) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Le montant de versement doit être supérieur ou égal à 1 000 F.',
+                'errors' => ['montant' => ['Le montant minimum de versement est 1 000 F.']]
+            ], 422);
+        }
 
         $user  = $request->user();
         $agent = Agent::where('id_user', $user->id)->first();
