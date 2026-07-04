@@ -57,12 +57,22 @@ export default function AjouterOperationPage() {
         e.montant = `Le montant doit être un multiple de ${fmt(dailyDepositAmount)}.`;
       }
     }
+    }
 
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async () => {
+    const montantValue = Number(montant);
+
+    if (typeOp === "dépôt_cash" && dailyDepositAmount > 0 && montantValue > 0 && montantValue < dailyDepositAmount) {
+      const message = `Montant du dépôt du jour : ${fmt(dailyDepositAmount)}. Le montant saisi est inférieur.`;
+      setErrors({ ...errors, montant: message });
+      Swal.fire({ icon: "warning", title: "Montant trop faible", text: message, confirmButtonColor: "#F97316" });
+      return;
+    }
+
     if (!validate()) return;
 
     const typeLabel = TYPE_OPS.find(t => t.value === typeOp)?.label;

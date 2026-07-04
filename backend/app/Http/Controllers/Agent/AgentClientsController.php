@@ -16,7 +16,7 @@ use Carbon\Carbon;
 
 class AgentClientsController extends Controller
 {
-    private const OPERATION_UNIT = 50000;
+    private const OPERATION_UNIT = 1000;
     private const MAX_OPERATIONS_PER_DAY = 3;
 
     /**
@@ -25,7 +25,7 @@ class AgentClientsController extends Controller
     public function index(Request $request): JsonResponse
     {
         $agent = Agent::where('id_user', $request->user()->id)->first();
-        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent introuvable.'], 404);
+        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent not found.'], 404);
 
         $clients = Client::with(['carte'])
             ->where('id_agent', $agent->id_agent)
@@ -55,14 +55,14 @@ class AgentClientsController extends Controller
     public function show(Request $request, $id): JsonResponse
     {
         $agent = Agent::where('id_user', $request->user()->id)->first();
-        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent introuvable.'], 404);
+        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent not found.'], 404);
 
         $client = Client::with(['carte', 'compte'])
             ->where('id_client', $id)
             ->where('id_agent', $agent->id_agent)
             ->first();
 
-        if (!$client) return response()->json(['success' => false, 'message' => 'Client introuvable.'], 404);
+        if (!$client) return response()->json(['success' => false, 'message' => 'Client not found.'], 404);
 
         // Transactions du client
         $transactions = Transaction::with(['kiosque', 'agent.user', 'agent.kiosque'])
@@ -116,13 +116,13 @@ class AgentClientsController extends Controller
         $request->validate(['qr_code_uid' => 'required|string']);
         $carte = Carte::where('qr_code_uid', $request->qr_code_uid)->first();
 
-        if (!$carte) return response()->json(['success' => false, 'message' => 'Carte introuvable.'], 404);
+        if (!$carte) return response()->json(['success' => false, 'message' => 'Card not found.'], 404);
         if ($carte->statut !== 'vierge') return response()->json([
             'success' => false,
-            'message' => 'Cette carte est déjà utilisée (statut : ' . $carte->statut . ').',
+            'message' => 'This card is already in use (status: ' . $carte->statut . ').',
         ], 422);
 
-        return response()->json(['success' => true, 'message' => 'Carte valide.', 'data' => [
+        return response()->json(['success' => true, 'message' => 'Valid card.', 'data' => [
             'numero_carte' => $carte->numero_carte,
             'qr_code_uid'  => $carte->qr_code_uid,
             'duree'        => $carte->duree,
@@ -153,21 +153,20 @@ class AgentClientsController extends Controller
             'duree'           => 'required|in:15 jours,30 jours',
         ]);
 
-        // ✅ Vérification stricte supplémentaire : montant >= 1000
         if ((float)$validated['montant'] < 1000) {
             return response()->json([
                 'success' => false,
-                'message' => 'Le montant de versement doit être supérieur ou égal à 1 000 F.',
-                'errors' => ['montant' => ['Le montant minimum de versement est 1 000 F.']]
+                'message' => 'Deposit amount must be at least 1,000 F.',
+                'errors' => ['montant' => ['Minimum deposit amount is 1,000 F.']]
             ], 422);
         }
 
         $user  = $request->user();
         $agent = Agent::where('id_user', $user->id)->first();
-        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent introuvable.'], 404);
+        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent not found.'], 404);
 
         $carte = Carte::where('qr_code_uid', $request->qr_code_uid)->where('statut', 'vierge')->first();
-        if (!$carte) return response()->json(['success' => false, 'message' => 'Carte invalide ou déjà utilisée.'], 422);
+        if (!$carte) return response()->json(['success' => false, 'message' => 'Card is invalid or already in use.'], 422);
 
         DB::beginTransaction();
         try {
@@ -235,7 +234,7 @@ class AgentClientsController extends Controller
             ]);
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Client enregistré avec succès.', 'data' => [
+            return response()->json(['success' => true, 'message' => 'Client registered successfully.', 'data' => [
                 'client'       => $client->prenom . ' ' . $client->nom,
                 'numero_carte' => $carte->numero_carte,
                 'solde'        => $soldeFinal,
@@ -243,7 +242,7 @@ class AgentClientsController extends Controller
             ]], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Erreur : ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Registration failed: ' . $e->getMessage()], 500);
         }
     }
 
@@ -317,24 +316,23 @@ class AgentClientsController extends Controller
 
         $user  = $request->user();
         $agent = Agent::where('id_user', $user->id)->first();
-        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent introuvable.'], 404);
+        if (!$agent) return response()->json(['success' => false, 'message' => 'Agent not found.'], 404);
 
         $client = Client::with(['carte', 'compte'])->find($request->id_client);
-        if (!$client) return response()->json(['success' => false, 'message' => 'Client introuvable.'], 404);
+        if (!$client) return response()->json(['success' => false, 'message' => 'Client not found.'], 404);
 
         $compte = $client->compte;
         $carte  = $client->carte;
         $soldeAvant = $compte->solde_total;
 
-        // Vérification solde pour retraits
         if ($request->type_op === 'retrait_solde_compte') {
             if ($request->montant > $soldeAvant) {
-                return response()->json(['success' => false, 'message' => 'Solde insuffisant.'], 422);
+                return response()->json(['success' => false, 'message' => 'Insufficient balance.'], 422);
             }
         } elseif ($request->type_op === 'retrait_partiel') {
             $penaliteCalculee = 100;
             if (($request->montant + $penaliteCalculee) > $soldeAvant) {
-                return response()->json(['success' => false, 'message' => "Solde insuffisant pour ce retrait partiel (incluant la pénalité de {$penaliteCalculee} F)."], 422);
+                return response()->json(['success' => false, 'message' => "Insufficient balance for partial withdrawal (including {$penaliteCalculee} F penalty)."], 422);
             }
         }
 
@@ -408,11 +406,11 @@ class AgentClientsController extends Controller
                 $soldeApres = $currentSolde;
             } elseif ($request->type_op === 'retrait_partiel') {
                 if (!$this->canProcessDailyOperation($carte, 1)) {
-                    return response()->json(['success' => false, 'message' => 'Le client a déjà atteint la limite de 3 opérations pour la journée.'], 422);
+                    return response()->json(['success' => false, 'message' => 'Daily operation limit (3 per day) reached.'], 422);
                 }
 
-                $penalite   = 100; // pénalité fixe de 100 F pour chaque retrait partiel
-                $soldeApres = $soldeAvant - $request->montant - $penalite; // Diminution effective du solde
+                $penalite   = 100;
+                $soldeApres = $soldeAvant - $request->montant - $penalite;
                 $compte->increment('total_retraits_partiels', $request->montant);
                 $compte->increment('total_penalites', $penalite);
                 $compte->update(['solde_total' => $soldeApres]);
@@ -438,13 +436,12 @@ class AgentClientsController extends Controller
                 ]);
             } elseif ($request->type_op === 'retrait_solde_compte') {
                 if (!$this->canProcessDailyOperation($carte, 1)) {
-                    return response()->json(['success' => false, 'message' => 'Le client a déjà atteint la limite de 3 opérations pour la journée.'], 422);
+                    return response()->json(['success' => false, 'message' => 'Daily operation limit (3 per day) reached.'], 422);
                 }
 
                 $soldeApres = 0;
                 $compte->increment('total_retraits', $soldeAvant);
                 $compte->update(['solde_total' => 0, 'date_cloture' => now()]);
-                // La carte expire automatiquement lors du retrait total
                 $carte->update(['statut' => 'terminé', 'date_expiration' => now()]);
 
                 Transaction::create([
@@ -470,23 +467,21 @@ class AgentClientsController extends Controller
 
             $this->syncCompteTotals($compte, $client->id_client);
 
-            // Calculer progression carte par rapport à l'objectif total (15 ou 30 jours)
             if ($carte && $carte->montant_initial > 0) {
                 $nbJours = $carte->duree === '15 jours' ? 15 : 30;
                 $objectifFinal = $carte->montant_initial * $nbJours;
-                // S'assurer qu'on ne tombe pas sous 0
                 $prog = round(($compte->fresh()->solde_total / $objectifFinal) * 100);
                 $progression = max(0, min(100, $prog));
                 $carte->update(['progression' => $progression]);
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Transaction enregistrée.', 'data' => [
+            return response()->json(['success' => true, 'message' => 'Transaction recorded successfully.', 'data' => [
                 'solde_apres' => $soldeApres,
             ]]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Erreur : ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Transaction failed: ' . $e->getMessage()], 500);
         }
     }
 }
