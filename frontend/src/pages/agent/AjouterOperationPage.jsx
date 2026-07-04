@@ -20,6 +20,12 @@ export default function AjouterOperationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors]       = useState({});
 
+  const dailyDepositAmount = (() => {
+    const montantInitial = Number(client?.carte?.montant_initial ?? 0);
+    if (!montantInitial || !client?.carte?.duree) return 0;
+    return montantInitial * (client.carte.duree === '15 jours' ? 0.5 : 1);
+  })();
+
   useEffect(() => {
     const fetchClient = async () => {
       try {
@@ -39,8 +45,19 @@ export default function AjouterOperationPage() {
 
   const validate = () => {
     const e = {};
+    const montantValue = Number(montant);
+
     if (!typeOp) e.typeOp = "Sélectionnez un type d'opération";
-    if (!montant || Number(montant) < 100) e.montant = "Montant minimum : 100 F";
+    if (!montant || montantValue < 100) {
+      e.montant = "Montant minimum : 100 F";
+    } else if (typeOp === "dépôt_cash" && dailyDepositAmount > 0) {
+      if (montantValue < dailyDepositAmount) {
+        e.montant = `Montant du dépôt du jour : ${fmt(dailyDepositAmount)}. Le montant saisi est inférieur.`;
+      } else if (montantValue % dailyDepositAmount !== 0) {
+        e.montant = `Le montant doit être un multiple de ${fmt(dailyDepositAmount)}.`;
+      }
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };

@@ -46,6 +46,7 @@ class AgentDepositRuleTest extends BaseTestCase
 
         $this->assertSame(2, $this->invokePrivateMethod($controller, 'calculateDepositOperationUnits', [100000]));
         $this->assertSame(3, $this->invokePrivateMethod($controller, 'calculateDepositOperationUnits', [150000]));
+        $this->assertSame(2, $this->invokePrivateMethod($controller, 'calculateDepositOperationUnits', [1000, 500]));
     }
 
     public function test_daily_operation_limit_blocks_a_fourth_operation(): void

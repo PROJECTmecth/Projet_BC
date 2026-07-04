@@ -146,6 +146,7 @@ export default function NouveauClientModal({ onClose, onSuccess, initialCarte = 
   // ============================================================
 
 
+
   const handleScanResult = async (qrCodeUid) => {
     try {
       const res = await axiosClient.post("/api/agent/scan", { numero_carte: qrCodeUid });

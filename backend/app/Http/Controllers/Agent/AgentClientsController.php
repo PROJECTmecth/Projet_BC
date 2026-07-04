@@ -259,9 +259,9 @@ class AgentClientsController extends Controller
         }
     }
 
-    private function calculateDepositOperationUnits(float $montant): int
+    private function calculateDepositOperationUnits(float $montant, float $unit = self::OPERATION_UNIT): int
     {
-        return max(1, (int) ceil($montant / self::OPERATION_UNIT));
+        return max(1, (int) ceil($montant / max(1, $unit)));
     }
 
     private function canProcessDailyOperation(Carte $carte, int $units = 1): bool
@@ -275,6 +275,11 @@ class AgentClientsController extends Controller
 
     private function resolveDepositBaseAmount(?Carte $carte, ?Compte $compte): float
     {
+        if ($carte && $carte->montant_initial > 0 && $carte->duree) {
+            $taux = $carte->duree === '15 jours' ? 0.5 : 1.0;
+            return max(0, (float) $carte->montant_initial * $taux);
+        }
+
         if ($compte && $compte->solde_total > 0) {
             return (float) $compte->solde_total;
         }
@@ -340,20 +345,26 @@ class AgentClientsController extends Controller
 
             if ($request->type_op === 'dépôt_cash') {
                 $montantDepot = (float) $request->montant;
-                $baseAmount = (float) self::OPERATION_UNIT;
-                $resolvedBaseAmount = $this->resolveDepositBaseAmount($carte, $compte);
-                if ($resolvedBaseAmount > 0) {
-                    $baseAmount = $resolvedBaseAmount;
+                $baseAmount = $this->resolveDepositBaseAmount($carte, $compte);
+                if ($baseAmount <= 0) {
+                    $baseAmount = (float) self::OPERATION_UNIT;
                 }
 
-                if ($baseAmount > 0 && $montantDepot < $baseAmount) {
+                if ($montantDepot < $baseAmount) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Le montant est inférieur au montant du dépôt du jour.',
                     ], 422);
                 }
 
-                $unitsRequired = $this->calculateDepositOperationUnits($montantDepot);
+                if (round(fmod($montantDepot, $baseAmount), 2) !== 0.0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Le montant doit être un multiple du montant du dépôt du jour.',
+                    ], 422);
+                }
+
+                $unitsRequired = $this->calculateDepositOperationUnits($montantDepot, $baseAmount);
 
                 if ($unitsRequired > self::MAX_OPERATIONS_PER_DAY || !$this->canProcessDailyOperation($carte, $unitsRequired)) {
                     return response()->json(['success' => false, 'message' => 'Le client a déjà atteint la limite de 3 opérations pour la journée.'], 422);
@@ -363,7 +374,7 @@ class AgentClientsController extends Controller
                 $currentSolde = $soldeAvant;
 
                 while ($montantTotal > 0) {
-                    $montantTranche = min($baseAmount, $montantTotal);
+                    $montantTranche = $baseAmount;
                     $soldeTrancheAvant = $currentSolde;
                     $soldeTrancheApres = $soldeTrancheAvant + $montantTranche;
 
