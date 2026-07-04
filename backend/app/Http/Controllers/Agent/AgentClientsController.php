@@ -338,6 +338,14 @@ class AgentClientsController extends Controller
 
             if ($request->type_op === 'dépôt_cash') {
                 $montantDepot = (float) $request->montant;
+                $currentDailyAmount = (float) $compte->solde_total;
+                if ($currentDailyAmount > 0 && $montantDepot < $currentDailyAmount) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Le montant est inférieur au montant du dépôt du jour.',
+                    ], 422);
+                }
+
                 $unitsRequired = $this->calculateDepositOperationUnits($montantDepot);
 
                 if ($unitsRequired > self::MAX_OPERATIONS_PER_DAY || !$this->canProcessDailyOperation($carte, $unitsRequired)) {
@@ -346,7 +354,6 @@ class AgentClientsController extends Controller
 
                 $montantTotal = $montantDepot;
                 $currentSolde = $soldeAvant;
-                $baseAmount = $this->resolveDepositBaseAmount($carte, $compte);
                 if ($baseAmount <= 0) {
                     $baseAmount = (float) self::OPERATION_UNIT;
                 }

@@ -19,6 +19,7 @@ export default function AjouterOperationPage() {
   const [loading, setLoading]     = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors]       = useState({});
+  const dailyDepositAmount = Number(client?.compte?.solde_total || 0);
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -39,13 +40,28 @@ export default function AjouterOperationPage() {
 
   const validate = () => {
     const e = {};
+    const montantValue = Number(montant);
+
     if (!typeOp) e.typeOp = "Sélectionnez un type d'opération";
-    if (!montant || Number(montant) < 100) e.montant = "Montant minimum : 100 F";
+    if (!montant || montantValue < 100) e.montant = "Montant minimum : 100 F";
+    if (typeOp === "dépôt_cash" && dailyDepositAmount > 0 && montantValue > 0 && montantValue < dailyDepositAmount) {
+      e.montant = `Montant du dépôt du jour : ${fmt(dailyDepositAmount)}. Le montant saisi est inférieur.`;
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async () => {
+    const montantValue = Number(montant);
+
+    if (typeOp === "dépôt_cash" && dailyDepositAmount > 0 && montantValue > 0 && montantValue < dailyDepositAmount) {
+      const message = `Montant du dépôt du jour : ${fmt(dailyDepositAmount)}. Le montant saisi est inférieur.`;
+      setErrors({ ...errors, montant: message });
+      Swal.fire({ icon: "warning", title: "Montant trop faible", text: message, confirmButtonColor: "#F97316" });
+      return;
+    }
+
     if (!validate()) return;
 
     const typeLabel = TYPE_OPS.find(t => t.value === typeOp)?.label;
