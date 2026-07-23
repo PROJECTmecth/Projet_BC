@@ -54,6 +54,7 @@ class MouvementCaisseController extends Controller
             $query->whereDate('date_heure', '<=', $dateTo);
         }
 
+        
         // ⏱️ Filtrer les opérations récentes (dernières 24h)
         if ($request->query('recent_only') == 1) {
             $query->where('date_heure', '>=', now()->subHours(24));
