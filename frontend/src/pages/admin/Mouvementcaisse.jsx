@@ -118,6 +118,61 @@ export default function MouvementCaisse() {
       .finally(() => setLoading(false));
   }, []);
 
+  // --- Filtre et pagination intermédiaire ---
+  const filteredTransactions = transactions.filter(t => {
+    if (filterOp && t.type_op !== filterOp) return false;
+    return true;
+  });
+
+  const parseDateTime = (row) => {
+    if (!row?.date_heure) return 0;
+    const time = new Date(row.date_heure).getTime();
+    return Number.isFinite(time) ? time : 0;
+  };
+
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    const dateA = parseDateTime(a);
+    const dateB = parseDateTime(b);
+    if (dateA !== dateB) return dateB - dateA;
+
+    if (a.type_op === "dépôt_cash" && b.type_op === "dépôt_cash" && a.montant !== b.montant) {
+      return b.montant - a.montant;
+    }
+
+    if (a.id_trans !== undefined && b.id_trans !== undefined) {
+      return b.id_trans - a.id_trans;
+    }
+
+    return 0;
+  });
+
+  const filteredTotals = filteredTransactions.reduce((acc, t) => {
+    const montant = Number(t.montant ?? 0);
+    const penalite = Number(t.penalite ?? 0);
+
+    if (t.type_op === "dépôt_cash") {
+      acc.total_depot += montant;
+    }
+
+    if (t.type_op === "retrait_partiel" || t.type_op === "retrait_solde_compte") {
+      acc.total_retrait += montant;
+    }
+
+    acc.total_penalite += penalite;
+    return acc;
+  }, {
+    total_depot: 0,
+    total_retrait: 0,
+    total_penalite: 0,
+  });
+
+  const currentTotals = {
+    total_depot: filteredTotals.total_depot,
+    total_retrait: filteredTotals.total_retrait,
+    total_penalite: filteredTotals.total_penalite,
+    total_solde: totaux.total_solde,
+  };
+
   // --- Sécurité : Vérification des données ---
   const hasData = (action) => {
     if (filteredTransactions.length === 0) {
@@ -202,10 +257,62 @@ export default function MouvementCaisse() {
     }).then((result) => {
       if (result.isConfirmed) {
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        doc.setFontSize(14);
         doc.text("Mouvement de Solde - Rapport", 14, 15);
-        
+
+        const boxWidth = 54;
+        const boxHeight = 24;
+        const gap = 6;
+        const startX = 14;
+        const summaryY = 22;
+        const boxes = [
+          {
+            label: "Total dépôt cash",
+            value: `+${fmt(currentTotals.total_depot)} XAF`,
+            fill: [255, 246, 230],
+            border: [255, 159, 10],
+            text: [30, 30, 30],
+          },
+          {
+            label: "Total retrait",
+            value: `-${fmt(currentTotals.total_retrait)} XAF`,
+            fill: [255, 249, 230],
+            border: [196, 85, 0],
+            text: [30, 30, 30],
+          },
+          {
+            label: "Total pénalité",
+            value: `-${fmt(currentTotals.total_penalite)} XAF`,
+            fill: [255, 246, 220],
+            border: [255, 193, 7],
+            text: [30, 30, 30],
+          },
+          {
+            label: "Total solde de compte",
+            value: `${fmt(totaux.total_solde)} XAF`,
+            fill: [255, 247, 227],
+            border: [255, 159, 10],
+            text: [30, 30, 30],
+          },
+        ];
+
+        boxes.forEach((box, index) => {
+          const x = startX + index * (boxWidth + gap);
+          doc.setFillColor(...box.fill);
+          doc.setDrawColor(...box.border);
+          doc.setLineWidth(0.7);
+          doc.rect(x, summaryY, boxWidth, boxHeight, "FD");
+          doc.setFontSize(9);
+          doc.setTextColor(...box.text);
+          doc.text(box.label, x + 4, summaryY + 8);
+          doc.setFontSize(10);
+          doc.setFont(undefined, "bold");
+          doc.text(box.value, x + 4, summaryY + 18);
+          doc.setFont(undefined, "normal");
+        });
+
         const tableColumn = ["ID Carte", "ID Client", "Opération", "Montant", "Pénalité", "Solde"];
-        const tableRows = filteredTransactions.map(t => [
+        const tableRows = sortedTransactions.map(t => [
           t.id_carte,
           t.id_client,
           opLabel(t.type_op),
@@ -217,7 +324,7 @@ export default function MouvementCaisse() {
         autoTable(doc, {
           head: [tableColumn],
           body: tableRows,
-          startY: 22,
+          startY: summaryY + boxHeight + 10,
           theme: 'grid',
           styles: { fontSize: 8 },
           headStyles: { fillColor: [30, 42, 58], textColor: 255 }
@@ -248,17 +355,11 @@ export default function MouvementCaisse() {
     });
   };
 
-  // --- Filtre et pagination ---
-  const filteredTransactions = transactions.filter(t => {
-    if (filterOp && t.type_op !== filterOp) return false;
-    return true;
-  });
-
   const ITEMS_PER_PAGE = 10;
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIdx = startIdx + ITEMS_PER_PAGE;
-  const paginatedTransactions = filteredTransactions.slice(startIdx, endIdx);
+  const paginatedTransactions = sortedTransactions.slice(startIdx, endIdx);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -463,15 +564,15 @@ export default function MouvementCaisse() {
           <div className="grid grid-cols-1 gap-3">
             <div className="border-l-4 border-green-500 bg-green-50 rounded-xl p-4 flex justify-between items-center">
               <span className="text-xs text-gray-500 uppercase font-semibold">Total dépôt cash</span>
-              <span className="font-extrabold text-green-600 text-lg">{fmt(totaux.total_depot)} XAF</span>
+              <span className="font-extrabold text-green-600 text-lg">{fmt(currentTotals.total_depot)} XAF</span>
             </div>
             <div className="border-l-4 border-red-400 bg-red-50 rounded-xl p-4 flex justify-between items-center">
               <span className="text-xs text-gray-500 uppercase font-semibold">Total retrait</span>
-              <span className="font-extrabold text-red-500 text-lg">{fmt(totaux.total_retrait)} XAF</span>
+              <span className="font-extrabold text-red-500 text-lg">{fmt(currentTotals.total_retrait)} XAF</span>
             </div>
             <div className="border-l-4 border-purple-400 bg-purple-50 rounded-xl p-4 flex justify-between items-center">
               <span className="text-xs text-gray-500 uppercase font-semibold">Total pénalité</span>
-              <span className="font-bold text-purple-600">{fmt(totaux.total_penalite)} XAF</span>
+              <span className="font-bold text-purple-600">{fmt(currentTotals.total_penalite)} XAF</span>
             </div>
           </div>
         </div>
