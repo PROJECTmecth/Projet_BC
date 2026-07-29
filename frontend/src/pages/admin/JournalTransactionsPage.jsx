@@ -8,6 +8,7 @@ import { Search, Printer, Download, FileText, Calendar, Inbox, RotateCw, Chevron
 import { Button } from "../../components/ui/button";
 import Toast from "../../components/ui/Toast";
 import { useTransactionJournal } from "../../hooks/useTransactionJournal";
+import api from "../../lib/axios";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -135,59 +136,139 @@ export default function JournalTransactionsPage() {
 
     if (!result.isConfirmed) return;
 
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const dateLabel = `${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
-    const totalTransactions = transactions.length;
-    const totalDepots = transactions.filter((tx) => tx.operation?.toLowerCase().includes("dépôt")).length;
-    const totalRetraits = totalTransactions - totalDepots;
+    try {
+      const params = {
+        page: 1,
+        limit: 1000,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      };
 
-    doc.setFillColor(249, 115, 22);
-    doc.roundedRect(10, 8, pageWidth - 20, 22, 2.5, 2.5, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("BOMBA CASH — Journal de Transaction", 14, 19);
+      if (filters.date_from) params.date_from = filters.date_from;
+      if (filters.date_to) params.date_to = filters.date_to;
+      if (filters.type) params.type = filters.type;
+      if (filters.search) params.search = filters.search;
 
-    doc.setTextColor(70, 70, 70);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(`Période : ${localFilters.date_from || "..."} au ${localFilters.date_to || "..."}`, 14, 35);
-    doc.text(`Généré le ${dateLabel}`, pageWidth - 14, 35, { align: "right" });
-    doc.text(`Transactions : ${totalTransactions}  •  Dépôts : ${totalDepots}  •  Retraits : ${totalRetraits}`, 14, 41);
+      const response = await api.get("/api/admin/transactions", { params });
+      const rawTransactions = response.data?.success ? (response.data.data || []) : [];
 
-    doc.autoTable({
-      startY: 48,
-      head: [["DATE", "NOM & PRÉNOM", "OPÉRATION", "MONTANT (XAF)", "HEURE", "TÉLÉPHONE", "KIOSQUE", "NOM AGENT"]],
-      body: transactions.map((tx) => [
-        tx.date,
-        tx.nom,
-        tx.operation,
-        `${tx.operation?.toLowerCase().includes("dépôt") ? "+" : "-"}${formatMontant(tx.montant)}`,
-        tx.heure,
-        tx.telephone,
-        tx.kiosque,
-        tx.agent,
-      ]),
-      theme: "grid",
-      headStyles: { fillColor: [74, 74, 74], textColor: 255, fontSize: 8, fontStyle: "bold" },
-      bodyStyles: { fontSize: 8, textColor: [60, 60, 60] },
-      alternateRowStyles: { fillColor: [249, 250, 251] },
-      styles: { cellPadding: 1.8, overflow: "linebreak" },
-      margin: { left: 10, right: 10 },
-    });
+      if (rawTransactions.length === 0) {
+        showToast("Aucune donnée à exporter.", "error");
+        return;
+      }
 
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i += 1) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`Page ${i} / ${pageCount}   —   BOMBA CASH © 2026`, 14, pageHeight - 8);
+      const exportRows = rawTransactions.map((item) => {
+        const raw = item || {};
+        const date = raw.date || (raw.date_heure ? new Date(raw.date_heure).toLocaleDateString("fr-FR") : "");
+        const heure = raw.heure || (raw.date_heure ? new Date(raw.date_heure).toLocaleTimeString("fr-FR") : "");
+        const nom = raw.nom || [raw.client?.nom, raw.client?.prenom].filter(Boolean).join(" ").trim() || "";
+        const operation = raw.operation || (raw.type_op ? String(raw.type_op).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "");
+        const montant = raw.montant ?? 0;
+        const telephone = raw.telephone || raw.client?.telephone || "";
+        const kiosque = raw.kiosque?.nom_kiosque || raw.kiosque?.nom || raw.nom_kiosque || "";
+        const agent = raw.agent?.user?.name || [raw.agent?.nom, raw.agent?.prenom].filter(Boolean).join(" ").trim() || raw.agent || "";
+        const type = raw.type_op || raw.type || "";
+        const reference = raw.reference || raw.numero_recu || raw.numero_operation || raw.code || raw.id_trans || raw.id || "";
+        const solde = raw.solde_apres ?? raw.solde ?? "";
+        const statut = raw.statut || raw.status || "";
+        const details = [
+          type ? `Type: ${type}` : null,
+          reference ? `Réf: ${reference}` : null,
+          solde !== "" ? `Solde: ${formatMontant(solde)}` : null,
+          statut ? `Statut: ${statut}` : null,
+          raw.description || raw.notes || raw.commentaire ? `Note: ${raw.description || raw.notes || raw.commentaire}` : null,
+        ].filter(Boolean).join(" | ");
+
+        return [
+          raw.id_trans || raw.id || "",
+          date,
+          heure,
+          nom,
+          operation,
+          `${operation.toLowerCase().includes("dépôt") ? "+" : "-"}${formatMontant(montant)}`,
+          telephone,
+          kiosque,
+          agent,
+          details,
+        ];
+      });
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const dateLabel = `${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+      const totalTransactions = exportRows.length;
+      const totalDepots = exportRows.filter((row) => String(row[4]).toLowerCase().includes("dépôt")).length;
+      const totalRetraits = totalTransactions - totalDepots;
+      const montantTotal = exportRows.reduce((sum, row) => {
+        const value = Number(String(row[5]).replace(/[^
+0-9.-]/g, ""));
+        return Number.isFinite(value) ? sum + value : sum;
+      }, 0);
+      const montantDepots = exportRows.reduce((sum, row) => {
+        const isDepot = String(row[4]).toLowerCase().includes("dépôt");
+        const value = Number(String(row[5]).replace(/[^0-9.-]/g, ""));
+        return isDepot && Number.isFinite(value) ? sum + value : sum;
+      }, 0);
+      const montantRetraits = exportRows.reduce((sum, row) => {
+        const isDepot = String(row[4]).toLowerCase().includes("dépôt");
+        const value = Number(String(row[5]).replace(/[^0-9.-]/g, ""));
+        return !isDepot && Number.isFinite(value) ? sum + value : sum;
+      }, 0);
+
+      doc.setFillColor(249, 115, 22);
+      doc.roundedRect(10, 8, pageWidth - 20, 22, 2.5, 2.5, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("BOMBA CASH — Journal de Transaction", 14, 19);
+
+      doc.setTextColor(70, 70, 70);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Période : ${filters.date_from || "..."} au ${filters.date_to || "..."}`, 14, 35);
+      doc.text(`Généré le ${dateLabel}`, pageWidth - 14, 35, { align: "right" });
+      doc.text(`Transactions : ${totalTransactions}  •  Dépôts : ${totalDepots}  •  Retraits : ${totalRetraits}`, 14, 41);
+      doc.text(`Montant total : ${formatMontant(montantTotal)} XAF  •  Dépôts : ${formatMontant(montantDepots)} XAF  •  Retraits : ${formatMontant(montantRetraits)} XAF`, 14, 47);
+
+      doc.autoTable({
+        startY: 48,
+        head: [["ID", "DATE", "HEURE", "CLIENT", "OPÉRATION", "MONTANT", "TÉLÉPHONE", "KIOSQUE", "AGENT", "DÉTAILS"]],
+        body: exportRows,
+        theme: "grid",
+        headStyles: { fillColor: [74, 74, 74], textColor: 255, fontSize: 7, fontStyle: "bold" },
+        bodyStyles: { fontSize: 7, textColor: [60, 60, 60] },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        styles: { cellPadding: 1.4, overflow: "linebreak" },
+        margin: { left: 8, right: 8 },
+        columnStyles: {
+          0: { cellWidth: 14, halign: "center" },
+          1: { cellWidth: 20, halign: "center" },
+          2: { cellWidth: 16, halign: "center" },
+          3: { cellWidth: 30, halign: "left" },
+          4: { cellWidth: 22, halign: "left" },
+          5: { cellWidth: 20, halign: "right" },
+          6: { cellWidth: 24, halign: "left" },
+          7: { cellWidth: 24, halign: "left" },
+          8: { cellWidth: 24, halign: "left" },
+          9: { cellWidth: 70, halign: "left" },
+        },
+      });
+
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i += 1) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(`Page ${i} / ${pageCount}   —   BOMBA CASH © 2026`, 14, pageHeight - 8);
+      }
+
+      doc.save(`journal_transactions_${filters.date_from || "all"}_${filters.date_to || "all"}.pdf`);
+      showToast("PDF exporté avec succès.");
+    } catch (err) {
+      console.error("Erreur export PDF journal", err);
+      showToast("Impossible d’exporter le PDF du journal.", "error");
     }
-
-    doc.save(`journal_transactions_${localFilters.date_from || "all"}_${localFilters.date_to || "all"}.pdf`);
-    showToast("PDF exporté avec succès.");
   };
 
   const handleExportExcel = () => {
