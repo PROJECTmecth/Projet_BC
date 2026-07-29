@@ -321,13 +321,16 @@ export default function GestionCartesPage() {
       doc.text(`Actifs : ${actifs}  |  Annulés : ${annules}`, W / 2, 27, { align: "center" });
       doc.text(`Rapport complet (tous statuts)`, W - 14, 27, { align: "right" });
 
+      const tableWidth = 160;
+      const centeredLeftMargin = (W - tableWidth) / 2;
+
       autoTable(doc, {
         head: [["No.", "Date", "Quantite", "Statut"]],
         body: tous.map(l => [l.numero, l.dateGeneration, l.quantite, l.annule ? "ANNULE" : l.statut]),
         startY: 32,
         theme: "grid",
-        margin: { left: 14, right: 14 },
-        styles: { fontSize: 9, cellPadding: 3 },
+        margin: { left: centeredLeftMargin, right: centeredLeftMargin },
+        styles: { fontSize: 9, cellPadding: 3, halign: "center" },
         headStyles: { fillColor: [30, 42, 58], textColor: 255, fontStyle: "bold", halign: "center" },
         alternateRowStyles: { fillColor: [255, 248, 242] },
         columnStyles: {

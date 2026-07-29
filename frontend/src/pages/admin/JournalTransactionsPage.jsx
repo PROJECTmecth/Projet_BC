@@ -8,6 +8,7 @@ import { Search, Printer, Download, FileText, Calendar, Inbox, RotateCw, Chevron
 import { Button } from "../../components/ui/button";
 import Toast from "../../components/ui/Toast";
 import { useTransactionJournal } from "../../hooks/useTransactionJournal";
+import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
@@ -116,31 +117,76 @@ export default function JournalTransactionsPage() {
     showToast("Impression lancée.");
   };
 
-  const handleExportPDF = () => {
-    if (transactions.length === 0) { showToast("Aucune donnée à exporter.", "error"); return; }
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    doc.setFontSize(18); doc.setTextColor(249, 115, 22);
-    doc.text("BOMBA CASH — Journal de Transaction", 14, 15);
-    doc.setFontSize(10); doc.setTextColor(100);
-    doc.text(`Période : du ${localFilters.date_from || "..."} au ${localFilters.date_to || "..."} | Généré le ${new Date().toLocaleDateString("fr-FR")}`, 14, 23);
-    doc.autoTable({
-      startY: 30,
-      head: [["DATE","NOM & PRÉNOM","OPÉRATION","MONTANT (XAF)","HEURE","TÉLÉPHONE","KIOSQUE","NOM AGENT"]],
-      body: transactions.map(tx => [
-        tx.date, tx.nom, tx.operation,
-        `${tx.operation.toLowerCase().includes('dépôt') ? "+" : "-"}${formatMontant(tx.montant)}`,
-        tx.heure, tx.telephone, tx.kiosque, tx.agent,
-      ]),
-      headStyles: { fillColor: [74,74,74], textColor: 255, fontSize: 9, fontStyle: "bold" },
-      bodyStyles: { fontSize: 9 },
-      alternateRowStyles: { fillColor: [249,250,251] },
-    });
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150);
-      doc.text(`Page ${i} / ${pageCount}   —   BOMBA CASH © 2026`, 14, doc.internal.pageSize.height - 8);
+  const handleExportPDF = async () => {
+    if (transactions.length === 0) {
+      showToast("Aucune donnée à exporter.", "error");
+      return;
     }
-    doc.save(`journal_transactions_${localFilters.date_from || 'all'}_${localFilters.date_to || 'all'}.pdf`);
+
+    const result = await Swal.fire({
+      title: "Exporter en PDF ?",
+      text: "Voulez-vous générer le rapport PDF du journal de transactions ?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#F97316",
+      confirmButtonText: "Oui, exporter",
+      cancelButtonText: "Annuler",
+    });
+
+    if (!result.isConfirmed) return;
+
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const dateLabel = `${new Date().toLocaleDateString("fr-FR")} à ${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`;
+    const totalTransactions = transactions.length;
+    const totalDepots = transactions.filter((tx) => tx.operation?.toLowerCase().includes("dépôt")).length;
+    const totalRetraits = totalTransactions - totalDepots;
+
+    doc.setFillColor(249, 115, 22);
+    doc.roundedRect(10, 8, pageWidth - 20, 22, 2.5, 2.5, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("BOMBA CASH — Journal de Transaction", 14, 19);
+
+    doc.setTextColor(70, 70, 70);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Période : ${localFilters.date_from || "..."} au ${localFilters.date_to || "..."}`, 14, 35);
+    doc.text(`Généré le ${dateLabel}`, pageWidth - 14, 35, { align: "right" });
+    doc.text(`Transactions : ${totalTransactions}  •  Dépôts : ${totalDepots}  •  Retraits : ${totalRetraits}`, 14, 41);
+
+    doc.autoTable({
+      startY: 48,
+      head: [["DATE", "NOM & PRÉNOM", "OPÉRATION", "MONTANT (XAF)", "HEURE", "TÉLÉPHONE", "KIOSQUE", "NOM AGENT"]],
+      body: transactions.map((tx) => [
+        tx.date,
+        tx.nom,
+        tx.operation,
+        `${tx.operation?.toLowerCase().includes("dépôt") ? "+" : "-"}${formatMontant(tx.montant)}`,
+        tx.heure,
+        tx.telephone,
+        tx.kiosque,
+        tx.agent,
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [74, 74, 74], textColor: 255, fontSize: 8, fontStyle: "bold" },
+      bodyStyles: { fontSize: 8, textColor: [60, 60, 60] },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+      styles: { cellPadding: 1.8, overflow: "linebreak" },
+      margin: { left: 10, right: 10 },
+    });
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i += 1) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Page ${i} / ${pageCount}   —   BOMBA CASH © 2026`, 14, pageHeight - 8);
+    }
+
+    doc.save(`journal_transactions_${localFilters.date_from || "all"}_${localFilters.date_to || "all"}.pdf`);
     showToast("PDF exporté avec succès.");
   };
 
