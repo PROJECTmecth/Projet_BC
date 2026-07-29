@@ -57,7 +57,6 @@ export default function AjouterOperationPage() {
         e.montant = `Le montant doit être un multiple de ${fmt(dailyDepositAmount)}.`;
       }
     }
-    }
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -223,3 +222,4 @@ export default function AjouterOperationPage() {
     </div>
   );
 }
+

@@ -15,12 +15,20 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        User::factory()->create([
-            'name'     => 'admin',
-            'email'    => 'admin@bomba.com',
-            'password' => Hash::make('admin123'),
-            'role'     => 'admin',
-            'statut'   => 'actif',
+        User::firstOrCreate(
+            ['email' => 'admin@bomba.com'],
+            [
+                'name'     => 'admin',
+                'password' => Hash::make('admin123'),
+                'role'     => 'admin',
+                'statut'   => 'actif',
+            ]
+        );
+
+        $this->call([
+            AgentTestSeeder::class,
+            TestClientsSeeder::class,
+            MouvementCaisseSeeder::class,
         ]);
     }
 }

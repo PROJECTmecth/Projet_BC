@@ -13,31 +13,37 @@ class AgentTestSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Créer User agent
-        $userAgent = User::create([
-            'name'     => 'agent_test',
-            'email'    => 'agent@test.com',
-            'password' => Hash::make('Agent@123456'),
-            'role'     => 'agent',
-            'statut'   => 'actif',
-        ]);
+        // 1. Créer ou récupérer le User agent
+        $userAgent = User::firstOrCreate(
+            ['email' => 'agent@test.com'],
+            [
+                'name'     => 'agent_test',
+                'password' => Hash::make('Agent@123456'),
+                'role'     => 'agent',
+                'statut'   => 'actif',
+            ]
+        );
 
-        // 2. Créer Kiosque test
-        $kiosque = Kiosque::create([
-            'code_kiosque' => 'KIOSK-TEST',
-            'nom_kiosque'  => 'Kiosque Test',
-            'adresse'      => 'Test Street',
-            'ville'        => 'Yaoundé',
-            'telephone'    => '123456789',
-        ]);
+        // 2. Créer ou récupérer le Kiosque test
+        $kiosque = Kiosque::firstOrCreate(
+            ['code_kiosque' => 'KIOSK-TEST'],
+            [
+                'nom_kiosque' => 'Kiosque Test',
+                'adresse'      => 'Test Street',
+                'ville'        => 'Yaoundé',
+                'telephone'    => '123456789',
+            ]
+        );
 
-        // 3. Créer Agent lié au User
-        Agent::create([
-            'id_user'      => $userAgent->id,
-            'id_kiosque'   => $kiosque->id_kiosque,
-            'nom'          => 'Test',
-            'prenom'       => 'Agent',
-            'statut'       => 'actif',
-        ]);
+        // 3. Créer ou récupérer l'Agent lié au User et au kiosque
+        Agent::firstOrCreate(
+            ['id_user' => $userAgent->id],
+            [
+                'id_kiosque'   => $kiosque->id_kiosque,
+                'telephone'    => '+242060000000',
+                'adresse'      => 'Test Street',
+                'statut_ligne' => 'en_ligne',
+            ]
+        );
     }
 }
