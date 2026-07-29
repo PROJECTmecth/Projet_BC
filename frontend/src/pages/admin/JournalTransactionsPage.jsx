@@ -119,11 +119,6 @@ export default function JournalTransactionsPage() {
   };
 
   const handleExportPDF = async () => {
-    if (transactions.length === 0) {
-      showToast("Aucune donnée à exporter.", "error");
-      return;
-    }
-
     const result = await Swal.fire({
       title: "Exporter en PDF ?",
       text: "Voulez-vous générer le rapport PDF du journal de transactions ?",
@@ -201,8 +196,7 @@ export default function JournalTransactionsPage() {
       const totalDepots = exportRows.filter((row) => String(row[4]).toLowerCase().includes("dépôt")).length;
       const totalRetraits = totalTransactions - totalDepots;
       const montantTotal = exportRows.reduce((sum, row) => {
-        const value = Number(String(row[5]).replace(/[^
-0-9.-]/g, ""));
+        const value = Number(String(row[5]).replace(/[^0-9.-]/g, ""));
         return Number.isFinite(value) ? sum + value : sum;
       }, 0);
       const montantDepots = exportRows.reduce((sum, row) => {
@@ -263,7 +257,16 @@ export default function JournalTransactionsPage() {
         doc.text(`Page ${i} / ${pageCount}   —   BOMBA CASH © 2026`, 14, pageHeight - 8);
       }
 
-      doc.save(`journal_transactions_${filters.date_from || "all"}_${filters.date_to || "all"}.pdf`);
+      const fileName = `journal_transactions_${filters.date_from || "all"}_${filters.date_to || "all"}.pdf`;
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       showToast("PDF exporté avec succès.");
     } catch (err) {
       console.error("Erreur export PDF journal", err);

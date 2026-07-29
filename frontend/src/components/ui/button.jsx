@@ -35,10 +35,11 @@ function buttonVariants({ variant = "default", size = "default", className = "" 
   );
 }
 
-function Button({ className, variant, size, children, ...props }) {
+function Button({ className, variant, size, children, type = "button", ...props }) {
   return (
     <button
       data-slot="button"
+      type={type}
       className={buttonVariants({ variant, size, className })}
       {...props}
     >
