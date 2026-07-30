@@ -132,20 +132,32 @@ export default function JournalTransactionsPage() {
     if (!result.isConfirmed) return;
 
     try {
-      const params = {
-        page: 1,
-        limit: 1000,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      };
+      let rawTransactions = [];
 
-      if (filters.date_from) params.date_from = filters.date_from;
-      if (filters.date_to) params.date_to = filters.date_to;
-      if (filters.type) params.type = filters.type;
-      if (filters.search) params.search = filters.search;
+      try {
+        const params = {
+          page: 1,
+          limit: 1000,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+        };
 
-      const response = await api.get("/api/admin/transactions", { params });
-      const rawTransactions = response.data?.success ? (response.data.data || []) : [];
+        if (filters.date_from) params.date_from = filters.date_from;
+        if (filters.date_to) params.date_to = filters.date_to;
+        if (filters.type) params.type = filters.type;
+        if (filters.search) params.search = filters.search;
+
+        const response = await api.get("/api/admin/transactions", { params });
+        if (response.data?.success) {
+          rawTransactions = response.data.data || [];
+        }
+      } catch (requestError) {
+        console.warn("Export PDF: fallback to current journal data", requestError);
+      }
+
+      if (rawTransactions.length === 0) {
+        rawTransactions = (transactions || []).map((tx) => tx._raw || tx);
+      }
 
       if (rawTransactions.length === 0) {
         showToast("Aucune donnée à exporter.", "error");
