@@ -219,7 +219,7 @@ class AgentClientsController extends Controller
                 'duree'           => $request->duree,
                 'montant_initial' => $request->montant,
                 'frais_garde'     => $fraisGarde,
-                'progression'     => min(100, round(($soldeFinal / $this->calculateObjectiveFinal($carte)) * 100)),
+                'progression'     => $this->calculateProgression($soldeFinal, $this->calculateObjectiveFinal($carte)),
                 'date_activation' => $dateActivation,
                 'date_expiration' => $dateExpiration,
                 'reset_date'      => $dateActivation,
@@ -317,6 +317,15 @@ class AgentClientsController extends Controller
         }
 
         return $montantInitial * $nbJours;
+    }
+
+    private function calculateProgression(float $solde, float $objectifFinal): int
+    {
+        if ($objectifFinal <= 0) {
+            return 0;
+        }
+
+        return max(0, min(100, (int) round(($solde / $objectifFinal) * 100)));
     }
 
     private function syncCompteTotals(Compte $compte, int $idClient): void
@@ -500,8 +509,7 @@ class AgentClientsController extends Controller
 
             if ($carte && $carte->montant_initial > 0) {
                 $objectifFinal = $this->calculateObjectiveFinal($carte);
-                $prog = round(($compte->fresh()->solde_total / $objectifFinal) * 100);
-                $progression = max(0, min(100, $prog));
+                $progression = $this->calculateProgression($compte->fresh()->solde_total, $objectifFinal);
                 $carte->update(['progression' => $progression]);
             }
 
