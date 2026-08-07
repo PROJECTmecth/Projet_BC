@@ -219,7 +219,7 @@ class AgentClientsController extends Controller
                 'duree'           => $request->duree,
                 'montant_initial' => $request->montant,
                 'frais_garde'     => $fraisGarde,
-                'progression'     => min(100, round(($soldeFinal / ($request->montant * $nbJours)) * 100)),
+                'progression'     => min(100, round(($soldeFinal / $this->calculateObjectiveFinal($carte)) * 100)),
                 'date_activation' => $dateActivation,
                 'date_expiration' => $dateExpiration,
                 'reset_date'      => $dateActivation,
@@ -305,6 +305,18 @@ class AgentClientsController extends Controller
         }
 
         return (float) self::OPERATION_UNIT;
+    }
+
+    private function calculateObjectiveFinal(Carte $carte): float
+    {
+        $montantInitial = max(0, (float) $carte->montant_initial);
+        $nbJours = $carte->duree === '15 jours' ? 15 : 30;
+
+        if ($carte->duree === '15 jours') {
+            return ($montantInitial / 2) * $nbJours;
+        }
+
+        return $montantInitial * $nbJours;
     }
 
     private function syncCompteTotals(Compte $compte, int $idClient): void
@@ -487,8 +499,7 @@ class AgentClientsController extends Controller
             $this->syncCompteTotals($compte, $client->id_client);
 
             if ($carte && $carte->montant_initial > 0) {
-                $nbJours = $carte->duree === '15 jours' ? 15 : 30;
-                $objectifFinal = $carte->montant_initial * $nbJours;
+                $objectifFinal = $this->calculateObjectiveFinal($carte);
                 $prog = round(($compte->fresh()->solde_total / $objectifFinal) * 100);
                 $progression = max(0, min(100, $prog));
                 $carte->update(['progression' => $progression]);

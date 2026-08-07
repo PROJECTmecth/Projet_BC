@@ -61,4 +61,17 @@ class AgentDepositRuleTest extends BaseTestCase
 
         $this->assertFalse($this->invokePrivateMethod($controller, 'canProcessDailyOperation', [$carte]));
     }
+
+    public function test_objective_final_for_15_days_uses_half_initial(): void
+    {
+        $controller = $this->createController();
+
+        $carte = new Carte([
+            'montant_initial' => 1000,
+            'duree' => '15 jours',
+        ]);
+
+        $result = $this->invokePrivateMethod($controller, 'calculateObjectiveFinal', [$carte]);
+        $this->assertSame(7500.0, $result);
+    }
 }
