@@ -28,6 +28,15 @@ export default function ProfilClientPage() {
 
   const fmt = (v) => new Intl.NumberFormat("fr-FR").format(isNaN(Number(v)) ? 0 : Number(v)) + " F";
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
+  const getObjectifTotal = () => {
+    const montantInitial = Number(carte?.montant_initial ?? 0);
+    if (!montantInitial || !carte?.duree) return 0;
+
+    const taux = carte.duree === '15 jours' ? 0.5 : 1;
+    const nbJours = carte.duree === '15 jours' ? 15 : 30;
+
+    return montantInitial * taux * nbJours;
+  };
   const getPhotoUrl = (url) => {
     if (!url) return "";
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -194,7 +203,7 @@ export default function ProfilClientPage() {
           <div className="carte-detail-row">
             <span className="carte-detail-label">Objectif total</span>
             <span className="carte-detail-value font-bold" style={{ color: '#1F2937' }}>
-              {fmt((carte?.montant_initial ?? 0) * (carte?.duree === '15 jours' ? 15 : 30))}
+              {fmt(getObjectifTotal())}
             </span>
           </div>
           <div className="carte-detail-row">
@@ -204,7 +213,7 @@ export default function ProfilClientPage() {
           <div className="carte-detail-row">
             <span className="carte-detail-label">Montant restant à atteindre</span>
             <span className="carte-detail-value font-bold" style={{ color: '#F59E0B' }}>
-              {fmt(Math.max(0, ((carte?.montant_initial ?? 0) * (carte?.duree === '15 jours' ? 15 : 30)) - (compte?.solde_total ?? 0)))}
+              {fmt(Math.max(0, getObjectifTotal() - (compte?.solde_total ?? 0)))}
             </span>
           </div>
           <div className="carte-detail-row">
