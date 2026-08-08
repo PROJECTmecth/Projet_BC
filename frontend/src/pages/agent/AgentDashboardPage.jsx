@@ -107,7 +107,7 @@ export default function AgentDashboardPage() {
       `${agentNom}`
     );
 
-    const mailtoUrl = `mailto:direction@bombacash.com,support@bombacash.com?subject=${emailSubject}&body=${emailBody}`;
+    const mailtoUrl = `mailto:directionbombacash@gmail.com?subject=${emailSubject}&body=${emailBody}`;
 
     const handleCopyEmailText = () => {
       const plainSubject = "Demande de déblocage - Kiosque / Compte Gelé";
