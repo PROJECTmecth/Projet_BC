@@ -10,8 +10,8 @@ import Toast from "../../components/ui/Toast";
 import { useTransactionJournal } from "../../hooks/useTransactionJournal";
 import api from "../../lib/axios";
 import Swal from "sweetalert2";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const COLONNES = [
   "DATE", "NOM & PRÉNOM", "OPÉRATION",
@@ -237,7 +237,7 @@ export default function JournalTransactionsPage() {
       doc.text(`Transactions : ${totalTransactions}  •  Dépôts : ${totalDepots}  •  Retraits : ${totalRetraits}`, 14, 41);
       doc.text(`Montant total : ${formatMontant(montantTotal)} XAF  •  Dépôts : ${formatMontant(montantDepots)} XAF  •  Retraits : ${formatMontant(montantRetraits)} XAF`, 14, 47);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 48,
         head: [["ID", "DATE", "HEURE", "CLIENT", "OPÉRATION", "MONTANT", "TÉLÉPHONE", "KIOSQUE", "AGENT", "DÉTAILS"]],
         body: exportRows,
