@@ -172,7 +172,9 @@ export default function JournalTransactionsPage() {
         const operation = raw.operation || (raw.type_op ? String(raw.type_op).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "");
         const montant = raw.montant ?? 0;
         const telephone = raw.telephone || raw.client?.telephone || "";
-        const kiosque = raw.kiosque?.nom_kiosque || raw.kiosque?.nom || raw.nom_kiosque || "";
+        const kiosque = typeof raw.kiosque === "string"
+          ? raw.kiosque
+          : raw.kiosque?.nom_kiosque || raw.kiosque?.nom || raw.kiosque?._attributes?.nom_kiosque || raw.nom_kiosque || "";
         const agent = raw.agent?.user?.name || [raw.agent?.nom, raw.agent?.prenom].filter(Boolean).join(" ").trim() || raw.agent || "";
         const type = raw.type_op || raw.type || "";
         const reference = raw.reference || raw.numero_recu || raw.numero_operation || raw.code || raw.id_trans || raw.id || "";
